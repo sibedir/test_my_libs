@@ -12,17 +12,20 @@ using namespace std::string_literals;
 using sib::TNullPtr;
 using sib::TValue;
 using sib::TPointer;
+using sib::TArray;
 
 // -----------------------------------------------------------------------------------
 
 
-#define MY_ASSERTIONS_FOR_TYPES(type, p, lp, mbi, f, lf)                                    \
+#define MY_ASSERTIONS_FOR_TYPES(type, p, lp, mbi, f, lf, a, c)                              \
                                                                                             \
     static_assert( p   std::is_pointer_v       <type>, #type" "#p  " is_pointer"       );   \
     static_assert( lp  sib::is_like_pointer_v  <type>, #type" "#lp " is_like_pointer"  );   \
     static_assert( mbi sib::may_be_indirect_v  <type>, #type" "#mbi" may_be_indirect"  );   \
     static_assert( f   std::is_function_v      <type>, #type" "#f  " is_function"      );   \
     static_assert( lf  sib::is_like_function_v <type>, #type" "#lf " is_like_function" );   \
+    static_assert( a   std::is_array_v         <type>, #type" "#c  " is_array_v"       );   \
+    static_assert( c   sib::is_container_v     <type>, #type" "#c  " is_container"     );   \
 
 #define _MAFT MY_ASSERTIONS_FOR_TYPES
 
@@ -32,25 +35,28 @@ static int foo(float f) { return static_cast<int>(f); }
 
 using TFn = decltype(foo);
 
-//                          |---------------|---------------|---------------|---------------|---------------|
-//                          |    pointer    | like_pointer  |may_be_indirect|   function    | like_function |
-//                          |---------------|---------------|---------------|---------------|---------------|
-_MAFT(std::nullptr_t        ,      not      ,               ,      not      ,      not      ,      not      )
-_MAFT(TNullPtr              ,      not      ,               ,      not      ,      not      ,      not      )
-_MAFT(void*                 ,               ,               ,      not      ,      not      ,      not      )
-_MAFT(TValue<void*>         ,      not      ,               ,      not      ,      not      ,      not      )
-_MAFT(TPointer<void>        ,      not      ,               ,      not      ,      not      ,      not      )
-_MAFT(int*                  ,               ,               ,               ,      not      ,      not      )
-_MAFT(TValue<int*>          ,      not      ,               ,               ,      not      ,      not      )
-_MAFT(TPointer<int>         ,      not      ,               ,               ,      not      ,      not      )
-_MAFT(TFn                   ,      not      ,      not      ,      not      ,               ,               )
-_MAFT(TFn*                  ,               ,               ,               ,      not      ,               )
-_MAFT(TValue<TFn*>          ,      not      ,               ,               ,      not      ,               )
-_MAFT(TPointer<TFn>         ,      not      ,               ,               ,      not      ,               )
-_MAFT(TFn**                 ,               ,               ,               ,      not      ,      not      )
-_MAFT(TValue<TFn**>         ,      not      ,               ,               ,      not      ,      not      )
-_MAFT(TPointer<TFn*>        ,      not      ,               ,               ,      not      ,      not      )
-//                          |---------------|---------------|---------------|---------------|---------------|
+//                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+//                          |    pointer    | like_pointer  |may_be_indirect|   function    | like_function |     array     |   container   |
+//                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+_MAFT(std::nullptr_t        ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TNullPtr              ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(void*                 ,               ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TValue<void*>         ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TPointer<void>        ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(int*                  ,               ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TValue<int*>          ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TPointer<int>         ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TFn                   ,      not      ,      not      ,      not      ,               ,               ,      not      ,      not      )
+_MAFT(TFn*                  ,               ,               ,               ,      not      ,               ,      not      ,      not      )
+_MAFT(TValue<TFn*>          ,      not      ,               ,               ,      not      ,               ,      not      ,      not      )
+_MAFT(TPointer<TFn>         ,      not      ,               ,               ,      not      ,               ,      not      ,      not      )
+_MAFT(TFn**                 ,               ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TValue<TFn**>         ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(TPointer<TFn*>        ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(int[5]                ,      not      ,               ,               ,      not      ,      not      ,               ,               )
+_MAFT(std::array<int _ 5>   ,      not      ,      not      ,      not      ,      not      ,      not      ,      not      ,               )
+_MAFT(TArray<int _ 5>       ,      not      ,               ,               ,      not      ,      not      ,      not      ,               )
+//                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
 
 enum TEnum { e_1 = 1, e_2, e_3, e_4, e_5 };
 
@@ -501,8 +507,6 @@ int main()
         DEF(int, i, = 10);
         DEFA(TPointer, ptr, (&i), TPointer<int>);
         PRN(ptr);
-        std::cout << ptr << "\n";
-
         PRN(&i);
         END;
         EXE(*ptr = 999);
@@ -655,7 +659,7 @@ int main()
         EXE(delete ptr);
         END;
         //BP;
-    } /*{
+    } {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "                                              TArray                                              \n";
@@ -665,10 +669,19 @@ int main()
         BEG;
         DEF(int, i, = 222);
         DEF(int const, ic, = 111);
-        DEFA(TArray, arr, ( i _ ic _ 333 _ ic _ i ), TArray<int _ 5>);
+        DEFA(TArray, arr, (i _ ic _ 333 _ ic _ i), TArray<int _ 5>);
+
+        do {
+            auto __typ__ = sib::TTypeInfo<decltype(arr)>().full_name();
+            std::cout << "p       |" << "arr" << "  =  ";
+            debug_print(arr);
+            std::cout << " -> " << __typ__ << std::endl;
+        } while (0); SetBreakPoint(BP_ALL);
+
         PRN(arr);
+
         END;
-    } {
+    } /* {
         BEG;
         DEFA(TArray, arr, { 1 _ 2 _ 3 _ 4 _ 5 }, TArray<int _ 5>);
         PRN(arr);
@@ -693,14 +706,7 @@ int main()
         END;
     } {
         BEG;
-        //DEF(char const, cha, [] = "111");
-
-        char const cha[] = "111";
-        do {
-            std::string __init__{ "[] = \"111\"" }; std::cout << "d   " << "char const" << " " << "cha" << " " << __init__ << "  ->  " << TTypeInfo<decltype(cha)>().full_name() << "\n";
-        } while (0);
-        SetBreakPoint(BP_ALL);
-
+        DEF(char const, cha, [] = "111");
         DEFA(TArray, arr, = cha, TArray<char _ 4>);
         PRN(cha);
         PRN(arr);
@@ -819,7 +825,7 @@ int main()
         std::cout << "                                              ______                                              \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
-    } {
+    } /* {
         BEG;
         DEF(BVector, b, { 1 _ 2 _ 3 _ 4 _ 5 _ 6 });
         DEF(HVector, h, { 1 _ 2 _ 3 _ 4 _ 5 _ 6 });
@@ -919,7 +925,7 @@ int main()
         PRN(B13);
         PRN(H13);
         END;
-    }*/
+    } */
 
     std::cout << "\n";
     sib::WaitKeyCodes(

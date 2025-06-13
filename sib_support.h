@@ -13,7 +13,7 @@ namespace sib {
     using always_false = std::false_type;
 
     template <typename T>
-    constexpr bool always_false_v = always_false_v<T>::value;
+    constexpr bool always_false_v = always_false<T>::value;
 
     template <typename>
     using always_void_t = void;
@@ -103,72 +103,66 @@ namespace sib {
 
 
 
-// ----------------------------------------------------------------------------------- type_traits
+// ----------------------------------------------------------------------------------- type traits
 
     // instantiation
 
     template <template <typename...> typename, typename...>
-    constexpr bool is_instantiation_v = false;
+    struct  is_instantiation : std::false_type {};
 
     template <template <typename...> typename Templ, typename... Ts>
-    constexpr bool is_instantiation_v<Templ, Templ<Ts...>> = true;
+    struct  is_instantiation<Templ, Templ<Ts...>> : std::true_type {};
 
     template <template <typename...> typename Templ, typename... Ts>
-    using is_instantiation = std::bool_constant<is_instantiation_v<Templ, Ts...>>;
+    struct not_instantiation : std::bool_constant<is_instantiation<Templ, Templ<Ts...>>::value> {};
 
-    template <typename T, template <typename...> typename Templ>
-    concept Instantiation = is_instantiation_v<Templ, T>;
+    template <template <typename...> typename Templ, typename... Ts> constexpr bool  is_instantiation_v =  is_instantiation<Templ, Templ<Ts...>>::value;
+    template <template <typename...> typename Templ, typename... Ts> constexpr bool not_instantiation_v = not_instantiation<Templ, Templ<Ts...>>::value;
 
-    template <typename T, template <typename...> typename Templ>
-    concept not_Instantiation = not is_instantiation_v<Templ, T>;
+    template <typename T, template <typename...> typename Templ>  concept     Instantiation =  is_instantiation_v<Templ, T>;
+    template <typename T, template <typename...> typename Templ>  concept not_Instantiation = not_instantiation_v<Templ, T>;
 
 
 
     // any of ...
 
-    template <typename T, typename... Ts>
-    constexpr bool is_any_of_v = (std::is_same_v<T, Ts> or ...);
+    template <typename T, typename... Ts> constexpr bool  is_any_of_v =     (std::is_same_v<T, Ts> or ...);
+    template <typename T, typename... Ts> constexpr bool not_any_of_v = not (std::is_same_v<T, Ts> or ...);
 
-    template <typename T, typename... Ts>
-    using is_any_of = std::bool_constant<is_any_of_v<T, Ts...>>;
+    template <typename T, typename... Ts> struct  is_any_of : std::bool_constant< is_any_of_v<T, Ts...>> {};
+    template <typename T, typename... Ts> struct not_any_of : std::bool_constant<not_any_of_v<T, Ts...>> {};
 
-    template <typename T, typename... Ts>
-    concept Any_of = is_any_of_v<T, Ts...>;
-
-    template <typename T, typename... Ts>
-    concept not_Any_of = not is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept     Any_of =  is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept not_Any_of = not_any_of_v<T, Ts...>;
 
 
 
     // container
 
     template <typename T>
-    // до лучших времён
-    // concept Container = requires (T v) { for (auto it : v) {} } );
-    concept Container =
-        requires (T& v)
-        {
-            { std::begin(v) == std::end(v) } -> std::same_as<bool>;
-        }
+    constexpr bool is_container_v =
+        // до лучших времён
+        // requires ( requires (T v) { for (auto it : v) {} } )
+        ( requires (T & v) {
+              { std::begin(v) == std::end(v) } -> std::same_as<bool>;
+          }
+        )
     and
-        requires (decltype(std::begin(std::declval<T&>())) it)
-        {
-            { *it };
-            { ++it } -> std::same_as<decltype(it)&>;
-        }
+        ( requires (decltype(std::begin(std::declval<T&>())) it) {
+              { *it };
+              { ++it } -> std::same_as<decltype(it)&>;
+          }
+        )
     ;
 
     template <typename T>
-    struct is_container : std::false_type {};
+    constexpr bool not_container_v = not is_container_v<T>;
 
-    template <Container T>
-    struct is_container<T> : std::true_type {};
+    template <typename T> struct  is_container : std::bool_constant< is_container_v<T>> {};
+    template <typename T> struct not_container : std::bool_constant<not_container_v<T>> {};
 
-    template <typename T>
-    constexpr bool is_container_v = is_container<T>::value;
-
-    template <typename T>
-    concept not_Container = not is_container_v<T>;
+    template <typename T> concept     Container =  is_container_v<T>;
+    template <typename T> concept not_Container = not_container_v<T>;
 
 
 
@@ -179,34 +173,55 @@ namespace sib {
 
     // enum
 
-    template <typename T>
-    using is_enum = std::is_enum<T>;
+    template <typename T> constexpr bool  is_enum_v =      std::is_enum_v<T>;
+    template <typename T> constexpr bool not_enum_v = (not std::is_enum_v<T>);
+
+    template <typename T> using   is_enum = std::is_enum<T>;
+    template <typename T> struct not_enum : std::bool_constant<not_enum_v<T>> {};
+
+    template <typename T> concept     Enum =  is_enum_v<T>;
+    template <typename T> concept not_Enum = not_enum_v<T>;
+
+
+
+    template <typename T> constexpr bool  is_enum_class_v = (
+        ( std::is_enum_v<T>                                       )
+    and ( not std::is_convertible_v<T, std::underlying_type_t<T>> )
+    );
+
+    template <typename T> constexpr bool not_enum_class_v = not is_enum_class_v<T>;
+
+    template <typename T> struct  is_enum_class : std::bool_constant< is_enum_class_v<T>> {};
+    template <typename T> struct not_enum_class : std::bool_constant<not_enum_class_v<T>> {};
+
+    template <typename T> concept     Enum_class =  is_enum_class_v<T>;
+    template <typename T> concept not_Enum_class = not_enum_class_v<T>;
+    
+    
+    
+    // function
+
+    template <typename T> constexpr bool  is_function_v = std::is_function_v<T>;
+    template <typename T> constexpr bool not_function_v = (not std::is_function_v<T>);
+
+    template <typename T> using is_function = std::is_function<T>;
+
+    template <typename T> concept     Function = is_function_v<T>;
+    template <typename T> concept not_Function = not_function_v<T>;
+
+
 
     template <typename T>
-    constexpr bool is_enum_v = std::is_enum_v<T>;
+    constexpr bool is_like_function_v = requires (T f) { std::function(f); };
 
     template <typename T>
-    concept Enum = is_enum_v<T>;
+    constexpr bool not_like_function_v = (not is_like_function_v<T>);
 
-    template <typename T>
-    concept not_Enum = not is_enum_v<T>;
+    template <typename T> struct  is_like_function : std::bool_constant< is_like_function_v<T>> {};
+    template <typename T> struct not_like_function : std::bool_constant<not_like_function_v<T>> {};
 
-
-
-    template <typename T>
-    concept Enum_class = std::is_enum_v<T> and (not std::is_convertible_v<T, std::underlying_type_t<T>>);
-
-    template <typename T>
-    constexpr bool is_enum_class_v = false;
-
-    template <Enum_class E>
-    constexpr bool is_enum_class_v<E> = true;
-
-    template <typename T>
-    using is_enum_class = std::bool_constant<is_enum_class_v<T>>;
-
-    template <typename T>
-    concept not_Enum_class = not is_enum_class_v<T>;
+    template <typename T> concept     Like_function = is_like_function_v<T>;
+    template <typename T> concept not_Like_function = not_like_function_v<T>;
 
 
 
@@ -216,70 +231,67 @@ namespace sib {
     constexpr bool is_like_nullptr_v = std::is_constructible_v<std::nullptr_t, T>;
 
     template <typename T>
-    using is_like_nullptr = std::bool_constant<is_like_nullptr_v<T>>;
+    constexpr bool not_like_nullptr_v = (not is_like_nullptr_v<T>);
 
     template <typename T>
-    concept Like_nullptr = is_like_nullptr_v<T>;
+    struct is_like_nullptr : std::bool_constant<is_like_nullptr_v<T>> {};
+
+    template <typename T> concept     Like_nullptr =  is_like_nullptr_v<T>;
+    template <typename T> concept not_Like_nullptr = not_like_nullptr_v<T>;
+
+
 
     template <typename T>
-    concept not_Like_nullptr = not is_like_nullptr_v<T>;
-
-
-
-    template <typename T> class is_like_pointer;
+    struct is_like_pointer : std::false_type {};
 
     template <typename T>
-    concept Like_pointer =
-        std::is_pointer_v<T>
-     or (not std::is_function_v<T> and std::is_convertible_v<T, void const *>)
-     or (
-            is_like_pointer<decltype(std::declval<T>().operator->())>::value
+        requires (
+            std::is_pointer_v<T>
+         or (
+                not_like_function_v<T>
             and
-            std::is_same_v<
-                std::remove_pointer_t< decltype(std::declval<T>().operator->()) >,
-                                       decltype(std::declval<T>().operator *()) 
-            >
+                std::is_convertible_v<T, void const*>
+            )
+         or (
+                is_like_pointer<decltype(std::declval<T>().operator->())>::value
+            and
+                std::is_same_v<
+                    std::remove_pointer_t< decltype(std::declval<T>().operator->()) >,
+                                           decltype(std::declval<T>().operator *())
+                >
+            )
         )
-    ;
+    struct is_like_pointer<T> : std::true_type {};
 
-    template <typename T>
-    constexpr bool is_like_pointer_v = false;
+    template <typename T> constexpr bool  is_like_pointer_v = is_like_pointer<T>::value;
+    template <typename T> constexpr bool not_like_pointer_v = (not is_like_pointer<T>::value);
 
-    template <Like_pointer T>
-    constexpr bool is_like_pointer_v<T> = true;
-
-    template <typename T>
-    class is_like_pointer : public std::bool_constant<is_like_pointer_v<T>> {};
-
-    template <typename T>
-    concept not_Like_pointer = not is_like_pointer_v<T>;
+    template <typename T> concept     Like_pointer =  is_like_pointer_v<T>;
+    template <typename T> concept not_Like_pointer = not_like_pointer_v<T>;
 
 
 
     template <Like_pointer P>
-        requires (not is_like_nullptr_v<P>)
+        requires (not_like_nullptr_v<P>)
     using base_pointer_type = decltype(std::declval<P>().operator*());
 
 
 
     template <typename T>
-    concept Indirected
-        = is_like_pointer_v<T>
-        and not std::is_function_v<T>
-        and requires(T t) { *t; }
+    constexpr bool may_be_indirect_v =
+            ( is_like_pointer_v<T>      )
+        and ( not std::is_function_v<T> )
+        and ( requires(T t) { *t; }     )
     ;
-    
-    template <typename T>
-    constexpr bool may_be_indirect_v = false;
-
-    template <Indirected T>
-    constexpr bool may_be_indirect_v<T> = true;
 
     template <typename T>
-    using may_be_indirect = std::bool_constant<may_be_indirect_v<T>>;
-
+    constexpr bool cant_be_indirect_v = (not may_be_indirect_v<T>);
+        
     template <typename T>
-    concept not_Indirected = not may_be_indirect_v<T>;
+    struct may_be_indirect : std::bool_constant<may_be_indirect_v<T>> {};
+
+    template <typename T> concept     Indirected =  may_be_indirect_v<T>;
+    template <typename T> concept not_Indirected = cant_be_indirect_v<T>;
 
 
 
@@ -291,77 +303,49 @@ namespace sib {
 
 
 
-    // function
-
-
-    template <typename T>
-    constexpr bool is_function_v = std::is_function_v<T>;
-
-    template <typename T>
-    using is_function = std::is_function<T>;
-
-    template <typename T>
-    concept Function = is_function_v<T>;
-
-    template <typename T>
-    concept not_Function = not is_function_v<T>;
-
-    template <typename T>
-    constexpr bool is_like_function_v = requires (T f) { std::function(f); };
-
-    template <typename T>
-    using is_like_function = std::bool_constant<is_like_function_v<T>>;
-
-    template <typename T>
-    concept Like_function = is_like_function_v<T>;
-        
-    template <typename T>
-    concept not_Like_function = not is_like_function_v<T>;
-
-
-
     // char
 
     template <typename T>
     constexpr bool is_char_v = is_any_of_v< T, char, wchar_t, char8_t, char16_t, char32_t >;
 
     template <typename T>
+    constexpr bool not_char_v = (not is_char_v<T>);
+
+    template <typename T>
     struct is_char : std::bool_constant<is_char_v<T>> {};
 
-    template <typename T>
-    concept Char = is_char_v<T>;
+    template <typename T> concept     Char =  is_char_v<T>;
+    template <typename T> concept not_Char = not_char_v<T>;
+
+
+
+    // basic_string
 
     template <typename T>
-    concept not_Char = not is_char_v<T>;
+    concept Basic_string =
+        std::is_same_v<
+            T,
+            std::basic_string<
+                typename T::value_type,
+                typename T::traits_type,
+                typename T::allocator_type
+            >
+        >
+    ;
 
+    template <typename T>
+    constexpr bool is_basic_string_v = false;
+        
+    template <Basic_string T>
+    constexpr bool is_basic_string_v<T> = true;
 
-
-    // string
-
+    template <typename T>
+    constexpr bool not_basic_string_v = (not is_basic_string_v<T>);
+        
     template <typename T>
     struct is_basic_string : std::false_type {};
 
-    template <typename T>
-        requires (
-            std::is_same_v<
-                T,
-                std::basic_string<
-                    typename T::value_type,
-                    typename T::traits_type,
-                    typename T::allocator_type
-                >
-            >
-        )
-    struct is_basic_string<T> : std::bool_constant<is_char_v<typename T::value_type>> {};
-
-    template <typename T>
-    constexpr bool is_basic_string_v = is_basic_string<T>::value;
-
-    template <typename T>
-    concept Basic_string = is_basic_string_v<T>;
-
-    template <typename T>
-    concept not_Basic_string = not is_basic_string_v<T>;
+    template <typename T> concept not_Basic_string = not_basic_string_v<T>;
 
 
 

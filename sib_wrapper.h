@@ -280,8 +280,7 @@ namespace sib {
     struct std::remove_pointer<TPointer<T> const volatile> {
         using type = T;
     };
-    
-    
+    */
     
     // Array ------------------------------------------------------------------------------
     
@@ -342,6 +341,6 @@ namespace sib {
         template <typename... Args>
         TValue(Args... args) : TBaseClass(std::forward<Args>(args)...) {}
     };
-    */
+    
 
 } // namespace sib

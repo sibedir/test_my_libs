@@ -58,6 +58,8 @@ template <sib::Like_pointer P>
         not sib::is_like_function_v<P>
         and
         not std::is_array_v<P>
+        and
+        not sib::is_container_v<P>
     )
 inline void debug_print(P const & ptr) {
     if (!ptr) {
