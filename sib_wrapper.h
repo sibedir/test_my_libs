@@ -187,7 +187,13 @@ namespace sib {
 
 
     template <typename T>
-        requires (std::is_const_v<T> or (!std::is_arithmetic_v<T> and !std::is_enum_v<T> and !std::is_pointer_v<T>))
+        requires (
+            (std::is_const_v<T>            )
+         or 
+            (    !std::is_arithmetic_v<T>
+             and !std::is_enum_v<T>
+             and !std::is_pointer_v<T>     )
+        )
     class TValue<T> {
         static_assert(always_false<T>::value, "TValue can accept only mulable arithmetic types, enum or pointer.");
     public:

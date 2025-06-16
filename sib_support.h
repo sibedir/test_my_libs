@@ -7,6 +7,8 @@
 #include <set>
 #include <map>
 
+#include <utility>
+
 namespace sib {
 
     template <typename>
@@ -84,17 +86,17 @@ namespace sib {
         struct _array_size_symbol { static std::string get() { return ""; } };
 
         template <typename _T>
-        struct _array_size_symbol<_T[]> { static std::string get() { return "[]"; } };
+        struct _array_size_symbol<_T[]> { static std::string get() { return " []"; } };
 
         template <typename _T, size_t _N>
-        struct _array_size_symbol<_T[_N]> { static std::string get() { return "[" + std::to_string(_N) + "]"; } };
+        struct _array_size_symbol<_T[_N]> { static std::string get() { return " [" + std::to_string(_N) + "]"; } };
 
 
 
     public:
         static std::string full_name() {
             std::string res = _low_name();
-            if (is_const) { res += " const"; }
+            res += _const_symbol();
             res += _ref_symbol();
             res += _array_size_symbol<rr_type>::get();
             return res;
@@ -136,14 +138,13 @@ namespace sib {
     template <typename T, typename... Ts> concept not_Any_of = not_any_of_v<T, Ts...>;
 
 
-
     // container
 
     template <typename T>
     constexpr bool is_container_v =
         // до лучших времён
         // requires ( requires (T v) { for (auto it : v) {} } )
-        ( requires (T & v) {
+        ( requires (T& v) {
               { std::begin(v) == std::end(v) } -> std::same_as<bool>;
           }
         )
@@ -248,7 +249,7 @@ namespace sib {
         requires (
             std::is_pointer_v<T>
          or (
-                not_like_function_v<T>
+                not_function_v<T>
             and
                 std::is_convertible_v<T, void const*>
             )

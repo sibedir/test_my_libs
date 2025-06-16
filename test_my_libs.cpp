@@ -110,8 +110,6 @@ int main()
     //sib::WaitAnyKey();
     //return 0;
 
-    current_break_level = BP_CUSTOM;
-    //BP;
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
@@ -173,9 +171,6 @@ int main()
         std::cout << "                                              TValue                                              \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
-    } {
-        TEnum e = e_1;
-        //TValue<TEnum const> v2 = e_2;
     } {
         BEG;
         EXE(int   _i5 = 555);
@@ -271,7 +266,6 @@ int main()
         PRN(p2);
         PRN(aaa);
         END;
-        //BP;
     } {
         BEG;
         EXE(float f = 11.1f);
@@ -365,6 +359,19 @@ int main()
         PRN(ip);
         PRN(v1);
         PRN(v2);
+        END;
+    } {
+        BEG;
+        DEF(TEnum, E, = e_1);
+        DEF(TValue<TEnum> const, V, = E);
+        PRN(E);
+        PRN(V);
+        END;
+        EXE(E = e_2);
+        PRN(E);
+        END;
+        EXE(E = V);
+        PRN(E);
         END;
     } {
         BEG;
@@ -658,7 +665,6 @@ int main()
         PRN(ptr);
         EXE(delete ptr);
         END;
-        //BP;
     } {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
@@ -670,18 +676,16 @@ int main()
         DEF(int, i, = 222);
         DEF(int const, ic, = 111);
         DEFA(TArray, arr, (i _ ic _ 333 _ ic _ i), TArray<int _ 5>);
-
-        do {
-            auto __typ__ = sib::TTypeInfo<decltype(arr)>().full_name();
-            std::cout << "p       |" << "arr" << "  =  ";
-            debug_print(arr);
-            std::cout << " -> " << __typ__ << std::endl;
-        } while (0); SetBreakPoint(BP_ALL);
-
         PRN(arr);
-
         END;
-    } /* {
+    } {
+        BEG;
+        DEFA(TArray, arr, (1 _ 2 _ 3), TArray<int _ 3>);
+        DEFA(TArray, arrarr, (arr _ arr _ arr), TArray<TArray<int _ 3> _ 3>);
+        PRN(arr);
+        PRN(arrarr);
+        END;
+    } {
         BEG;
         DEFA(TArray, arr, { 1 _ 2 _ 3 _ 4 _ 5 }, TArray<int _ 5>);
         PRN(arr);
@@ -703,6 +707,40 @@ int main()
         END;
         EXE(arr = "87654");
         PRN(arr);
+        END;
+    } {
+        BEG;
+        DEF(char, ch10[10], = "12345");
+        DEFA(TArray, arr, = ch10, TArray<char _ 10>);
+        PRN(ch10);
+        PRN(arr);
+        END;
+        EXE(arr = "123456789");
+        EXE(strcpy_s(ch10, arr.data()));
+        PRN(arr);
+        PRN(ch10);
+        END;
+        EXE(ch10[3] = 0);
+        PRN(ch10);
+        PRN(arr);
+        EXE(arr = ch10);
+        PRN(ch10);
+        PRN(arr);
+        END;
+        EXE(OUTSTREAM << ch10 << '\n');
+        EXE(OUTSTREAM << arr << '\n');
+        END;
+    } {
+        BEG;
+        DEFA(TArray, arr1, = "12345", TArray<char _ 6>);
+        DEFA(TArray, arr2, = "54321", TArray<char _ 6>);
+        PRN(arr1);
+        PRN(arr2);
+        END;
+        EXE(arr1 = arr2);
+        EXE(arr2[1] = '0');
+        PRN(arr1);
+        PRN(arr2);
         END;
     } {
         BEG;
@@ -825,107 +863,7 @@ int main()
         std::cout << "                                              ______                                              \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
-    } /* {
-        BEG;
-        DEF(BVector, b, { 1 _ 2 _ 3 _ 4 _ 5 _ 6 });
-        DEF(HVector, h, { 1 _ 2 _ 3 _ 4 _ 5 _ 6 });
-        DEF(BVector, b0, );
-        DEF(HVector, h0, );
-        DEF(BVector, b1, = { 1 _ 2 _ 3 _ 4 _ 5 _ 6 });
-        DEF(HVector, h1, = { 1 _ 2 _ 3 _ 4 _ 5 _ 6 });
-        DEF(BVector, b2, = b);
-        DEF(HVector, h2, = b);
-        DEF(BVector, b3, = h);
-        DEF(HVector, h3, = h);
-        DEF(BVector, b4, (b));
-        DEF(HVector, h4, (b));
-        DEF(BVector, b5, (h));
-        DEF(HVector, h5, (h));
-        DEF(BVector, b6, { b });
-        DEF(HVector, h6, { static_cast<HVector>(b) });
-        DEF(BVector, b7, { h });
-        DEF(HVector, h7, { h });
-        PRN(b);
-        PRN(h);
-        PRN(b0);
-        PRN(h0);
-        PRN(b1);
-        PRN(h1);
-        PRN(b2);
-        PRN(h2);
-        PRN(b3);
-        PRN(h3);
-        PRN(b4);
-        PRN(h4);
-        PRN(b5);
-        PRN(h5);
-        PRN(b6);
-        PRN(h6);
-        PRN(b7);
-        PRN(h7);
-        END;
-        DEF(TValue<BVector>, B  , { 1 _ 1 _ 1 _ 1 _ 1 });
-        DEF(TValue<HVector>, H  , { 2 _ 2 _ 2 _ 2 _ 2 });
-        DEF(TValue<BVector>, B0 , );
-        DEF(TValue<HVector>, H0 , );
-        DEF(TValue<BVector>, B1 , = { 1 _ 1 _ 1 _ 1 _ 1 _ 1 });
-        DEF(TValue<HVector>, H1 , = { 2 _ 2 _ 2 _ 2 _ 2 _ 2 });
-        DEF(TValue<BVector>, B2 , = b);
-        DEF(TValue<HVector>, H2 , = b);
-        DEF(TValue<BVector>, B3 , = h);
-        DEF(TValue<HVector>, H3 , = h);
-        DEF(TValue<BVector>, B4 , (b));
-        DEF(TValue<HVector>, H4 , (b));
-        DEF(TValue<BVector>, B5 , (h));
-        DEF(TValue<HVector>, H5 , (h));
-        DEF(TValue<BVector>, B6 , { b });
-        DEF(TValue<HVector>, H6 , { static_cast<HVector>(b) });
-        DEF(TValue<BVector>, B7 , { static_cast<BVector>(h) });
-        DEF(TValue<HVector>, H7 , { h });
-        DEF(TValue<BVector>, B8 , = B);
-        DEF(TValue<HVector>, H8 , = B);
-        DEF(TValue<BVector>, B9 , = H);
-        DEF(TValue<HVector>, H9 , = H);
-        DEF(TValue<BVector>, B10, (B));
-        DEF(TValue<HVector>, H10, (B));
-        DEF(TValue<BVector>, B11, (H));
-        DEF(TValue<HVector>, H11, (H));
-        DEF(TValue<BVector>, B12, { B });
-        DEF(TValue<HVector>, H12, { static_cast<HVector>(B) });
-        DEF(TValue<BVector>, B13, { static_cast<BVector>(H) });
-        DEF(TValue<HVector>, H13, { H });
-        PRN(B);
-        PRN(H);
-        PRN(B0);
-        PRN(H0);
-        PRN(B1);
-        PRN(H1);
-        PRN(B2);
-        PRN(H2);
-        PRN(B3);
-        PRN(H3);
-        PRN(B4);
-        PRN(H4);
-        PRN(B5);
-        PRN(H5);
-        PRN(B6);
-        PRN(H6);
-        PRN(B7);
-        PRN(H7);
-        PRN(B8);
-        PRN(H8);
-        PRN(B9);
-        PRN(H9);
-        PRN(B10);
-        PRN(H10);
-        PRN(B11);
-        PRN(H11);
-        PRN(B12);
-        PRN(H12);
-        PRN(B13);
-        PRN(H13);
-        END;
-    } */
+    }
 
     std::cout << "\n";
     sib::WaitKeyCodes(

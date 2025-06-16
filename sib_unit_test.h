@@ -11,12 +11,6 @@ extern bool const is_initialized_unit_test_module;
 #define OUTSTREAM std::cout
 
 template <typename T>
-/*    requires (
-        not std::is_same_v<bool, T>
-    and not sib::is_char_v<T>
-    and not sib::is_container_v<T>
-    and not sib::is_like_pointer_v<T>
-    )*/
 inline void debug_print(T const& val) {
     OUTSTREAM << val;
 }
@@ -28,7 +22,8 @@ inline void debug_print(T const & val) {
 
 template <sib::Char Ch>
 inline void debug_print(Ch const & ch) {
-    OUTSTREAM << "'" << ch << "'";
+    if (ch == 0) { OUTSTREAM << "#0";             }
+    else         { OUTSTREAM << "'" << ch << "'"; }
 }
 
 template <sib::Container Cont> requires (not sib::is_basic_string_v<Cont>)
