@@ -1,4 +1,4 @@
-    #pragma once
+ï»¿#pragma once
 
 #include <cstdlib>
 #include <concepts>
@@ -142,7 +142,7 @@ namespace sib {
 
     template <typename T>
     constexpr bool is_container_v =
-        // äî ëó÷øèõ âðåì¸í
+        // Ð´Ð¾ Ð»ÑƒÑ‡ÑˆÐ¸Ñ… Ð²Ñ€ÐµÐ¼Ñ‘Ð½
         // requires ( requires (T v) { for (auto it : v) {} } )
         ( requires (T& v) {
               { std::begin(v) == std::end(v) } -> std::same_as<bool>;

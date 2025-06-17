@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <utility>
 #include <type_traits>
@@ -20,31 +20,21 @@ namespace sib {
 
     template <typename T> struct remove_all_wrapers { using type = T; };
 
-
-
     template <typename T>
     using remove_all_wrapers_t = remove_all_wrapers<T>::type;
 
-
-
-    template <                    > struct remove_all_wrapers<TNullPtr          > { using type = std::nullptr_t                    ; };
-
-    template <typename T          > struct remove_all_wrapers<TValue<T>         > { using type = remove_all_wrapers_t<T>           ; };
-    template <typename T          > struct remove_all_wrapers<TValue<T>    const> { using type = remove_all_wrapers_t<T>  const    ; };
-
-    template <typename T          > struct remove_all_wrapers<TPointer<T>       > { using type = remove_all_wrapers_t<T>*          ; };
-    template <typename T          > struct remove_all_wrapers<TPointer<T>  const> { using type = remove_all_wrapers_t<T>* const    ; };
-
-    template <typename T, size_t N> struct remove_all_wrapers<TArray<T, N>      > { using type = remove_all_wrapers_t<T>        [N]; };
-    template <typename T, size_t N> struct remove_all_wrapers<TArray<T, N> const> { using type = remove_all_wrapers_t<T>  const [N]; };
+    template <                    > struct remove_all_wrapers<TNullPtr      > { using type = std::nullptr_t             ; };
+    template <typename T          > struct remove_all_wrapers<TValue  <T>   > { using type = remove_all_wrapers_t<T>    ; };
+    template <typename T, size_t N> struct remove_all_wrapers<TArray  <T, N>> { using type = remove_all_wrapers_t<T> [N]; };
     
     
     
     template <typename T> struct TWrapperSpec          { using type = TValue<remove_all_wrapers_t<T>>      ; };
     template <typename T> struct TWrapperSpec<T const> { using type = TValue<remove_all_wrapers_t<T>> const; };
     
-    template <> struct TWrapperSpec<std::nullptr_t> { using type = TNullPtr; };
-    
+    template <> struct TWrapperSpec<std::nullptr_t      > { using type = TNullPtr      ; };
+    template <> struct TWrapperSpec<std::nullptr_t const> { using type = TNullPtr const; };
+
     template <typename T> struct TWrapperSpec<T*      > { using type = TPointer<remove_all_wrapers_t<T>>      ; };
     template <typename T> struct TWrapperSpec<T* const> { using type = TPointer<remove_all_wrapers_t<T>> const; };
     
@@ -59,6 +49,7 @@ namespace sib {
     template <typename T> struct TWrapperSpec<T&&> { using type = std::remove_reference_t<remove_all_wrapers_t<T>&&>; };
     
     
+
     template <typename T>
     using TWrapper = typename TWrapperSpec<T>::type;
     
@@ -334,19 +325,19 @@ namespace sib {
     
     
     
-    template <typename T, size_t N>
-    class TValue<T[N]> : public TArray<T, N> {
-    public:
-        using TBaseParam = T[N];
-        using TBaseClass = TArray<T, N>;
-    
-        TValue(                ) : TBaseClass(              ) {}
-        TValue(TBaseParam& obj ) : TBaseClass(          obj ) {}
-        TValue(TBaseParam&& obj) : TBaseClass(std::move(obj)) {}
-    
-        template <typename... Args>
-        TValue(Args... args) : TBaseClass(std::forward<Args>(args)...) {}
-    };
+    //template <typename T, size_t N>
+    //class TValue<T[N]> : public TArray<T, N> {
+    //public:
+    //    using TBaseParam = T[N];
+    //    using TBaseClass = TArray<T, N>;
+    //
+    //    TValue(                ) : TBaseClass(              ) {}
+    //    TValue(TBaseParam& obj ) : TBaseClass(          obj ) {}
+    //    TValue(TBaseParam&& obj) : TBaseClass(std::move(obj)) {}
+    //
+    //    template <typename... Args>
+    //    TValue(Args... args) : TBaseClass(std::forward<Args>(args)...) {}
+    //};
     
 
 } // namespace sib

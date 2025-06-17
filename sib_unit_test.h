@@ -1,5 +1,6 @@
-#pragma once
+﻿#pragma once
 
+#include <utility>
 #include <iostream>
 
 #include "sib_support.h"
@@ -10,24 +11,37 @@ extern bool const is_initialized_unit_test_module;
 
 #define OUTSTREAM std::cout
 
+struct debug_endl_t {};
+
+constexpr debug_endl_t debug_endl;
+
 template <typename T>
-inline void debug_print(T const& val) {
+inline void _debug_print(T const& val) {
     OUTSTREAM << val;
 }
 
+template <>
+inline void _debug_print<debug_endl_t>(debug_endl_t const& val) {
+    OUTSTREAM << '\n';
+}
+
 template <std::same_as<bool> T>
-inline void debug_print(T const & val) {
+inline void _debug_print(T const & val) {
     OUTSTREAM << (val ? "true" : "false");
 }
 
 template <sib::Char Ch>
-inline void debug_print(Ch const & ch) {
-    if (ch == 0) { OUTSTREAM << "#0";             }
-    else         { OUTSTREAM << "'" << ch << "'"; }
+inline void _debug_print(Ch const & ch) {
+    switch (ch) {
+        case '\0': OUTSTREAM << "\\0"; break;
+        case '\n': OUTSTREAM << "\\n"; break;
+        case '\r': OUTSTREAM << "\\r"; break;
+        default:   OUTSTREAM << "'" << ch << "'";
+    }
 }
 
 template <sib::Container Cont> requires (not sib::is_basic_string_v<Cont>)
-inline void debug_print(Cont const & cont) {
+inline void _debug_print(Cont const & cont) {
     if (std::begin(cont) == std::end(cont)) {
         OUTSTREAM << "{}";
         return;
@@ -35,16 +49,16 @@ inline void debug_print(Cont const & cont) {
 
     OUTSTREAM << "{ ";
     auto it = std::begin(cont);
-    debug_print(*it);
+    _debug_print(*it);
     for (++it; it != std::end(cont); ++it) {
         OUTSTREAM << ", ";
-        debug_print(*it);
+        _debug_print(*it);
     }
     OUTSTREAM << " }";
 }
 
 template <sib::Basic_string Str>
-inline void debug_print(Str const & str) {
+inline void _debug_print(Str const & str) {
     OUTSTREAM << "\"" << str << "\"";
 }
 
@@ -56,7 +70,7 @@ template <sib::Like_pointer P>
         and
         not sib::is_container_v<P>
     )
-inline void debug_print(P const & ptr) {
+inline void _debug_print(P const & ptr) {
     if (!ptr) {
         OUTSTREAM << nullptr;
         return;
@@ -65,14 +79,25 @@ inline void debug_print(P const & ptr) {
     OUTSTREAM << static_cast<void const*>(ptr);
     if constexpr (sib::may_be_indirect_v<P>) {
         OUTSTREAM << " { ";
-        debug_print(*ptr);
+        _debug_print(*ptr);
         OUTSTREAM << " }";
     }
 }
 
 template <sib::Like_function F>
-inline void debug_print(F const &) {
+inline void _debug_print(F const &) {
     OUTSTREAM << "function " << typeid(F).name();
+}
+
+template <typename T>
+inline void debug_print(T&& first) {
+    _debug_print(std::forward<T >(first));
+}
+
+template <typename T, typename... Ts>
+inline void debug_print(T&& first, Ts&& ... others) {
+    _debug_print(std::forward<T >(first )   );
+     debug_print(std::forward<Ts>(others)...);
 }
 
 

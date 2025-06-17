@@ -107,8 +107,14 @@ using TMyClassMethod = std::remove_pointer_t<TMyClassMethodPtr>;
 // MAIN ------------------------------------------------------------------------------
 int main()
 {
-    //sib::WaitAnyKey();
-    //return 0;
+    std::string str = "1234567890";
+    std::string_view str_v(&str[2], &str[7]);
+
+    std::cout << "11111 11111\v";
+    std::cout << "22222";
+
+    sib::WaitAnyKey();
+    return 0;
 
     {
         std::cout << "\n";
