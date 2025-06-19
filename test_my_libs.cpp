@@ -82,12 +82,14 @@ using BArray = std::array<int, 5>;
 class HArray : public BArray {};
 
 template <typename T>
-struct _function {
+struct _function
+{
     template <typename... Args>
     _function(Args&&... args) {}
 };
 
-struct MyClass {
+struct MyClass
+{
     MyClass() = default;
     MyClass(MyClass const&) = default;
     MyClass(MyClass&&) = default;
@@ -104,18 +106,26 @@ using TMyClassConstr = std::remove_pointer_t<TMyClassConstrPtr>;
 using TMyClassMethodPtr = decltype(MyClassMethodPtr);
 using TMyClassMethod = std::remove_pointer_t<TMyClassMethodPtr>;
 
+struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumClass123> {};
+
 // MAIN ------------------------------------------------------------------------------
+
+#define TEST_NULLPTR
+#define TEST_VALUE
+#define TEST_POINTER
+#define TEST_ARRAY
+#define TEST_WRAPPER
+
+#define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
+
 int main()
 {
-    std::string str = "1234567890";
-    std::string_view str_v(&str[2], &str[7]);
+    setlocale(LC_ALL, "Russian");
 
-    std::cout << "11111 11111\v";
-    std::cout << "22222";
+    //sib::WaitAnyKey();
+    //return 0;
 
-    sib::WaitAnyKey();
-    return 0;
-
+#ifdef TEST_NULLPTR
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
@@ -171,7 +181,11 @@ int main()
         PRN(ptr);
         PRN(ip);
         END;
-    } {
+    }
+#endif TEST_NULLPTR
+
+#ifdef TEST_VALUE
+    {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "                                              TValue                                              \n";
@@ -274,11 +288,9 @@ int main()
         END;
     } {
         BEG;
-        EXE(float f = 11.1f);
-        EXE(TValue<int> v = f);
+        EXE(TValue<int> v = 11);
         EXE(std::vector<int> vec_i(v));
         PRN(v);
-        PRN(f);
         PRN(vec_i);
         END;
     } {
@@ -460,17 +472,21 @@ int main()
         END;
     } {
         BEG;
-        DEFA(TValue, val, = 1, TValue<int>);
-        DEF(float&&, fcr, = val);
+        DEFA(auto, i, = 1, int);
+        DEFA(TValue, val, = 2, TValue<int>);
+        DEF(float&&, fcr1, = i);
+        DEF(float&&, fcr2, = val);
+        PRN(i);
         PRN(val);
-        PRN(fcr);
+        PRN(fcr1);
+        PRN(fcr2);
         END;
         EXE(val = 42);
         PRN(val);
-        PRN(fcr);
-        EXE(fcr = 777777);
+        PRN(fcr2);
+        EXE(fcr2 = 777777);
         PRN(val);
-        PRN(fcr);
+        PRN(fcr2);
         END;
     } {
         BEG;
@@ -487,7 +503,11 @@ int main()
         PRN(val);
         PRN(ir);
         END;
-    } {
+    }
+#endif TEST_VALUE
+
+#ifdef TEST_POINTER
+    {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "                                             TPointer                                             \n";
@@ -672,6 +692,46 @@ int main()
         EXE(delete ptr);
         END;
     } {
+        BEG;
+        DEF(int, i, = 10);
+        DEF(TPointer, ptr, = &i);
+        PRN(ptr);
+        END;
+        PRN(ptr++);
+        END;
+        PRN(--ptr);
+        END;
+        EXE(--ptr);
+        PRN(ptr);
+        END;
+        EXE(ptr += 4);
+        PRN(ptr);
+        END;
+        EXE(ptr = ptr - 3);
+        PRN(ptr);
+        END;
+    } {
+        BEG;
+        DEF(int, i1, = 10);
+        DEF(int, i2, = 20);
+        DEF(TPointer, ptr1, = &i1);
+        DEF(TPointer, ptr2, = &i2);
+        PRN(i1);
+        PRN(i2);
+        PRN(&i1);
+        PRN(&i2);
+        PRN(ptr1);
+        PRN(ptr2);
+        PRN(i2 - i1);
+        PRN(*ptr2 - *ptr1);
+        PRN(&i2 - &i1);
+        PRN(ptr2 - ptr1);
+        END;
+    }
+#endif TEST_POINTER
+
+#ifdef TEST_ARRAY
+    {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "                                              TArray                                              \n";
@@ -716,7 +776,7 @@ int main()
         END;
     } {
         BEG;
-        DEF(char, ch10[10], = "12345");
+        DEF(char, ch10, [10] = "12345");
         DEFA(TArray, arr, = ch10, TArray<char _ 10>);
         PRN(ch10);
         PRN(arr);
@@ -733,8 +793,8 @@ int main()
         PRN(ch10);
         PRN(arr);
         END;
-        EXE(OUTSTREAM << ch10 << '\n');
-        EXE(OUTSTREAM << arr << '\n');
+        EXE(std::cout << ch10 << '\n');
+        EXE(std::cout << arr << '\n');
         END;
     } {
         BEG;
@@ -863,13 +923,157 @@ int main()
         DEF(TArray, arr, (std::array{ 'f' _ 'f' _ 'f' _ 'f' }));
         PRN(arr);
         END;
-    } {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                              ______                                              \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
     }
+#endif TEST_ARRAY
+
+#ifdef TEST_WRAPPER
+    {
+        std::cout << "\n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "                                              TWrapper                                              \n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "\n";
+    } {
+        BEG;
+        DEF(int, i, = 1);
+        DEF(auto, w, = sib::to_wrap(i));
+        PRN(i);
+        PRN(w);
+        END;
+        EXE(w = 2);
+        EXE(i = w);
+        PRN(i);
+        PRN(w);
+        END;
+        EXE(i = 3);
+        EXE(w = i);
+        PRN(i);
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(int const, ic, = 1);
+        DEF(auto, w, = sib::to_wrap(ic));
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(int const, ic, = 1);
+        DEF(decltype(auto), w, = sib::to_wrap(ic));
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(auto, w, = sib::to_wrap(1));
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(auto, w, = sib::to_wrap(nullptr));
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(auto, w1, = sib::to_wrap(char(100)));
+        DEF(auto, w2, = sib::to_wrap(w1));
+        char c = w2;
+        DEF(auto, s, = "111"s + c);
+        PRN(w1);
+        PRN(w2);
+        PRN(s);
+        END;
+    } {
+        BEG;
+        EXE(int i = 2 + sib::to_wrap(3));
+        PRN(i);
+        END;
+    } {
+        BEG;
+        DEF(int, i, = 2);
+        DEF(auto, w, (sib::to_wrap(&i)));
+        PRN(i);
+        PRN(w);
+        END;
+        EXE(*w = 3);
+        PRN(i);
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(auto, c, = '+');
+        DEF(auto, p, = &c);
+        DEF(auto, w, (sib::to_wrap(p)));
+        DEF(auto, s, = "_"s + *w);
+        PRN(c);
+        PRN(p);
+        PRN(w);
+        PRN(s);
+        END;
+    } {
+        BEG;
+        DEF(char const, a, [] = "1234\0005678");
+        DEF(decltype(auto), w, (sib::to_wrap(a)));
+        PRN(a);
+        PRN(w);
+        EXE(std::wcout << w << '\n');
+        END;
+    } {
+        BEG;
+        DEF(std::vector const, v, { 1 _ 2 _ 3 _ 4 _ 5 });
+        DEF(decltype(auto), w, (sib::to_wrap(v)));
+        PRN(v);
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(decltype(auto), w, (sib::to_wrap(foo)));
+        PRN(w);
+        PRN(w(111));
+        END;
+    } {
+        BEG;
+        DEF(MyStruct, tmp, {});
+        PRN(tmp);
+        PRN(int(tmp));
+        PRN(TEnum(tmp));
+        PRNAS(TEnumClass123(tmp), sib::underlying_type_t<TEnumClass123>);
+        END;
+        EXE(static_cast<int&>(tmp) = 444);
+        EXE(static_cast<TEnum&>(tmp) = e_3);
+        EXE(static_cast<TEnumClass123&>(tmp) = TEnumClass123::_1);
+        PRN(tmp);
+        PRN(int(tmp));
+        PRN(TEnum(tmp));
+        PRNAS(TEnumClass123(tmp), sib::underlying_type_t<TEnumClass123>);
+        END;
+        DEF(TEnum, e, = tmp);
+        PRN(e);
+        END;
+        EXE(e = e_2);
+        EXE(TValue<TEnum> ve);
+        EXE(ve = e);
+        PRN(e);
+        PRN(ve);
+        END;
+    } {
+        BEG;
+        DEF(auto, w, = sib::to_wrap(L"123456789ффф"s));
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEFA(char, c, [] = "123", char[4]);
+        END;
+    } {
+        BEG;
+
+        static struct AAA {};
+
+        DEF(AAA, aaa, , );
+        PRN(std::is_class_v<AAA>);
+        END;
+    }
+#endif TEST_WRAPPER
 
     std::cout << "\n";
     sib::WaitKeyCodes(

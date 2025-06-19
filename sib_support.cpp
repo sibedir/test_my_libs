@@ -16,14 +16,16 @@ namespace sib {
 
     Tconsole_reactions_to_keys default_console_reactions_to_keys{};
 
-    [[nodiscard]] inline TKeyCode GetKeyCode() {
+    [[nodiscard]] inline TKeyCode GetKeyCode()
+    {
         TKeyCode res = _getch();
         if (res == KC_COMM_1 or res == KC_COMM_2)
             res = res * 256 + _getch();
         return res;
     }
 
-    inline TKeyCode WaitKeyCodes(std::set<TKeyCode> const& codes, std::string const& msg) {
+    inline TKeyCode WaitKeyCodes(std::set<TKeyCode> const& codes, std::string const& msg)
+    {
         std::cout << msg;
         while (true) {
             auto kc = codes.find(GetKeyCode());
@@ -31,18 +33,21 @@ namespace sib {
         }
     }
 
-    inline TKeyCode WaitAnyKey(std::string const& msg) {
+    inline TKeyCode WaitAnyKey(std::string const& msg)
+    {
         std::cout << msg;
         return GetKeyCode();
     }
 
-    inline TKeyCode WaitReactToKeyCodes(std::set<TKeyCode> const& codes, Tconsole_reactions_to_keys const& console_reactions_to_keys, std::string const& msg) {
+    inline TKeyCode WaitReactToKeyCodes(std::set<TKeyCode> const& codes, Tconsole_reactions_to_keys const& console_reactions_to_keys, std::string const& msg)
+    {
         auto kc = console_reactions_to_keys.find(WaitKeyCodes(codes, msg));
         if (kc != console_reactions_to_keys.end()) kc->second();
         return kc->first;
     }
     
-    inline TKeyCode WaitReactToAnyKey(Tconsole_reactions_to_keys const& console_reactions_to_keys, std::string const& msg) {
+    inline TKeyCode WaitReactToAnyKey(Tconsole_reactions_to_keys const& console_reactions_to_keys, std::string const& msg)
+    {
         auto kc = console_reactions_to_keys.find(WaitAnyKey(msg));
         if (kc != console_reactions_to_keys.end()) kc->second();
         return kc->first;

@@ -1,15 +1,16 @@
 ﻿#pragma once
 
-#include <utility>
-#include <type_traits>
 #include <array>
 #include <initializer_list>
+#include <type_traits>
+#include <utility>
 
 // Note: sib_wrapper library classes behave as if no volotile exists
 
 namespace sib {
 
     struct TNullPtr;
+    template <typename T> class TConst;
     template <typename T> class TValue;
     template <typename T> using TPointer = TValue<T*>;
     template <typename T, size_t N> class TArray;
@@ -41,12 +42,13 @@ namespace sib {
     template <typename T, size_t N> struct TWrapperSpec<T       [N]> { using type = TArray<remove_all_wrapers_t<T>, N>      ; };
     template <typename T, size_t N> struct TWrapperSpec<T const [N]> { using type = TArray<remove_all_wrapers_t<T>, N> const; };
     
-    template <class   Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class> { using type = Class; };
-    
+    template <class Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class      > { using type = Class      ; };
+    template <class Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class const> { using type = Class const; };
+
     template <typename Func> requires (std::is_function_v<Func>) struct TWrapperSpec<Func>  { using type = std::function<Func>; };
     
-    template <typename T> struct TWrapperSpec<T&>  { using type = std::remove_reference_t<remove_all_wrapers_t<T>&> ; };
-    template <typename T> struct TWrapperSpec<T&&> { using type = std::remove_reference_t<remove_all_wrapers_t<T>&&>; };
+    //template <typename T> struct TWrapperSpec<T&>  { using type = std::remove_reference_t<remove_all_wrapers_t<T>&> ; };
+    //template <typename T> struct TWrapperSpec<T&&> { using type = std::remove_reference_t<remove_all_wrapers_t<T>&&>; };
     
     
 
@@ -56,16 +58,23 @@ namespace sib {
     
     
     template <typename T>
-    TWrapper<T> to_wrap(T&& source) { return TWrapper<T>(std::forward<T>(source)); }
+    TWrapper<std::remove_reference_t<T>> to_wrap(T&& source)
+    {
+        return std::forward<T>(source);
+    }
     
     template <typename T, typename... Args>
-    TWrapper<T> to_wrap(Args&&... args) { return TWrapper<T>( std::forward<Args>(args)... ); }
+    TWrapper<std::remove_reference_t<T>> to_wrap(Args&&... args)
+    {
+        return TWrapper<std::remove_reference_t<T>>(std::forward<Args>(args)... );
+    }
     
     
     
     // TNullPtr ---------------------------------------------------------------------------
     
-    struct TNullPtr {
+    struct TNullPtr
+    {
         using base_type = std::nullptr_t;
     
         TNullPtr(std::nullptr_t = nullptr) {}
@@ -79,9 +88,8 @@ namespace sib {
     // Value ------------------------------------------------------------------------------
     
     template <typename T>
-    class TValue {
-    private:
-        using ptr_base_type = std::remove_pointer_t<T>;
+    class TValue
+    {
     public:
         using data_type = T;
         T data;
@@ -97,10 +105,16 @@ namespace sib {
 
         constexpr T& operator= (T const& other) { return data = other; }
 
-        constexpr ptr_base_type const * operator -> () const requires (std::is_pointer_v<T>) { return data; }
-        constexpr ptr_base_type       * operator -> ()       requires (std::is_pointer_v<T>) { return data; }
+        constexpr data_type operator -> () const requires (std::is_pointer_v<T>) { return data; }
+        //constexpr ptr_base_type       * operator -> ()       requires (std::is_pointer_v<T>) { return data; }
 
         constexpr explicit operator bool () const requires (std::is_pointer_v<T>) { return data; }
+
+        constexpr TValue& operator ++ () requires (std::is_pointer_v<T>) { ++data; return *this; }
+        constexpr TValue& operator -- () requires (std::is_pointer_v<T>) { --data; return *this; }
+
+        constexpr data_type operator ++ (int) requires (std::is_pointer_v<T>) { return data++; }
+        constexpr data_type operator -- (int) requires (std::is_pointer_v<T>) { return data--; }
 
         template <typename AnyT> requires (std::is_pointer_v<T>)
         constexpr explicit operator AnyT const * () const { return static_cast<AnyT const *>(data); }
@@ -111,7 +125,8 @@ namespace sib {
     };
 
     template <typename Ret, typename... Args>
-    class TValue<Ret(*)(Args...)> {
+    class TValue<Ret(*)(Args...)>
+    {
     public:
         using data_type = Ret(*)(Args...);
         data_type data;
@@ -127,7 +142,8 @@ namespace sib {
     };
 
     template <Enum E> requires (not std::is_const_v<E>)
-    class TValue<E> {
+    class TValue<E>
+    {
     public:
 
         using data_type = E;
@@ -185,7 +201,8 @@ namespace sib {
              and !std::is_enum_v<T>
              and !std::is_pointer_v<T>     )
         )
-    class TValue<T> {
+    class TValue<T>
+    {
         static_assert(always_false<T>::value, "TValue can accept only mulable arithmetic types, enum or pointer.");
     public:
         template <typename... AnyT>
@@ -201,7 +218,8 @@ namespace sib {
     
     /*
     template <typename T>
-    class TPointer {
+    class TPointer
+    {
     private:
     
         using base_type_ = remove_all_wrapers_t<T>;
@@ -240,7 +258,8 @@ namespace sib {
     
     
     template <function F>
-    class TPointer<F> : public TValue<F*> {
+    class TPointer<F> : public TValue<F*>
+    {
     private:
         using TBaseClass = TValue<F*>;
     public:
@@ -259,22 +278,26 @@ namespace sib {
     
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T>> {
+    struct std::remove_pointer<TPointer<T>>
+    {
         using type = T;
     };
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T> const> {
+    struct std::remove_pointer<TPointer<T> const>
+    {
         using type = T;
     };
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T> volatile> {
+    struct std::remove_pointer<TPointer<T> volatile>
+    {
         using type = T;
     };
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T> const volatile> {
+    struct std::remove_pointer<TPointer<T> const volatile>
+    {
         using type = T;
     };
     */
@@ -282,7 +305,8 @@ namespace sib {
     // Array ------------------------------------------------------------------------------
     
     template <typename T, size_t N>
-    class TArray : public std::array<T, N> {
+    class TArray : public std::array<T, N>
+    {
     public:
         using TBaseParam = T[N];
         using TBaseClass = std::array<T, N>;
@@ -326,7 +350,8 @@ namespace sib {
     
     
     //template <typename T, size_t N>
-    //class TValue<T[N]> : public TArray<T, N> {
+    //class TValue<T[N]> : public TArray<T, N>
+    //{
     //public:
     //    using TBaseParam = T[N];
     //    using TBaseClass = TArray<T, N>;

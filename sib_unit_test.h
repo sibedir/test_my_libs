@@ -9,93 +9,162 @@ extern bool const is_initialized_unit_test_module;
 
 // ----------------------------------------------------------------------------------- debug print
 
-#define OUTSTREAM std::cout
-
 struct debug_endl_t {};
 
 constexpr debug_endl_t debug_endl;
 
+namespace {
+
+    template <sib::Char Ch = char>
+    struct outstream
+    {
+        auto& operator() () { return std::cout; }
+    };
+
+    template <>
+    struct outstream<wchar_t>
+    {
+        auto& operator() () { return std::wcout; }
+    };
+   
+    template <sib::Char Ch>
+    inline void _debug_print_char(Ch ch)
+    {
+        if constexpr (sib::is_any_of_v<Ch, char8_t, char16_t, char32_t>)
+        {
+            outstream{}() << '#' << static_cast<long>(ch);
+        }
+        else
+        {
+            switch (ch)
+            {
+                case '\0': outstream{}() << "\\0"; break;
+                case '\a': outstream{}() << "\\a"; break;
+                case '\b': outstream{}() << "\\b"; break;
+                case '\t': outstream{}() << "\\t"; break;
+                case '\n': outstream{}() << "\\n"; break;
+                case '\v': outstream{}() << "\\v"; break;
+                case '\f': outstream{}() << "\\f"; break;
+                case '\r': outstream{}() << "\\r"; break;
+                default:   outstream<Ch>{}() << ch;
+            }
+        }
+    }
+
+    template <typename T>
+    inline void _debug_print(T const & val)
+    {
+        if      constexpr (std::is_same_v<T, debug_endl_t>)
+        {
+            outstream{}() << '\n';
+        }
+        else if constexpr (std::is_same_v<T, bool>)
+        {
+            outstream{}() << (val ? "true" : "false");
+        }
+        else if constexpr (sib::is_char_v<T>)
+        {
+            outstream{}() << "'";
+            _debug_print_char(val);
+            outstream{}() << "'";
+        }
+        else if constexpr (sib::is_container_v<T>)
+        {
+            if constexpr (sib::is_like_string_v<T>) {
+                outstream{}() << "\"";
+                auto begin = std::begin(val);
+                auto end   = std::end  (val);
+                for (auto it = begin; it != end; ++it)
+                {
+                    if (it - begin > 32) {
+                        outstream{}() << "...";
+                        break;
+                    }
+                    _debug_print_char(*it);
+                }
+                outstream{}() << "\"";
+            }
+            else
+            {
+                if (std::begin(val) == std::end(val))
+                {
+                    outstream{}() << "{}";
+                    return;
+                }
+
+                outstream{}() << "{ ";
+                auto end   = std::end  (val);
+                auto it    = std::begin(val);
+                _debug_print(*it);
+                for (++it; it != end; ++it)
+                {
+                    outstream{}() << ", ";
+                    _debug_print(*it);
+                }
+                outstream{}() << " }";
+            }
+        }
+        else if constexpr (sib::is_like_function_v<T>)
+        {
+            outstream{}() << "function " << typeid(val).name();
+        }
+        else if constexpr (sib::is_like_pointer_v<T>)
+        {
+            if (!val)
+            {
+                outstream{}() << nullptr;
+                return;
+            }
+
+            if constexpr (std::is_convertible_v<T, void const*>)
+            {
+                outstream{}() << static_cast<void const*>(val);
+            }
+            else
+            {
+                outstream{}() << val;
+            }
+
+            if constexpr (sib::may_be_indirect_v<T>)
+            {
+                if constexpr (sib::is_char_v<sib::base_indirection_type<T>>)
+                {
+                    outstream{}() << " \"";
+                    for (sib::base_indirection_type<T>* it = val; *it != '\0'; ++it)
+                    {
+                        if (it - val > 16)
+                        {
+                            outstream{}() << "...";
+                            break;
+                        }
+                        _debug_print_char(*it);
+                    }
+                    outstream{}() << "\"";
+                }
+                else
+                {
+                    outstream{}() << " { ";
+                    _debug_print(*val);
+                    outstream{}() << " }";
+                }
+            }
+        }
+        else
+        {
+            outstream{}() << val;
+        }
+    }
+}
+
 template <typename T>
-inline void _debug_print(T const& val) {
-    OUTSTREAM << val;
-}
-
-template <>
-inline void _debug_print<debug_endl_t>(debug_endl_t const& val) {
-    OUTSTREAM << '\n';
-}
-
-template <std::same_as<bool> T>
-inline void _debug_print(T const & val) {
-    OUTSTREAM << (val ? "true" : "false");
-}
-
-template <sib::Char Ch>
-inline void _debug_print(Ch const & ch) {
-    switch (ch) {
-        case '\0': OUTSTREAM << "\\0"; break;
-        case '\n': OUTSTREAM << "\\n"; break;
-        case '\r': OUTSTREAM << "\\r"; break;
-        default:   OUTSTREAM << "'" << ch << "'";
-    }
-}
-
-template <sib::Container Cont> requires (not sib::is_basic_string_v<Cont>)
-inline void _debug_print(Cont const & cont) {
-    if (std::begin(cont) == std::end(cont)) {
-        OUTSTREAM << "{}";
-        return;
-    }
-
-    OUTSTREAM << "{ ";
-    auto it = std::begin(cont);
-    _debug_print(*it);
-    for (++it; it != std::end(cont); ++it) {
-        OUTSTREAM << ", ";
-        _debug_print(*it);
-    }
-    OUTSTREAM << " }";
-}
-
-template <sib::Basic_string Str>
-inline void _debug_print(Str const & str) {
-    OUTSTREAM << "\"" << str << "\"";
-}
-
-template <sib::Like_pointer P>
-    requires (
-        not sib::is_like_function_v<P>
-        and
-        not std::is_array_v<P>
-        and
-        not sib::is_container_v<P>
-    )
-inline void _debug_print(P const & ptr) {
-    if (!ptr) {
-        OUTSTREAM << nullptr;
-        return;
-    }
-
-    OUTSTREAM << static_cast<void const*>(ptr);
-    if constexpr (sib::may_be_indirect_v<P>) {
-        OUTSTREAM << " { ";
-        _debug_print(*ptr);
-        OUTSTREAM << " }";
-    }
-}
-
-template <sib::Like_function F>
-inline void _debug_print(F const &) {
-    OUTSTREAM << "function " << typeid(F).name();
-}
-
-template <typename T>
-inline void debug_print(T&& first) {
+inline void debug_print(T&& first)
+{
     _debug_print(std::forward<T >(first));
 }
 
 template <typename T, typename... Ts>
-inline void debug_print(T&& first, Ts&& ... others) {
+inline void debug_print(T&& first, Ts&& ... others)
+{
     _debug_print(std::forward<T >(first )   );
      debug_print(std::forward<Ts>(others)...);
 }
@@ -117,19 +186,19 @@ extern inline void SetBreakPoint(TBreakPointLevel bp_level = BP_ALL);
 static int BEG_COUNTR = 0;
 
 #define BEG                                                     \
-    OUTSTREAM << ++BEG_COUNTR << " ----------------------------------------------------------------------------------------------\n\n";\
+    std::cout << ++BEG_COUNTR << " ----------------------------------------------------------------------------------------------\n\n";\
     SetBreakPoint(BP_BEGIN)                                     \
 
 #define DEF(type, inst, init)                                   \
     type inst init;                                             \
     do {                                                        \
-        std::string __init__{STR(init)};                        \
-        OUTSTREAM                                               \
+        constexpr auto __typ__ = sib::type_name<decltype(inst)>();  \
+        std::string inst_str { STR(init) };                     \
+        std::cout                                               \
             <<   "d   " << STR(type)                            \
             <<      " " << #inst                                \
-            <<      " " << __init__                             \
-            << "  ->  "                                         \
-            << sib::TTypeInfo<decltype(inst)>().full_name()     \
+            <<      " " << inst_str                             \
+            << "  ->  " << __typ__                              \
             << "\n";                                            \
     } while(0);                                                 \
     SetBreakPoint(BP_ALL)                                       \
@@ -144,39 +213,39 @@ static int BEG_COUNTR = 0;
 
 #define PRN(instance)                                           \
     do {                                                        \
-        auto __typ__ = sib::TTypeInfo<decltype(instance)>().full_name();\
-        OUTSTREAM                                               \
+        constexpr auto __typ__ = sib::type_name<decltype(instance)>();\
+        std::cout                                               \
             << "p       |" << STR(instance)                     \
             <<     "  =  ";                                     \
         debug_print(instance);                                  \
-        OUTSTREAM                                               \
+        std::cout                                               \
             <<      " -> " << __typ__                           \
-            << std::endl;                                       \
+            << '\n';                                            \
     } while(0);                                                 \
     SetBreakPoint(BP_ALL)                                       \
 
-#define PRNAS(instance, type)                                   \
+#define PRNAS(instance, type_as)                                \
     do {                                                        \
-        auto __typ__ = sib::TTypeInfo<decltype(instance)>().full_name();\
-        auto __typ_as__ = sib::TTypeInfo<type>().full_name();   \
-        OUTSTREAM                                               \
+        constexpr auto __typ__    = sib::type_name<decltype(instance)>();   \
+        constexpr auto __typ_as__ = sib::type_name<type_as           >();   \
+        std::cout                                               \
             << "p       |" << STR(instance)                     \
             <<        " {" << __typ__    << "}"                 \
             <<     " -> {" << __typ_as__ << "}"                 \
             <<     "  =  ";                                     \
-        debug_print(static_cast<type>(instance));               \
-        OUTSTREAM                                               \
-            << std::endl;                                       \
+        debug_print(static_cast<type_as>(instance));            \
+        std::cout                                               \
+            << '\n';                                            \
     } while(0);                                                 \
     SetBreakPoint(BP_ALL)                                       \
 
 #define EXE(line)                                               \
-    OUTSTREAM << "e   " << STR(line) << ";\n";                  \
+    std::cout << "e   " << STR(line) << ";\n";                  \
     line;                                                       \
     SetBreakPoint(BP_ALL)                                       \
 
 #define BP SetBreakPoint(BP_CUSTOM)                             \
 
 #define END                                                     \
-    OUTSTREAM << "\n";                                          \
+    std::cout << "\n";                                          \
     SetBreakPoint(BP_END)                                       \
