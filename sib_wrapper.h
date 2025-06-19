@@ -497,7 +497,7 @@ namespace sib {
 
     // Кортеж уникальных отсортированных типов -----------------------------------------
     template <typename... Ts>
-    class TUniqueTuple : public std::tuple<Ts...>
+    class TUniqueTuple : public TWrapper<Ts> ...
     {
         static_assert
             (
