@@ -32,6 +32,7 @@ using sib::TArray;
 // -----------------------------------------------------------------------------------
 
 static int foo(float f) { return static_cast<int>(f); }
+static int bar(float f) { return static_cast<int>(-f); }
 
 using TFn = decltype(foo);
 
@@ -115,12 +116,27 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 #define TEST_POINTER
 #define TEST_ARRAY
 #define TEST_WRAPPER
+#define TEST_UNIQUE_TUPLE
 
 #define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
 int main()
 {
     setlocale(LC_ALL, "Russian");
+
+    int const i1 = 1111;
+    decltype(auto) i2 = i1;
+    decltype(auto) w1 = sib::to_wrap(i1);
+    PRN(w1);
+
+    TValue<TFn*> v1 = foo;
+    v1 = bar;
+    PRN(v1);
+
+    TFn* const fp = foo;
+    decltype(auto) v2 = sib::to_wrap(fp);
+    //v2 = bar;
+    PRN(v2);
 
     //sib::WaitAnyKey();
     //return 0;
@@ -1028,7 +1044,7 @@ int main()
         BEG;
         DEF(decltype(auto), w, (sib::to_wrap(foo)));
         PRN(w);
-        PRN(w(111));
+        PRN(w(11.1));
         END;
     } {
         BEG;
@@ -1066,14 +1082,64 @@ int main()
         END;
     } {
         BEG;
-
-        static struct AAA {};
-
-        DEF(AAA, aaa, , );
-        PRN(std::is_class_v<AAA>);
         END;
     }
 #endif TEST_WRAPPER
+
+#ifdef TEST_UNIQUE_TUPLE
+    {
+        std::cout << "\n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "                                           TUniqueTuple                                           \n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "\n";
+    } {
+        BEG;
+        struct A {};
+        struct B {};
+        struct C {};
+        struct D {};
+        struct E {};
+
+        static_assert(std::is_same_v<
+            sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
+            sib::MakeUniqueTuple<std::string, std::vector<int, std::allocator<int>>, bool>
+        >);
+
+        static_assert(std::is_same_v<
+            sib::MakeUniqueTuple<A, B, C>,
+            sib::MakeUniqueTuple<B, C, A>
+        >);
+
+        sib::MakeUniqueTuple<A, B, C> tmp1;
+        sib::MakeUniqueTuple<C, B, A> tmp2;
+        sib::MakeUniqueTuple<B, A, C> tmp3;
+
+        sib::MakeUniqueTuple<std::vector<int>, bool, std::string> tmp4;
+        sib::MakeUniqueTuple<std::string, std::vector<int, std::allocator<int>>, bool> tmp5;
+
+        static_assert(std::is_same_v<decltype(tmp1), decltype(tmp2)>);
+        static_assert(std::is_same_v<decltype(tmp2), decltype(tmp3)>);
+        static_assert(std::is_same_v<decltype(tmp3), decltype(tmp1)>);
+
+        static_assert(std::is_same_v<decltype(tmp4), decltype(tmp5)>);
+        static_assert(std::is_same_v<decltype(tmp5), decltype(tmp4)>);
+
+        std::cout << sib::type_name(tmp1) << '\n';
+        std::cout << sib::type_name(tmp2) << '\n';
+        std::cout << sib::type_name(tmp3) << '\n';
+        std::cout << sib::type_name(tmp4) << '\n';
+        std::cout << sib::type_name(tmp5) << '\n';
+
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
+    }
+#endif TEST_UNIQUE_TUPLE
 
     std::cout << "\n";
     sib::WaitKeyCodes(

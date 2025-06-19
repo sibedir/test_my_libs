@@ -106,7 +106,7 @@ namespace {
         }
         else if constexpr (sib::is_like_function_v<T>)
         {
-            outstream{}() << "function " << typeid(val).name();
+            outstream{}() << "function";
         }
         else if constexpr (sib::is_like_pointer_v<T>)
         {

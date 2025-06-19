@@ -90,31 +90,43 @@ namespace sib {
     template <typename T>
     class TValue
     {
+        static_assert(always_false<T>::value, "TValue can accept only mulable arithmetic types, enum or pointer.");
+    };
+
+    template <typename T>
+        requires (
+            (!std::is_const_v<T>)
+            and
+            (std::is_arithmetic_v<T> or std::is_pointer_v<T>)
+        )
+    class TValue<T>
+    {
     public:
         using data_type = T;
+    private:
         T data;
-    
+    public:
         constexpr TValue(     ) : data{   } {}
         constexpr TValue(T val) : data(val) {}
     
         template <typename AnyT>
-        constexpr TValue(TValue<AnyT> other) : data(other.data) {}
+        constexpr TValue(TValue<AnyT> other) : data(other) {}
     
         constexpr operator T const & () const { return data; }
         constexpr operator T       & ()       { return data; }
 
         constexpr T& operator= (T const& other) { return data = other; }
 
-        constexpr data_type operator -> () const requires (std::is_pointer_v<T>) { return data; }
-        //constexpr ptr_base_type       * operator -> ()       requires (std::is_pointer_v<T>) { return data; }
+        constexpr T const operator -> () const requires (std::is_pointer_v<T>) { return data; }
+        constexpr T       operator -> ()       requires (std::is_pointer_v<T>) { return data; }
 
         constexpr explicit operator bool () const requires (std::is_pointer_v<T>) { return data; }
 
         constexpr TValue& operator ++ () requires (std::is_pointer_v<T>) { ++data; return *this; }
         constexpr TValue& operator -- () requires (std::is_pointer_v<T>) { --data; return *this; }
 
-        constexpr data_type operator ++ (int) requires (std::is_pointer_v<T>) { return data++; }
-        constexpr data_type operator -- (int) requires (std::is_pointer_v<T>) { return data--; }
+        constexpr T    operator ++ (int) requires (std::is_pointer_v<T>) { return data++; }
+        constexpr T    operator -- (int) requires (std::is_pointer_v<T>) { return data--; }
 
         template <typename AnyT> requires (std::is_pointer_v<T>)
         constexpr explicit operator AnyT const * () const { return static_cast<AnyT const *>(data); }
@@ -191,24 +203,6 @@ namespace sib {
     template <like_enum E>
     using underlying_type_t = typename underlying_type<E>::type;
 
-
-
-    template <typename T>
-        requires (
-            (std::is_const_v<T>            )
-         or 
-            (    !std::is_arithmetic_v<T>
-             and !std::is_enum_v<T>
-             and !std::is_pointer_v<T>     )
-        )
-    class TValue<T>
-    {
-        static_assert(always_false<T>::value, "TValue can accept only mulable arithmetic types, enum or pointer.");
-    public:
-        template <typename... AnyT>
-        constexpr TValue(AnyT... args) {}
-    };
-    
     template <typename T>
     TValue(T) -> TValue<remove_all_wrapers_t<std::remove_cvref_t<T>>>;
     
@@ -363,6 +357,163 @@ namespace sib {
     //    template <typename... Args>
     //    TValue(Args... args) : TBaseClass(std::forward<Args>(args)...) {}
     //};
-    
+
+
+    // Сортировка типов ----------------------------------------------------------------
+
+    template <typename... Ts> struct TTypeList;
+
+    template <typename...> struct TConcatTypeList;
+
+    template <typename... Ts, typename... Us>
+    struct TConcatTypeList<TTypeList<Ts...>, TTypeList<Us...>>
+    {
+        using type = TTypeList<Ts..., Us...>;
+    };
+
+    template <typename... Ts>
+    using TConcatTypeList_t = typename TConcatTypeList<Ts...>::type;
+
+    template <typename Left, typename Right>
+    static constexpr bool type_less = sib::type_name<Left>() < sib::type_name<Right>();
+
+    template <template <typename...> typename Template, typename... Types>
+    class TSortTypeListAndInstantiate
+    {
+    private:
+        template <template <typename...> typename Templ, typename...> struct instantiate;
+
+        template <template <typename...> typename Templ, typename... Ts>
+        struct instantiate<Templ, TTypeList<Ts...>>
+        {
+            using type = Templ<Ts...>;
+        };
+
+        template <template <typename...> typename Templ, typename... Ts>
+        using instantiate_t = typename instantiate<Templ, Ts...>::type;
+
+        template <int Count, typename... Ts>
+        struct take;
+
+        template <int Count, typename... Ts>
+        using take_t = typename take<Count, Ts...>::type;
+
+        template <typename... Ts>
+        struct take<0, TTypeList<Ts...>>
+        {
+            using type = TTypeList<>;
+            using rest = TTypeList<Ts...>;
+        };
+
+        template <typename A, typename... Ts>
+        struct take<1, TTypeList<A, Ts...>>
+        {
+            using type = TTypeList<A>;
+            using rest = TTypeList<Ts...>;
+        };
+
+        template <int Count, typename A, typename... Ts>
+        struct take<Count, TTypeList<A, Ts...>>
+        {
+            using type = TConcatTypeList_t<TTypeList<A>, take_t<Count - 1, TTypeList<Ts...>>>;
+            using rest = typename take<Count - 1, TTypeList<Ts...>>::rest;
+        };
+
+        template <typename...> struct sort_list;
+
+        template <typename... Ts>
+        using sorted_list_t = typename sort_list<Ts...>::type;
+
+        template <typename A>
+        struct sort_list<TTypeList<A>>
+        {
+            using type = TTypeList<A>;
+        };
+
+        template <typename A, typename B>
+        struct sort_list<TTypeList<A, B>>
+        {
+            using type = std::conditional_t<type_less<A, B>, TTypeList<A, B>, TTypeList<B, A>>;
+        };
+
+        template <typename...> struct merge;
+
+        template <typename... Ts>
+        using merge_t = typename merge<Ts...>::type;
+
+        template <typename... Bs>
+        struct merge<TTypeList<>, TTypeList<Bs...>>
+        {
+            using type = TTypeList<Bs...>;
+        };
+
+        template <typename... As>
+        struct merge<TTypeList<As...>, TTypeList<>>
+        {
+            using type = TTypeList<As...>;
+        };
+
+        template <typename AHead, typename... As, typename BHead, typename... Bs>
+        struct merge<TTypeList<AHead, As...>, TTypeList<BHead, Bs...>>
+        {
+            using type = std::conditional_t<
+                type_less<AHead, BHead>,
+                TConcatTypeList_t<TTypeList<AHead>, merge_t<TTypeList<As...>, TTypeList<BHead, Bs...>>>,
+                TConcatTypeList_t<TTypeList<BHead>, merge_t<TTypeList<AHead, As...>, TTypeList<Bs...>>>
+            >;
+        };
+
+        template <typename... Ts>
+        struct sort_list<TTypeList<Ts...>>
+        {
+            static constexpr auto first_size = sizeof...(Ts) / 2;
+            using split = take<first_size, TTypeList<Ts...>>;
+            using type = merge_t<
+                sorted_list_t<typename split::type>,
+                sorted_list_t<typename split::rest>
+            >;
+        };
+
+    public:
+        using result_type = instantiate_t<Template, sorted_list_t<TTypeList<Types...>>>;
+    };
+
+    template <typename T, typename... Ts>
+    struct First
+    {
+        using type = T;
+    };
+
+    template <typename... Ts>
+    using First_t = typename First<Ts...>::type;
+
+    template <typename T, typename... Ts>
+    constexpr bool is_sorted_v = type_less<T, First_t<Ts...>> and is_sorted_v<Ts...>;
+
+    template <typename T>
+    constexpr bool is_sorted_v<T> = true;
+
+
+
+    // Кортеж уникальных отсортированных типов -----------------------------------------
+    template <typename... Ts>
+    class TUniqueTuple : public std::tuple<Ts...>
+    {
+        static_assert
+            (
+                sib::is_unique_v<Ts...>,
+                "sib::unique_tuple: Template types must be unique and not not be implicitly convertible."
+                );
+
+        static_assert
+            (
+                sib::is_sorted_v<Ts...>,
+                "sib::unique_tuple: Template types must be sorted."
+                );
+    };
+
+    template <typename... Ts>
+    using MakeUniqueTuple = typename TSortTypeListAndInstantiate<TUniqueTuple, Ts...>::result_type;
+
 
 } // namespace sib

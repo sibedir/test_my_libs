@@ -73,6 +73,12 @@ namespace sib {
     }
 
     template <typename T>
+    consteval auto type_name(T&&) noexcept
+    {
+        return type_name<T>();
+    }
+
+    template <typename T>
     struct TTypeInfo {
     private:
         using rr_type = std::remove_reference_t<T>;
@@ -414,6 +420,20 @@ namespace sib {
 
     template <typename T> concept     Like_string =  is_like_string_v<T>;
     template <typename T> concept not_Like_string = not_like_string_v<T>;
+
+
+
+    // unique type list
+
+    template <typename T, typename... Ts>
+    constexpr bool is_unique_v =
+        not (std::is_convertible_v<T, Ts> || ...)
+    and not (std::is_convertible_v<Ts, T> || ...)
+    and (is_unique_v<Ts...>)
+    ;
+
+    template <typename T>
+    constexpr bool is_unique_v<T> = true;
 
 
 
