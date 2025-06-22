@@ -2,17 +2,14 @@
 
 #include <string>
 #include <vector>
+#include <tuple>
 
-#include "sib_support.h"
 #include "sib_wrapper.h"
+#include "sib_unique_tuple.h"
+#include "sib_support.h"
 #include "sib_unit_test.h"
 
 using namespace std::string_literals;
-
-using sib::TNullPtr;
-using sib::TValue;
-using sib::TPointer;
-using sib::TArray;
 
 // -----------------------------------------------------------------------------------
 
@@ -40,24 +37,30 @@ using TFn = decltype(foo);
 //                          |    pointer    | like_pointer  |may_be_indirect|   function    | like_function |     array     |   container   |
 //                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
 _MAFT(std::nullptr_t        ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TNullPtr              ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TNullPtr         ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
 _MAFT(void*                 ,               ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TValue<void*>         ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TPointer<void>        ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TValue<void*>    ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TPointer<void>   ,      not      ,               ,      not      ,      not      ,      not      ,      not      ,      not      )
 _MAFT(int*                  ,               ,               ,               ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TValue<int*>          ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TPointer<int>         ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TValue<int*>     ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TPointer<int>    ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
 _MAFT(TFn                   ,      not      ,      not      ,      not      ,               ,               ,      not      ,      not      )
 _MAFT(TFn*                  ,               ,               ,               ,      not      ,               ,      not      ,      not      )
-_MAFT(TValue<TFn*>          ,      not      ,               ,               ,      not      ,               ,      not      ,      not      )
-_MAFT(TPointer<TFn>         ,      not      ,               ,               ,      not      ,               ,      not      ,      not      )
+_MAFT(sib::TValue<TFn*>     ,      not      ,               ,               ,      not      ,               ,      not      ,      not      )
+_MAFT(sib::TPointer<TFn>    ,      not      ,               ,               ,      not      ,               ,      not      ,      not      )
 _MAFT(TFn**                 ,               ,               ,               ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TValue<TFn**>         ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
-_MAFT(TPointer<TFn*>        ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TValue<TFn**>    ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
+_MAFT(sib::TPointer<TFn*>   ,      not      ,               ,               ,      not      ,      not      ,      not      ,      not      )
 _MAFT(int[5]                ,      not      ,               ,               ,      not      ,      not      ,               ,               )
 _MAFT(std::array<int _ 5>   ,      not      ,      not      ,      not      ,      not      ,      not      ,      not      ,               )
-_MAFT(TArray<int _ 5>       ,      not      ,               ,               ,      not      ,      not      ,      not      ,               )
+_MAFT(sib::TArray<int _ 5>  ,      not      ,               ,               ,      not      ,      not      ,      not      ,               )
 //                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+
+struct A {};
+struct B {};
+struct C {};
+struct D {};
+struct E {};
 
 enum TEnum { e_1 = 1, e_2, e_3, e_4, e_5 };
 
@@ -124,20 +127,6 @@ int main()
 {
     setlocale(LC_ALL, "Russian");
 
-    int const i1 = 1111;
-    decltype(auto) i2 = i1;
-    decltype(auto) w1 = sib::to_wrap(i1);
-    PRN(w1);
-
-    TValue<TFn*> v1 = foo;
-    v1 = bar;
-    PRN(v1);
-
-    TFn* const fp = foo;
-    decltype(auto) v2 = sib::to_wrap(fp);
-    //v2 = bar;
-    PRN(v2);
-
     //sib::WaitAnyKey();
     //return 0;
 
@@ -145,12 +134,12 @@ int main()
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
-        std::cout << "                                             TNullPtr                                             \n";
+        std::cout << "                                             sib::TNullPtr                                             \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
     } {
         BEG;
-        DEFA(TNullPtr, ptr, = nullptr, TNullPtr);
+        DEFA(sib::TNullPtr, ptr, = nullptr, sib::TNullPtr);
         EXE(int* ip = ptr);
         PRN(ptr);
         PRN(ip);
@@ -160,7 +149,7 @@ int main()
         END;
     } {
         BEG;
-        DEFA(TNullPtr const, ptr, , TNullPtr const);
+        DEFA(sib::TNullPtr const, ptr, , sib::TNullPtr const);
         EXE(int const* ip = ptr);
         PRN(ptr);
         PRN(ip);
@@ -169,7 +158,7 @@ int main()
     } {
         BEG;
         DEF(std::nullptr_t, null_p, = nullptr);
-        DEFA(TNullPtr, ptr, = null_p, TNullPtr);
+        DEFA(sib::TNullPtr, ptr, = null_p, sib::TNullPtr);
         PRN(null_p);
         PRN(ptr);
         END;
@@ -179,20 +168,20 @@ int main()
     } {
         BEG;
         DEF(std::nullptr_t const, null_p, {});
-        DEFA(TNullPtr, ptr, = null_p, TNullPtr);
+        DEFA(sib::TNullPtr, ptr, = null_p, sib::TNullPtr);
         PRN(null_p);
         PRN(ptr);
         END;
     } {
         BEG;
-        DEFA(TNullPtr const, ptr, (nullptr), TNullPtr const);
+        DEFA(sib::TNullPtr const, ptr, (nullptr), sib::TNullPtr const);
         EXE(int* ip = ptr);
         PRN(ptr);
         PRN(ip);
         END;
     } {
         BEG;
-        DEFA(TNullPtr, ptr, (nullptr), TNullPtr);
+        DEFA(sib::TNullPtr, ptr, (nullptr), sib::TNullPtr);
         EXE(int* ip = ptr);
         PRN(ptr);
         PRN(ip);
@@ -204,7 +193,7 @@ int main()
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
-        std::cout << "                                              TValue                                              \n";
+        std::cout << "                                              sib::TValue                                              \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
     } {
@@ -235,16 +224,16 @@ int main()
         PRN(i8);
         PRN(i9);
 
-        DEF(TValue<int>, vi0,         );
-        DEF(TValue<int>, vi1, { 111 } );
-        DEF(TValue<int>, vi2, ( 222 ) );
-        DEF(TValue<int>, vi3, = 333   );
-        DEF(TValue<int>, vi4, = 444.f );
-        DEF(TValue<int>, vi5, { _i5 } );
-        DEF(TValue<int>, vi6, ( _i6 ) );
-        DEF(TValue<int>, vi7, = _i7   );
-        DEF(TValue<int>, vi8, ( _f8 ) );
-        DEF(TValue<int>, vi9, = _f9   );
+        DEF(sib::TValue<int>, vi0,         );
+        DEF(sib::TValue<int>, vi1, { 111 } );
+        DEF(sib::TValue<int>, vi2, ( 222 ) );
+        DEF(sib::TValue<int>, vi3, = 333   );
+        DEF(sib::TValue<int>, vi4, = 444.f );
+        DEF(sib::TValue<int>, vi5, { _i5 } );
+        DEF(sib::TValue<int>, vi6, ( _i6 ) );
+        DEF(sib::TValue<int>, vi7, = _i7   );
+        DEF(sib::TValue<int>, vi8, ( _f8 ) );
+        DEF(sib::TValue<int>, vi9, = _f9   );
 
         PRN(vi0);
         PRN(vi1);
@@ -264,11 +253,11 @@ int main()
         EXE(int i2 = 2);
         EXE(int i3 = 3);
         EXE(int i4 = 4);
-        DEFA(TValue, v0,         { i0 }, TValue<int>);
-        DEFA(TValue, v1,         ( i1 ), TValue<int>);
-        DEFA(TValue, v2, =         i2  , TValue<int>);
-        DEFA(auto  , v3, = TValue{ i3 }, TValue<int>);
-        DEFA(auto  , v4, = TValue( i4 ), TValue<int>);
+        DEFA(sib::TValue, v0,         { i0 }, sib::TValue<int>);
+        DEFA(sib::TValue, v1,         ( i1 ), sib::TValue<int>);
+        DEFA(sib::TValue, v2, =         i2  , sib::TValue<int>);
+        DEFA(auto  , v3, = sib::TValue{ i3 }, sib::TValue<int>);
+        DEFA(auto  , v4, = sib::TValue( i4 ), sib::TValue<int>);
         PRN(v0);
         PRN(v1);
         PRN(v2);
@@ -294,8 +283,8 @@ int main()
     } {
         BEG;
         DEF(int, arr, [3] = { 1 _ 2 _ 3 });
-        DEF(TValue<int*>, p1, = &arr[0]);
-        DEF(TValue<int*>, p2, = &arr[1]);
+        DEF(sib::TValue<int*>, p1, = &arr[0]);
+        DEF(sib::TValue<int*>, p2, = &arr[1]);
         EXE(auto aaa = p2 - p1);
         PRN(arr);
         PRN(p1);
@@ -304,7 +293,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(TValue<int> v = 11);
+        EXE(sib::TValue<int> v = 11);
         EXE(std::vector<int> vec_i(v));
         PRN(v);
         PRN(vec_i);
@@ -316,11 +305,11 @@ int main()
         EXE(int const ic2 = 2);
         EXE(int const ic3 = 3);
         EXE(int const ic4 = 4);
-        DEFA(TValue, v0,         { ic0 }, TValue<int>);
-        DEFA(TValue, v1,         ( ic1 ), TValue<int>);
-        DEFA(TValue, v2, =         ic2  , TValue<int>);
-        DEFA(auto  , v3, = TValue{ ic3 }, TValue<int>);
-        DEFA(auto  , v4, = TValue( ic4 ), TValue<int>);
+        DEFA(sib::TValue, v0,         { ic0 }, sib::TValue<int>);
+        DEFA(sib::TValue, v1,         ( ic1 ), sib::TValue<int>);
+        DEFA(sib::TValue, v2, =         ic2  , sib::TValue<int>);
+        DEFA(auto  , v3, = sib::TValue{ ic3 }, sib::TValue<int>);
+        DEFA(auto  , v4, = sib::TValue( ic4 ), sib::TValue<int>);
         PRN(v0);
         PRN(v1);
         PRN(v2);
@@ -329,14 +318,14 @@ int main()
         END;
     } {
         BEG;
-        DEFA(TValue      , v0 , = 42   , TValue<int>);
-        DEFA(TValue      , v1 , = v0   , TValue<int>);
-        DEF(TValue<float>, v2 , { v0 } );
-        DEF(TValue<float>, v3 , ( v0 ) );
-        DEF(TValue<float>, v4 , = v0   );
-        DEF(TValue<int>  , v5 , { v2 } );
-        DEF(TValue<int>  , v6 , ( v2 ) );
-        DEF(TValue<int>  , v7 , = v2   );
+        DEFA(sib::TValue      , v0 , = 42   , sib::TValue<int>);
+        DEFA(sib::TValue      , v1 , = v0   , sib::TValue<int>);
+        DEF(sib::TValue<float>, v2 , { v0 } );
+        DEF(sib::TValue<float>, v3 , ( v0 ) );
+        DEF(sib::TValue<float>, v4 , = v0   );
+        DEF(sib::TValue<int>  , v5 , { v2 } );
+        DEF(sib::TValue<int>  , v6 , ( v2 ) );
+        DEF(sib::TValue<int>  , v7 , = v2   );
         DEF(int const    , i  , = v2   );
         DEF(float const  , f  , = v0   );
         PRN(v0);
@@ -352,8 +341,8 @@ int main()
         END;
     } {
         BEG;
-        DEFA(auto, v1, = TValue{ 10  }, TValue<int   >);
-        DEFA(auto, v2, = TValue{ 2.2 }, TValue<double>);
+        DEFA(auto, v1, = sib::TValue{ 10  }, sib::TValue<int   >);
+        DEFA(auto, v2, = sib::TValue{ 2.2 }, sib::TValue<double>);
         PRN(v1);
         PRN(v2);
         END;
@@ -365,15 +354,19 @@ int main()
         END;
     } {
         BEG;
-        DEF(TValue, v, = 4.4);
-        DEF(std::vector<int>, vec, (v));
-        PRN(v);
-        PRN(vec);
+        DEF(auto, v1, = 4.4);
+        DEF(sib::TValue, v2, = 4.4);
+        DEF(std::vector<int>, vec1, (v1));
+        DEF(std::vector<int>, vec2, (v2));
+        PRN(v1);
+        PRN(v2);
+        PRN(vec1);
+        PRN(vec2);
         END;
     } {
         BEG;
-        DEF(TValue, v1, = 11);
-        DEF(TValue, v2, = 1.1 + v1 + 2);
+        DEF(sib::TValue, v1, = 11);
+        DEF(sib::TValue, v2, = 1.1 + v1 + 2);
         PRN(v1);
         PRN(v2);
         END;
@@ -387,8 +380,8 @@ int main()
         BEG;
         DEF(int, i, = 111);
         DEF(int*, ip, = &i);
-        DEF(TValue<int*>, v1, = &i);
-        DEFA(TValue, v2, = &i, TValue<int*>);
+        DEF(sib::TValue<int*>, v1, = &i);
+        DEFA(sib::TValue, v2, = &i, sib::TValue<int*>);
         PRN(i);
         PRN(ip);
         PRN(v1);
@@ -397,7 +390,7 @@ int main()
     } {
         BEG;
         DEF(TEnum, E, = e_1);
-        DEF(TValue<TEnum> const, V, = E);
+        DEF(sib::TValue<TEnum> const, V, = E);
         PRN(E);
         PRN(V);
         END;
@@ -414,8 +407,8 @@ int main()
         DEF(TEnumClass123, e3, = TEnumClass123::_3);
 
         PRN(e1);
-        PRNAS(e2, sib::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, sib::underlying_type_t<decltype(e3)>);
+        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
+        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
         EXE(std::vector<int> vec_i1(e1));
@@ -427,12 +420,12 @@ int main()
         END;
     } {
         BEG;
-        DEF(TValue<TEnum        >, e1, =               e_1);
-        DEF(TValue<TEnumClass   >, e2, = TEnumClass::e_2);
-        DEF(TValue<TEnumClass123>, e3, = TEnumClass123::_3);
+        DEF(sib::TValue<TEnum        >, e1, =               e_1);
+        DEF(sib::TValue<TEnumClass   >, e2, = TEnumClass::e_2);
+        DEF(sib::TValue<TEnumClass123>, e3, = TEnumClass123::_3);
         PRN(e1);
-        PRNAS(e2, sib::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, sib::underlying_type_t<decltype(e3)>);
+        PRNAS(e2, decltype(e2)::underlying_type);
+        PRNAS(e3, decltype(e3)::underlying_type);
         END;
 
         EXE(std::vector<int> vec_i1(e1));
@@ -448,24 +441,24 @@ int main()
         DEF(TEnumClass, e2, = TEnumClass::e_2);
         DEF(TEnumClass123, e3, = TEnumClass123::_3);
         PRN(e1);
-        PRNAS(e2, sib::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, sib::underlying_type_t<decltype(e3)>);
+        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
+        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
-        DEF(TValue, ve1, = e1);
-        DEF(TValue, ve2, = e2);
-        DEF(TValue, ve3, = e3);
+        DEF(sib::TValue, ve1, = e1);
+        DEF(sib::TValue, ve2, = e2);
+        DEF(sib::TValue, ve3, = e3);
         PRN(ve1);
-        PRNAS(ve2, sib::underlying_type_t<decltype(ve2)>);
-        PRNAS(ve3, sib::underlying_type_t<decltype(ve3)>);
+        PRNAS(ve2, decltype(ve2)::underlying_type);
+        PRNAS(ve3, decltype(ve3)::underlying_type);
         END;
 
         EXE(ve1 = e_3);
         EXE(ve2 = TEnumClass::e_5);
         EXE(ve3 = TEnumClass123::_1);
         PRN(ve1);
-        PRNAS(ve2, sib::underlying_type_t<decltype(ve2)>);
-        PRNAS(ve3, sib::underlying_type_t<decltype(ve3)>);
+        PRNAS(ve2, decltype(ve2)::underlying_type);
+        PRNAS(ve3, decltype(ve3)::underlying_type);
         END;
     } {
         BEG;
@@ -473,23 +466,23 @@ int main()
         DEF(TEnumClass, e2, { 100 });
         DEF(TEnumClass123, e3, { 100 });
         PRN(e1);
-        PRNAS(e2, sib::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, sib::underlying_type_t<decltype(e3)>);
+        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
+        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
-        using qqq = typename TValue<TEnum>::underlying_t;
+        using qqq = typename sib::TValue<TEnum>::underlying_type;
 
-        DEF(TValue<TEnum        >, ve1, { e_1 });
-        DEF(TValue<TEnumClass   >, ve2, { 100 });
-        DEF(TValue<TEnumClass123>, ve3, { 100 });
+        DEF(sib::TValue<TEnum        >, ve1, { e_1 });
+        DEF(sib::TValue<TEnumClass   >, ve2, { 100 });
+        DEF(sib::TValue<TEnumClass123>, ve3, { 100 });
         PRN(e1);
-        PRNAS(e2, sib::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, sib::underlying_type_t<decltype(e3)>);
+        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
+        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
     } {
         BEG;
         DEFA(auto, i, = 1, int);
-        DEFA(TValue, val, = 2, TValue<int>);
+        DEFA(sib::TValue, val, = 2, sib::TValue<int>);
         DEF(float&&, fcr1, = i);
         DEF(float&&, fcr2, = val);
         PRN(i);
@@ -506,7 +499,7 @@ int main()
         END;
     } {
         BEG;
-        DEFA(TValue, val, = 111, TValue<int>);
+        DEFA(sib::TValue, val, = 111, sib::TValue<int>);
         DEF(int&, ir, = val);
         PRN(val);
         PRN(ir);
@@ -526,13 +519,13 @@ int main()
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
-        std::cout << "                                             TPointer                                             \n";
+        std::cout << "                                             sib::TPointer                                             \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
     } {
         BEG;
         DEF(TFn*, ptrFoo, (foo));
-        DEFA(TPointer, PointerFoo, (foo), TPointer<TFn>);
+        DEFA(sib::TPointer, PointerFoo, (foo), sib::TPointer<TFn>);
         PRN(foo);
         PRN(ptrFoo);
         PRN(PointerFoo);
@@ -554,7 +547,7 @@ int main()
     } {
         BEG;
         DEF(int, i, = 10);
-        DEFA(TPointer, ptr, (&i), TPointer<int>);
+        DEFA(sib::TPointer, ptr, (&i), sib::TPointer<int>);
         PRN(ptr);
         PRN(&i);
         END;
@@ -567,13 +560,13 @@ int main()
     } {
         BEG;
         DEF(int const, i, = 10);
-        DEFA(TPointer, ptr, (&i), TPointer<int const>);
+        DEFA(sib::TPointer, ptr, (&i), sib::TPointer<int const>);
         PRN(ptr);
         PRN(&i);
         END;
     } {
         BEG;
-        DEF(TPointer<int>, ptr, );
+        DEF(sib::TPointer<int>, ptr, );
         PRN(ptr);
         END;
         DEF(int, i, = 10);
@@ -583,7 +576,7 @@ int main()
         END;
     } {
         BEG;
-        DEF(TPointer<int const>, ptr, );
+        DEF(sib::TPointer<int const>, ptr, );
         PRN(ptr);
         END;
         DEF(int, i, = 10);
@@ -592,7 +585,7 @@ int main()
         END;
     } {
         BEG;
-        DEF(TPointer<int>, ptr, );
+        DEF(sib::TPointer<int>, ptr, );
         PRN(ptr);
         END;
         EXE(ptr = new int);
@@ -618,7 +611,7 @@ int main()
     } {
         BEG;
         DEF(std::string, s, = "qwerty");
-        DEFA(TPointer, ptr, (&s), TPointer<std::string>);
+        DEFA(sib::TPointer, ptr, (&s), sib::TPointer<std::string>);
         PRN(ptr);
         END;
         EXE(s = "!!!!!!!!!!!!");
@@ -631,7 +624,7 @@ int main()
         BEG;
         DEF(std::string const, s1, = "qwerty");
         DEF(std::string const, s2, = "QAZXSWEDC");
-        DEFA(TPointer, ptr, (&s1), TPointer<std::string const>);
+        DEFA(sib::TPointer, ptr, (&s1), sib::TPointer<std::string const>);
         PRN(ptr);
         END;
         EXE(ptr = &s2);
@@ -640,7 +633,7 @@ int main()
     } {
         BEG;
         DEF(std::string, s, = "qwerty");
-        DEF(TPointer<std::string const> const, ptr, (&s));
+        DEF(sib::TPointer<std::string const> const, ptr, (&s));
         PRN(ptr);
         END;
         EXE(s = "!!!!!!!!");
@@ -649,8 +642,8 @@ int main()
     } {
         BEG;
         DEF(int, i, = 111);
-        DEFA(TPointer const, cptr_i, = &i, TPointer<int> const);
-        DEF(TPointer<int const>, ptr_ci, );
+        DEFA(sib::TPointer const, cptr_i, = &i, sib::TPointer<int> const);
+        DEF(sib::TPointer<int const>, ptr_ci, );
         PRN(cptr_i);
         PRN(ptr_ci);
         END;
@@ -661,7 +654,7 @@ int main()
         END;
     } {
         BEG;
-        DEFA(TPointer, ptr, ("qwerty"), TPointer<char const>);
+        DEFA(sib::TPointer, ptr, ("qwerty"), sib::TPointer<char const>);
         PRN(ptr);
         END;
         EXE(ptr = "!!!!!!!!!!!!!!");
@@ -669,12 +662,12 @@ int main()
         END;
     } {
         BEG;
-        DEF(TPointer<std::nullptr_t>, ptr, );
+        DEF(sib::TPointer<std::nullptr_t>, ptr, );
         PRN(ptr);
         END;
     } {
         BEG;
-        DEF(TPointer<void>, ptr, (nullptr));
+        DEF(sib::TPointer<void>, ptr, (nullptr));
         PRN(ptr);
         END;
         DEF(int, i, = 777);
@@ -688,7 +681,7 @@ int main()
     } {
         BEG;
         DEF(std::vector<int>, vec, );
-        DEF(TPointer, ptr, = &vec);
+        DEF(sib::TPointer, ptr, = &vec);
         EXE(ptr->push_back(11));
         PRN(vec);
         PRN(ptr);
@@ -696,21 +689,21 @@ int main()
     } {
         BEG;
         DEF(std::vector<int> const, vec, { 1 _ 2 _ 3 });
-        DEF(TPointer, ptr, = &vec);
+        DEF(sib::TPointer, ptr, = &vec);
         PRN(vec);
         PRN(ptr);
         PRN(ptr->size());
         END;
     } {
         BEG;
-        DEF(TPointer, ptr, = new MyClass);
+        DEF(sib::TPointer, ptr, = new MyClass);
         PRN(ptr);
         EXE(delete ptr);
         END;
     } {
         BEG;
         DEF(int, i, = 10);
-        DEF(TPointer, ptr, = &i);
+        DEF(sib::TPointer, ptr, = &i);
         PRN(ptr);
         END;
         PRN(ptr++);
@@ -730,8 +723,8 @@ int main()
         BEG;
         DEF(int, i1, = 10);
         DEF(int, i2, = 20);
-        DEF(TPointer, ptr1, = &i1);
-        DEF(TPointer, ptr2, = &i2);
+        DEF(sib::TPointer, ptr1, = &i1);
+        DEF(sib::TPointer, ptr2, = &i2);
         PRN(i1);
         PRN(i2);
         PRN(&i1);
@@ -750,26 +743,26 @@ int main()
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
-        std::cout << "                                              TArray                                              \n";
+        std::cout << "                                              sib::TArray                                              \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
     } {
         BEG;
         DEF(int, i, = 222);
         DEF(int const, ic, = 111);
-        DEFA(TArray, arr, (i _ ic _ 333 _ ic _ i), TArray<int _ 5>);
+        DEFA(sib::TArray, arr, (i _ ic _ 333 _ ic _ i), sib::TArray<int _ 5>);
         PRN(arr);
         END;
     } {
         BEG;
-        DEFA(TArray, arr, (1 _ 2 _ 3), TArray<int _ 3>);
-        DEFA(TArray, arrarr, (arr _ arr _ arr), TArray<TArray<int _ 3> _ 3>);
+        DEFA(sib::TArray, arr, (1 _ 2 _ 3), sib::TArray<int _ 3>);
+        DEFA(sib::TArray, arrarr, (arr _ arr _ arr), sib::TArray<sib::TArray<int _ 3> _ 3>);
         PRN(arr);
         PRN(arrarr);
         END;
     } {
         BEG;
-        DEFA(TArray, arr, { 1 _ 2 _ 3 _ 4 _ 5 }, TArray<int _ 5>);
+        DEFA(sib::TArray, arr, { 1 _ 2 _ 3 _ 4 _ 5 }, sib::TArray<int _ 5>);
         PRN(arr);
         END;
         EXE(arr = { 8 _ 7 _ 6 _ 5 _ 4 });
@@ -779,12 +772,12 @@ int main()
         BEG;
         DEF(static constexpr char, cech, = '1');
         DEF(static constexpr char, cech0, = '\0');
-        DEFA(TArray, arr, { cech _ cech _ cech _ cech0 }, TArray<char _ 4>);
+        DEFA(sib::TArray, arr, { cech _ cech _ cech _ cech0 }, sib::TArray<char _ 4>);
         PRN(arr);
         END;
     } {
         BEG;
-        DEFA(TArray, arr, { '1' _ '2' _ '3' _ '4' _ '5' _ '\0' }, TArray<char _ 6>);
+        DEFA(sib::TArray, arr, { '1' _ '2' _ '3' _ '4' _ '5' _ '\0' }, sib::TArray<char _ 6>);
         PRN(arr);
         END;
         EXE(arr = "87654");
@@ -793,7 +786,7 @@ int main()
     } {
         BEG;
         DEF(char, ch10, [10] = "12345");
-        DEFA(TArray, arr, = ch10, TArray<char _ 10>);
+        DEFA(sib::TArray, arr, = ch10, sib::TArray<char _ 10>);
         PRN(ch10);
         PRN(arr);
         END;
@@ -814,8 +807,8 @@ int main()
         END;
     } {
         BEG;
-        DEFA(TArray, arr1, = "12345", TArray<char _ 6>);
-        DEFA(TArray, arr2, = "54321", TArray<char _ 6>);
+        DEFA(sib::TArray, arr1, = "12345", sib::TArray<char _ 6>);
+        DEFA(sib::TArray, arr2, = "54321", sib::TArray<char _ 6>);
         PRN(arr1);
         PRN(arr2);
         END;
@@ -827,7 +820,7 @@ int main()
     } {
         BEG;
         DEF(char const, cha, [] = "111");
-        DEFA(TArray, arr, = cha, TArray<char _ 4>);
+        DEFA(sib::TArray, arr, = cha, sib::TArray<char _ 4>);
         PRN(cha);
         PRN(arr);
         END;
@@ -835,7 +828,7 @@ int main()
         BEG;
         DEF(char const, cch, = '1');
         DEF(char const, cch0, = '\0');
-        DEFA(TArray, arr, { cch _ cch _ cch _ cch0 }, TArray<char _ 4>);
+        DEFA(sib::TArray, arr, { cch _ cch _ cch _ cch0 }, sib::TArray<char _ 4>);
         PRN(arr);
         END;
         EXE(using ch_c_arr4 = char const [4]);
@@ -844,12 +837,12 @@ int main()
         END;
     } {
         BEG;
-        DEF(TArray<char const _ 4>, arr, = "999");
+        DEF(sib::TArray<char const _ 4>, arr, = "999");
         PRN(arr);
         END;
     } {
         BEG;
-        DEFA(TArray, arr, = "999", TArray<char _ 4>);
+        DEFA(sib::TArray, arr, = "999", sib::TArray<char _ 4>);
         PRN(arr);
         END;
         EXE(using ch_c_arr4 = char const [4]);
@@ -865,10 +858,10 @@ int main()
         END;
     } {
         BEG;
-        DEF(TArray<char const _ 7>, arr1, = "qwerty");
+        DEF(sib::TArray<char const _ 7>, arr1, = "qwerty");
         PRN(arr1);
         END;
-        DEF(TArray<char _ 7>, arr2, = arr1);
+        DEF(sib::TArray<char _ 7>, arr2, = arr1);
         PRN(arr2);
         END;
         DEF(char const *, ch, = arr1);
@@ -894,14 +887,14 @@ int main()
     } {
         BEG;
         DEF(char, charr, [7] = "qwerty");
-        DEFA(TArray, arr, = charr, TArray<char _ 7>);
+        DEFA(sib::TArray, arr, = charr, sib::TArray<char _ 7>);
         PRN(charr);
         PRN(arr);
         END;
     } {
         BEG;
         DEF(char, charr, [10] = "qwerty111");
-        DEFA(TArray, arr, = charr, TArray<char _ 10>);
+        DEFA(sib::TArray, arr, = charr, sib::TArray<char _ 10>);
         PRN(arr);
         END;
         EXE(arr = "!!!!!!000");
@@ -912,13 +905,13 @@ int main()
         END;
     } {
         BEG;
-        DEF(TArray<int _ 3>, arr,);
+        DEF(sib::TArray<int _ 3>, arr,);
         PRN(arr);
         END;
     } {
         BEG;
         DEF(std::array, starr, = { 1 _ 2 _ 3 _ 4 });
-        DEFA(TArray, arr, = starr, TArray<int _ 4>);
+        DEFA(sib::TArray, arr, = starr, sib::TArray<int _ 4>);
         PRN(arr);
         END;
         EXE(arr = { 8 _ 8 _ 8 _ 8 });
@@ -930,13 +923,13 @@ int main()
     } {
         BEG;
         DEF(std::array, sarr, { 'f' _ 'f' _ 'f' _ 'f' });
-        DEFA(TArray, arr, = sarr, TArray<char _ 4>);
+        DEFA(sib::TArray, arr, = sarr, sib::TArray<char _ 4>);
         PRN(sarr);
         PRN(arr);
         END;
     } {
         BEG;
-        DEF(TArray, arr, (std::array{ 'f' _ 'f' _ 'f' _ 'f' }));
+        DEF(sib::TArray, arr, (std::array{ 'f' _ 'f' _ 'f' _ 'f' }));
         PRN(arr);
         END;
     }
@@ -1052,7 +1045,7 @@ int main()
         PRN(tmp);
         PRN(int(tmp));
         PRN(TEnum(tmp));
-        PRNAS(TEnumClass123(tmp), sib::underlying_type_t<TEnumClass123>);
+        PRNAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
         END;
         EXE(static_cast<int&>(tmp) = 444);
         EXE(static_cast<TEnum&>(tmp) = e_3);
@@ -1060,13 +1053,13 @@ int main()
         PRN(tmp);
         PRN(int(tmp));
         PRN(TEnum(tmp));
-        PRNAS(TEnumClass123(tmp), sib::underlying_type_t<TEnumClass123>);
+        PRNAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
         END;
         DEF(TEnum, e, = tmp);
         PRN(e);
         END;
         EXE(e = e_2);
-        EXE(TValue<TEnum> ve);
+        EXE(sib::TValue<TEnum> ve);
         EXE(ve = e);
         PRN(e);
         PRN(ve);
@@ -1082,6 +1075,17 @@ int main()
         END;
     } {
         BEG;
+        DEF(std::nullptr_t, nptr, {});
+        DEF(decltype(auto), w, = sib::to_wrap(nptr));
+        PRN(nptr);
+        PRN(w);
+        END;
+    } {
+        BEG;
+        DEF(std::nullptr_t const, nptr, {});
+        DEF(decltype(auto), w, = sib::to_wrap(nptr));
+        PRN(nptr);
+        PRN(w);
         END;
     }
 #endif TEST_WRAPPER
@@ -1095,48 +1099,85 @@ int main()
         std::cout << "\n";
     } {
         BEG;
-        struct A {};
-        struct B {};
-        struct C {};
-        struct D {};
-        struct E {};
 
-        static_assert(std::is_same_v<
-            sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
-            sib::MakeUniqueTuple<std::string, std::vector<int, std::allocator<int>>, bool>
-        >);
+        EXE(
+            static_assert(std::is_same_v<
+                sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
+                sib::MakeUniqueTuple<std::string, std::vector<int, std::allocator<int>>, bool>
+            >)
+        );
+        EXE(
+            static_assert(std::is_same_v<
+                sib::MakeUniqueTuple<A, B, C>,
+                sib::MakeUniqueTuple<B, C, A>
+            >)
+        );
 
-        static_assert(std::is_same_v<
-            sib::MakeUniqueTuple<A, B, C>,
-            sib::MakeUniqueTuple<B, C, A>
-        >);
+        DEF(sib::MakeUniqueTuple<A _ B _ C>, tmp1, );
+        DEF(sib::MakeUniqueTuple<C _ B _ A>, tmp2, );
+        DEF(sib::MakeUniqueTuple<B _ A _ C>, tmp3, );
 
-        sib::MakeUniqueTuple<A, B, C> tmp1;
-        sib::MakeUniqueTuple<C, B, A> tmp2;
-        sib::MakeUniqueTuple<B, A, C> tmp3;
+        DEF(sib::MakeUniqueTuple<std::vector<int> _ bool _ std::string>, tmp4, );
+        DEF(sib::MakeUniqueTuple<std::string _ std::vector<int _ std::allocator<int>> _ bool>, tmp5, );
 
-        sib::MakeUniqueTuple<std::vector<int>, bool, std::string> tmp4;
-        sib::MakeUniqueTuple<std::string, std::vector<int, std::allocator<int>>, bool> tmp5;
+        EXE(static_assert(std::is_same_v<decltype(tmp1), decltype(tmp2)>));
+        EXE(static_assert(std::is_same_v<decltype(tmp2), decltype(tmp3)>));
+        EXE(static_assert(std::is_same_v<decltype(tmp3), decltype(tmp1)>));
 
-        static_assert(std::is_same_v<decltype(tmp1), decltype(tmp2)>);
-        static_assert(std::is_same_v<decltype(tmp2), decltype(tmp3)>);
-        static_assert(std::is_same_v<decltype(tmp3), decltype(tmp1)>);
+        EXE(static_assert(std::is_same_v<decltype(tmp4), decltype(tmp5)>));
+        EXE(static_assert(std::is_same_v<decltype(tmp5), decltype(tmp4)>));
 
-        static_assert(std::is_same_v<decltype(tmp4), decltype(tmp5)>);
-        static_assert(std::is_same_v<decltype(tmp5), decltype(tmp4)>);
+        PRN(tmp1);
+        PRN(tmp2);
+        PRN(tmp3);
+        PRN(tmp4);
+        PRN(tmp5);
 
-        std::cout << sib::type_name(tmp1) << '\n';
-        std::cout << sib::type_name(tmp2) << '\n';
-        std::cout << sib::type_name(tmp3) << '\n';
-        std::cout << sib::type_name(tmp4) << '\n';
-        std::cout << sib::type_name(tmp5) << '\n';
-
+        PRN(sib::is_container_v<decltype(tmp4)>);
         END;
     } {
         BEG;
+        DEF(sib::MakeUniqueTuple<int>, tmp, );
+        EXE(tmp = 111);
+        PRN(tmp);
         END;
     } {
         BEG;
+        DEF(sib::MakeUniqueTuple<std::string>, tmp, );
+        EXE(tmp = "xxxxxxxxx");
+        PRN(sib::is_container_v<decltype(tmp)>);
+        PRN(tmp);
+        END;
+    } {
+        BEG;
+        DEF(sib::MakeUniqueTuple<int _ std::string>, tmp, );
+        EXE(tmp = 111);
+        EXE(tmp = "xxxxxxxxx");
+        PRN(sib::is_container_v<decltype(tmp)>);
+        PRN(tmp);
+        END;
+    } {
+        BEG;
+        DEF(sib::MakeUniqueTuple<int _ std::string _ std::vector<int>>, tmp, );
+        EXE(tmp.as<std::vector<int>>() = std::vector<int>{1 _ 2 _ 3});
+        EXE(tmp = 2.2);
+        EXE(tmp = "xxxxxxxxx");
+        PRN(sib::is_container_v<decltype(tmp)>);
+        PRN(tmp.as<std::vector<int>>());
+        PRN(tmp.as<int>());
+        PRN(tmp.as<std::string>());
+        PRN(tmp);
+        END;
+        EXE(tmp.as<int>() = 3.3);
+        PRN(tmp.as<int>());
+        END;
+        DEF(float, f, = tmp);
+        PRN(f);
+        END;
+    } {
+        BEG;
+        DEF(sib::MakeUniqueTuple<int>, iii, = 111);
+        PRN(iii);
         END;
     }
 #endif TEST_UNIQUE_TUPLE

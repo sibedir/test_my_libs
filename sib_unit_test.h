@@ -15,38 +15,41 @@ constexpr debug_endl_t debug_endl;
 
 namespace {
 
-    template <sib::Char Ch = char>
-    struct outstream
+    struct fake_outstream_type
     {
-        auto& operator() () { return std::cout; }
+        template <typename T>
+        void operator << (T const &) const { std::cout << "???"; }
     };
 
-    template <>
-    struct outstream<wchar_t>
-    {
-        auto& operator() () { return std::wcout; }
-    };
-   
+    static constexpr fake_outstream_type fake_outstream{};
+
+    template <typename T = char>
+    constexpr auto& outstream() {
+        if      constexpr (requires (T const & v) { std:: cout << v; }) { return std::cout     ; }
+        else if constexpr (requires (T const & v) { std::wcout << v; }) { return std::wcout    ; }
+        else                                                            { return fake_outstream; }
+    }
+
     template <sib::Char Ch>
     inline void _debug_print_char(Ch ch)
     {
         if constexpr (sib::is_any_of_v<Ch, char8_t, char16_t, char32_t>)
         {
-            outstream{}() << '#' << static_cast<long>(ch);
+            outstream() << '#' << static_cast<long>(ch);
         }
         else
         {
             switch (ch)
             {
-                case '\0': outstream{}() << "\\0"; break;
-                case '\a': outstream{}() << "\\a"; break;
-                case '\b': outstream{}() << "\\b"; break;
-                case '\t': outstream{}() << "\\t"; break;
-                case '\n': outstream{}() << "\\n"; break;
-                case '\v': outstream{}() << "\\v"; break;
-                case '\f': outstream{}() << "\\f"; break;
-                case '\r': outstream{}() << "\\r"; break;
-                default:   outstream<Ch>{}() << ch;
+                case '\0': outstream() << "\\0"; break;
+                case '\a': outstream() << "\\a"; break;
+                case '\b': outstream() << "\\b"; break;
+                case '\t': outstream() << "\\t"; break;
+                case '\n': outstream() << "\\n"; break;
+                case '\v': outstream() << "\\v"; break;
+                case '\f': outstream() << "\\f"; break;
+                case '\r': outstream() << "\\r"; break;
+                default:   outstream<Ch>() << ch;
             }
         }
     }
@@ -56,116 +59,116 @@ namespace {
     {
         if      constexpr (std::is_same_v<T, debug_endl_t>)
         {
-            outstream{}() << '\n';
+            outstream() << '\n';
         }
         else if constexpr (std::is_same_v<T, bool>)
         {
-            outstream{}() << (val ? "true" : "false");
+            outstream() << (val ? "true" : "false");
         }
         else if constexpr (sib::is_char_v<T>)
         {
-            outstream{}() << "'";
+            outstream() << "'";
             _debug_print_char(val);
-            outstream{}() << "'";
+            outstream() << "'";
         }
         else if constexpr (sib::is_container_v<T>)
         {
             if constexpr (sib::is_like_string_v<T>) {
-                outstream{}() << "\"";
+                outstream() << "\"";
                 auto begin = std::begin(val);
                 auto end   = std::end  (val);
                 for (auto it = begin; it != end; ++it)
                 {
                     if (it - begin > 32) {
-                        outstream{}() << "...";
+                        outstream() << "...";
                         break;
                     }
                     _debug_print_char(*it);
                 }
-                outstream{}() << "\"";
+                outstream() << "\"";
             }
             else
             {
                 if (std::begin(val) == std::end(val))
                 {
-                    outstream{}() << "{}";
+                    outstream() << "{}";
                     return;
                 }
 
-                outstream{}() << "{ ";
+                outstream() << "{ ";
                 auto end   = std::end  (val);
                 auto it    = std::begin(val);
                 _debug_print(*it);
                 for (++it; it != end; ++it)
                 {
-                    outstream{}() << ", ";
+                    outstream() << ", ";
                     _debug_print(*it);
                 }
-                outstream{}() << " }";
+                outstream() << " }";
             }
         }
         else if constexpr (sib::is_like_function_v<T>)
         {
-            outstream{}() << "function";
+            outstream() << "function";
         }
         else if constexpr (sib::is_like_pointer_v<T>)
         {
             if (!val)
             {
-                outstream{}() << nullptr;
+                outstream() << nullptr;
                 return;
             }
 
             if constexpr (std::is_convertible_v<T, void const*>)
             {
-                outstream{}() << static_cast<void const*>(val);
+                outstream() << static_cast<void const*>(val);
             }
             else
             {
-                outstream{}() << val;
+                outstream() << val;
             }
 
             if constexpr (sib::may_be_indirect_v<T>)
             {
                 if constexpr (sib::is_char_v<sib::base_indirection_type<T>>)
                 {
-                    outstream{}() << " \"";
+                    outstream() << " \"";
                     for (sib::base_indirection_type<T>* it = val; *it != '\0'; ++it)
                     {
                         if (it - val > 16)
                         {
-                            outstream{}() << "...";
+                            outstream() << "...";
                             break;
                         }
                         _debug_print_char(*it);
                     }
-                    outstream{}() << "\"";
+                    outstream() << "\"";
                 }
                 else
                 {
-                    outstream{}() << " { ";
+                    outstream() << " { ";
                     _debug_print(*val);
-                    outstream{}() << " }";
+                    outstream() << " }";
                 }
             }
         }
         else
         {
-            outstream{}() << val;
+            outstream<decltype(val)>() << val;
         }
     }
 }
 
 template <typename T>
-inline void debug_print(T&& first)
+inline void debug_print(T const & first)
 {
-    _debug_print(std::forward<T >(first));
+    _debug_print(first);
 }
 
 template <typename T, typename... Ts>
-inline void debug_print(T&& first, Ts&& ... others)
+inline void debug_print(T const & first, Ts&& ... others)
 {
-    _debug_print(std::forward<T >(first )   );
+    _debug_print(first);
      debug_print(std::forward<Ts>(others)...);
 }
 
@@ -239,9 +242,9 @@ static int BEG_COUNTR = 0;
     } while(0);                                                 \
     SetBreakPoint(BP_ALL)                                       \
 
-#define EXE(line)                                               \
-    std::cout << "e   " << STR(line) << ";\n";                  \
-    line;                                                       \
+#define EXE(...)                                                \
+    std::cout << "e   " << #__VA_ARGS__ << ";\n";               \
+    __VA_ARGS__;                                                \
     SetBreakPoint(BP_ALL)                                       \
 
 #define BP SetBreakPoint(BP_CUSTOM)                             \

@@ -48,6 +48,7 @@ namespace sib {
 // ----------------------------------------------------------------------------------- type info
 
     /* https://stackoverflow.com/a/56766138/23601704 */
+
     template <typename T>
     consteval auto type_name() noexcept
     {
@@ -163,6 +164,15 @@ namespace sib {
 
 // ----------------------------------------------------------------------------------- type traits
 
+    template <typename T, typename... Ts>
+    struct First
+    {
+        using type = T;
+    };
+
+    template <typename... Ts>
+    using First_t = typename First<Ts...>::type;
+
     // instantiation
 
     template <template <typename...> typename, typename...>
@@ -190,8 +200,70 @@ namespace sib {
     template <typename T, typename... Ts> struct  is_any_of : std::bool_constant< is_any_of_v<T, Ts...>> {};
     template <typename T, typename... Ts> struct not_any_of : std::bool_constant<not_any_of_v<T, Ts...>> {};
 
-    template <typename T, typename... Ts> concept     Any_of =  is_any_of_v<T, Ts...>;
-    template <typename T, typename... Ts> concept not_Any_of = not_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept     AnyOf =  is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept not_AnyOf = not_any_of_v<T, Ts...>;
+
+
+
+    // convertible
+
+    template <typename From, typename... To>
+    constexpr bool  is_convertible_from_to_v = (std::is_convertible_v<From, To> or ...);
+
+    template <typename From, typename... To>
+    constexpr bool not_convertible_from_to_v = not is_convertible_from_to_v<From, To...>;
+
+    template <typename From, typename... To> struct  is_convertible_form_to : std::bool_constant< is_convertible_from_to_v<From, To...>> {};
+    template <typename From, typename... To> struct not_convertible_form_to : std::bool_constant<not_convertible_from_to_v<From, To...>> {};
+
+    template <typename From, typename... To> concept     ConvertibleFromTo =  is_convertible_from_to_v<From, To...>;
+    template <typename From, typename... To> concept not_ConvertibleFromTo = not_convertible_from_to_v<From, To...>;
+
+
+
+    template <typename To, typename... From>
+    constexpr bool  is_convertible_to_from_v = (std::is_convertible_v<From, To> or ...);
+
+    template <typename To, typename... From>
+    constexpr bool not_convertible_to_from_v =  not is_convertible_to_from_v<To, From...>;
+
+    template <typename To, typename... From> struct  is_convertible_to_from : std::bool_constant< is_convertible_to_from_v<To, From...>> {};
+    template <typename To, typename... From> struct not_convertible_to_from : std::bool_constant<not_convertible_to_from_v<To, From...>> {};
+
+    template <typename To, typename... From> concept     ConvertibleToFrom =  is_convertible_to_from_v<To, From...>;
+    template <typename To, typename... From> concept not_ConvertibleToFrom = not_convertible_to_from_v<To, From...>;
+
+
+
+    template <typename From, typename... To>
+    struct select_conversion_from_to {};
+
+    template <typename From, typename... To>
+    using select_conversion_from_to_t = typename select_conversion_from_to<From, To...>::type;
+
+    template <typename From, typename To, typename... To_others>
+        requires(is_convertible_from_to_v<From, To>)
+    struct select_conversion_from_to<From, To, To_others...> { using type = To; };
+
+    template <typename From, typename To, typename... To_others>
+        requires(is_convertible_from_to_v<From, To_others...>)
+    struct select_conversion_from_to<From, To, To_others...> { using type = select_conversion_from_to_t<From, To_others...>; };
+
+
+
+    template <typename To, typename... From>
+    struct select_conversion_to_from {};
+
+    template <typename To, typename... From>
+    using select_conversion_to_from_t = typename select_conversion_to_from<To, From...>::type;
+
+    template <typename To, typename From, typename... From_others>
+        requires(is_convertible_to_from_v<To, From>)
+    struct select_conversion_to_from<To, From, From_others...> { using type = From; };
+
+    template <typename To, typename From, typename... From_others>
+        requires(is_convertible_to_from_v<To, From_others...>)
+    struct select_conversion_to_from<To, From, From_others...> { using type = select_conversion_to_from_t<To, From_others...>; };
 
 
 
@@ -253,8 +325,8 @@ namespace sib {
     template <typename T> constexpr bool  is_enum_class_v =  is_enum_class<T>::value;
     template <typename T> constexpr bool not_enum_class_v = not_enum_class<T>::value;
 
-    template <typename T> concept     Enum_class =  is_enum_class_v<T>;
-    template <typename T> concept not_Enum_class = not_enum_class_v<T>;
+    template <typename T> concept     EnumClass =  is_enum_class_v<T>;
+    template <typename T> concept not_EnumClass = not_enum_class_v<T>;
     
     
     
@@ -280,8 +352,8 @@ namespace sib {
     template <typename T> struct  is_like_function : std::bool_constant< is_like_function_v<T>> {};
     template <typename T> struct not_like_function : std::bool_constant<not_like_function_v<T>> {};
 
-    template <typename T> concept     Like_function =  is_like_function_v<T>;
-    template <typename T> concept not_Like_function = not_like_function_v<T>;
+    template <typename T> concept     LikeFunction =  is_like_function_v<T>;
+    template <typename T> concept not_LikeFunction = not_like_function_v<T>;
 
 
 
@@ -296,8 +368,8 @@ namespace sib {
     template <typename T> struct  is_like_nullptr : std::bool_constant< is_like_nullptr_v<T>> {};
     template <typename T> struct not_like_nullptr : std::bool_constant<not_like_nullptr_v<T>> {};
 
-    template <typename T> concept     Like_nullptr =  is_like_nullptr_v<T>;
-    template <typename T> concept not_Like_nullptr = not_like_nullptr_v<T>;
+    template <typename T> concept     LikeNullptr =  is_like_nullptr_v<T>;
+    template <typename T> concept not_LikeNullptr = not_like_nullptr_v<T>;
 
 
 
@@ -340,12 +412,12 @@ namespace sib {
     template <typename T> constexpr bool  is_like_pointer_v =  is_like_pointer<T>::value;
     template <typename T> constexpr bool not_like_pointer_v = not_like_pointer<T>::value;
 
-    template <typename T> concept     Like_pointer =  is_like_pointer_v<T>;
-    template <typename T> concept not_Like_pointer = not_like_pointer_v<T>;
+    template <typename T> concept     LikePointer =  is_like_pointer_v<T>;
+    template <typename T> concept not_LikePointer = not_like_pointer_v<T>;
 
 
 
-    template <Like_pointer P>
+    template <LikePointer P>
         requires (not_like_nullptr_v<P>)
     using base_pointer_type = decltype(std::declval<P>().operator*());
 
@@ -418,8 +490,8 @@ namespace sib {
     template <typename T> constexpr bool  is_like_string_v =  is_like_string<T>::value;
     template <typename T> constexpr bool not_like_string_v = not_like_string<T>::value;
 
-    template <typename T> concept     Like_string =  is_like_string_v<T>;
-    template <typename T> concept not_Like_string = not_like_string_v<T>;
+    template <typename T> concept     LikeString =  is_like_string_v<T>;
+    template <typename T> concept not_LikeString = not_like_string_v<T>;
 
 
 

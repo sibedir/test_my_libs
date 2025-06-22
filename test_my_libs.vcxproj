@@ -141,6 +141,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sib_support.h" />
+    <ClInclude Include="sib_unique_tuple.h" />
     <ClInclude Include="sib_unit_test.h" />
     <ClInclude Include="sib_wrapper.h" />
   </ItemGroup>
