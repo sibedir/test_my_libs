@@ -38,5 +38,8 @@
     <ClInclude Include="sib_unique_tuple.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="sib_type_info.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

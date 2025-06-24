@@ -3,6 +3,7 @@
 #include <utility>
 #include <iostream>
 
+#include "sib_type_info.h"
 #include "sib_support.h"
 
 extern bool const is_initialized_unit_test_module;
@@ -195,7 +196,7 @@ static int BEG_COUNTR = 0;
 #define DEF(type, inst, init)                                   \
     type inst init;                                             \
     do {                                                        \
-        constexpr auto __typ__ = sib::type_name<decltype(inst)>();  \
+        auto __typ__ = sib::type_name(inst);                    \
         std::string inst_str { STR(init) };                     \
         std::cout                                               \
             <<   "d   " << STR(type)                            \
@@ -216,7 +217,7 @@ static int BEG_COUNTR = 0;
 
 #define PRN(instance)                                           \
     do {                                                        \
-        constexpr auto __typ__ = sib::type_name<decltype(instance)>();\
+        auto __typ__ = sib::type_name(instance);                \
         std::cout                                               \
             << "p       |" << STR(instance)                     \
             <<     "  =  ";                                     \
@@ -229,12 +230,11 @@ static int BEG_COUNTR = 0;
 
 #define PRNAS(instance, type_as)                                \
     do {                                                        \
-        constexpr auto __typ__    = sib::type_name<decltype(instance)>();   \
-        constexpr auto __typ_as__ = sib::type_name<type_as           >();   \
+        auto __typ__    = sib::type_name(instance);             \
         std::cout                                               \
             << "p       |" << STR(instance)                     \
-            <<        " {" << __typ__    << "}"                 \
-            <<     " -> {" << __typ_as__ << "}"                 \
+            <<        " {" << __typ__  << "}"                   \
+            <<     " -> {" << #type_as << "}"                   \
             <<     "  =  ";                                     \
         debug_print(static_cast<type_as>(instance));            \
         std::cout                                               \

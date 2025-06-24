@@ -31,6 +31,10 @@ using namespace std::string_literals;
 static int foo(float f) { return static_cast<int>(f); }
 static int bar(float f) { return static_cast<int>(-f); }
 
+static auto baz(int         const &) { return "do baz(int)"s;          }
+static auto baz(double      const &) { return "do baz(double)"s;       }
+static auto baz(std::string const &) { return "do baz(std::string&)"s; }
+
 using TFn = decltype(foo);
 
 //                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
@@ -55,6 +59,14 @@ _MAFT(int[5]                ,      not      ,               ,               ,   
 _MAFT(std::array<int _ 5>   ,      not      ,      not      ,      not      ,      not      ,      not      ,      not      ,               )
 _MAFT(sib::TArray<int _ 5>  ,      not      ,               ,               ,      not      ,      not      ,      not      ,               )
 //                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+
+template <size_t... idx_>
+consteval auto gen_impl(std::index_sequence<idx_...>)
+{
+    return sib::type_list< sib::type_tagN<idx_>...> {};
+}
+
+template <size_t N> using  gen_t = decltype(gen_impl(std::make_index_sequence<N>{}));
 
 struct A {};
 struct B {};
@@ -114,11 +126,12 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 
 // MAIN ------------------------------------------------------------------------------
 
-#define TEST_NULLPTR
-#define TEST_VALUE
-#define TEST_POINTER
-#define TEST_ARRAY
-#define TEST_WRAPPER
+//#define TEST_NULLPTR
+//#define TEST_VALUE
+//#define TEST_POINTER
+//#define TEST_ARRAY
+//#define TEST_WRAPPER
+#define TEST_TYPE_LIST
 #define TEST_UNIQUE_TUPLE
 
 #define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
@@ -1090,6 +1103,117 @@ int main()
     }
 #endif TEST_WRAPPER
 
+#ifdef TEST_TYPE_LIST
+    {
+        std::cout << "\n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "                                            type list                                             \n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "\n";
+    } {
+        BEG;
+
+        EXE(using f1 = sib::type_first_t<A _ B _ C>);
+        EXE(using f2 = sib::type_first_t<C _ B _ B>);
+        EXE(using f3 = sib::type_first_t<D _ D _ B>);
+        EXE(using f4 = sib::type_first_t<E>);
+        DEFA(f1, v1, , A);
+        DEFA(f2, v2, , C);
+        DEFA(f3, v3, , D);
+        DEFA(f4, v4, , E);
+
+        EXE(using f5 = sib::type_first_t<sib::type_list<A _ B _ C>>);
+        EXE(using f6 = sib::type_first_t<sib::type_list<C _ B _ B>>);
+        EXE(using f7 = sib::type_first_t<sib::type_list<D _ D _ B>>);
+        EXE(using f8 = sib::type_first_t<sib::type_list<E>>);
+        DEFA(f5, v5, , A);
+        DEFA(f6, v6, , C);
+        DEFA(f7, v7, , D);
+        DEFA(f8, v8, , E);
+
+        EXE(using f9 = sib::type_first_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
+        EXE(using f0 = sib::type_first_t<sib::type_list<sib::type_list<D _ B>>>);
+        EXE(using f_ = sib::type_first_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
+        DEFA(f9, v9, , sib::type_list<A _ E>);
+        DEFA(f0, v0, , sib::type_list<D _ B>);
+        DEFA(f_, v_, , sib::type_list<A _ E>);
+
+        END;
+    } {
+        BEG;
+
+        EXE(using f1 = sib::type_last_t<A, B, C>);
+        EXE(using f2 = sib::type_last_t<C, B, B>);
+        EXE(using f3 = sib::type_last_t<D, D, B>);
+        EXE(using f4 = sib::type_last_t<E>);
+        DEFA(f1, v1, , C);
+        DEFA(f2, v2, , B);
+        DEFA(f3, v3, , B);
+        DEFA(f4, v4, , E);
+
+        EXE(using f5 = sib::type_last_t<sib::type_list<A _ B _ C>>);
+        EXE(using f6 = sib::type_last_t<sib::type_list<C _ B _ B>>);
+        EXE(using f7 = sib::type_last_t<sib::type_list<D _ D _ B>>);
+        EXE(using f8 = sib::type_last_t<sib::type_list<E>>);
+        DEFA(f5, v5, , C);
+        DEFA(f6, v6, , B);
+        DEFA(f7, v7, , B);
+        DEFA(f8, v8, , E);
+
+        EXE(using f9 = sib::type_last_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
+        EXE(using f0 = sib::type_last_t<sib::type_list<sib::type_list<D _ B>>>);
+        EXE(using f_ = sib::type_last_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
+        DEFA(f9, v9, , sib::type_list<D _ A>);
+        DEFA(f0, v0, , sib::type_list<D _ B>);
+        DEFA(f_, v_, , sib::type_list<D _ A>);
+
+        END;
+    } {
+        BEG;
+        DEF(auto, tl, = gen_t<10>{});
+        std::cout << "    length     = " << sib::static_type_name<decltype(tl)>().size() << "\n";
+        std::cout << "    type count = " << decltype(tl)::size << "\n";
+        END;
+        DEF(auto, stl, = sib::sorted_type_list_tl<decltype(tl)>{});
+        std::cout << "    length     = " << sib::static_type_name<decltype(stl)>().size() << "\n";
+        std::cout << "    type count = " << decltype(stl)::size << "\n";
+        END;
+    } {
+        #define _C 10
+        #define _I 8
+        BEG;
+        EXE(using TL = gen_t<_C>);
+        EXE(TL tl);
+        std::cout << "    length     = " << sib::static_type_name<TL>().size() << "\n";
+        std::cout << "    type count = " << TL::size << "\n";
+        END;
+        EXE(using H = sib::head_type_list<_I _ TL>);
+        EXE(H h);
+        std::cout << "    length     = " << sib::static_type_name<H>().size() << "\n";
+        std::cout << "    type count = " << H::size << "\n";
+        END;
+        EXE(using T = sib::tail_type_list<_I _ TL>);
+        EXE(T t);
+        std::cout << "    length     = " << sib::static_type_name<T>().size() << "\n";
+        std::cout << "    type count = " << T::size << "\n";
+        END;
+    } {
+        BEG;
+        EXE(using TL = gen_t<10>);
+        EXE(TL tl);
+        std::cout << "    length     = " << sib::static_type_name<TL>().size() << "\n";
+        std::cout << "    type count = " << TL::size << "\n";
+        END;
+        EXE(using STL = sib::sorted_type_list_tl<decltype(tl)>);
+        EXE(STL stl);
+        std::cout << "    length     = " << sib::static_type_name<STL>().size() << "\n";
+        std::cout << "    type count = " << STL::size << "\n";
+        END;
+        EXE(static_assert(sib::is_sorted_v<STL>));
+        END;
+    }
+#endif TEST_TYPE_LIST
+
 #ifdef TEST_UNIQUE_TUPLE
     {
         std::cout << "\n";
@@ -1099,7 +1223,6 @@ int main()
         std::cout << "\n";
     } {
         BEG;
-
         EXE(
             static_assert(std::is_same_v<
                 sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
@@ -1176,8 +1299,50 @@ int main()
         END;
     } {
         BEG;
-        DEF(sib::MakeUniqueTuple<int>, iii, = 111);
-        PRN(iii);
+        DEF(sib::MakeUniqueTuple<std::string>, ut, = "qwerty");
+        PRN(ut);
+        END;
+    } {
+        BEG;
+        DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
+        DEF(float, f, = ut);
+        DEF(std::string, s, = ut);
+        PRN(f);
+        PRN(s);
+        PRN(ut);
+        PRN(foo(ut));
+        PRN(bar(ut));
+        PRN(baz(ut));
+        END;
+    } {
+        BEG;
+        DEF(auto, ut, = sib::make_unique_tuple("qwerty"s _ 111));
+        DEF(float, f, = ut);
+        DEF(std::string, s, = ut);
+        PRN(f);
+        PRN(s);
+        PRN(ut);
+        PRN(foo(ut));
+        PRN(bar(ut));
+        PRN(baz(ut));
+        END;
+    } {
+        BEG;
+        EXE(sib::instantiate_templ_t<sib::TUniqueTuple _ sib::sorted_type_list_tl<gen_t<20>>> ut{});
+        std::cout << "    length = " << sib::static_type_name<decltype(ut)>().size() << "\n";
+        std::cout << "    type count = " << decltype(ut)::typelist::size << "\n";
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
         END;
     }
 #endif TEST_UNIQUE_TUPLE
