@@ -45,7 +45,7 @@ namespace sib {
     using TUniqueTuple = detail::_TUniqueTuple_<Ts...>;
 
     template <typename... Ts>
-    using MakeUniqueTuple = specialization_templ_t<detail::_TUniqueTuple_, sorted_type_pack_t<Ts...>>;
+    using MakeUniqueTuple = specialization_templ_t<detail::_TUniqueTuple_, sorted_type_list_t<Ts...>>;
 
     template <typename... Args>
     constexpr MakeUniqueTuple<Args...> make_unique_tuple(Args&&... args)

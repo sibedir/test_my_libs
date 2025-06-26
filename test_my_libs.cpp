@@ -164,14 +164,14 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 
 // MAIN ------------------------------------------------------------------------------
 
-//#define TEST_NULLPTR
-//#define TEST_VALUE
-//#define TEST_POINTER
-//#define TEST_ARRAY
-//#define TEST_WRAPPER
+#define TEST_NULLPTR
+#define TEST_VALUE
+#define TEST_POINTER
+#define TEST_ARRAY
+#define TEST_WRAPPER
 #define TEST_TYPE_PACK
 #define TEST_TYPE_LIST
-//#define TEST_UNIQUE_TUPLE
+#define TEST_UNIQUE_TUPLE
 
 #define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
@@ -181,8 +181,6 @@ int main()
 
     //sib::WaitAnyKey();
     //return 0;
-
-    std::string stp_s, stl_s;
 
 #ifdef TEST_NULLPTR
     {
@@ -1233,7 +1231,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = gen_TP<50>);
+        EXE(using Ts = gen_TP<20>);
         PRN(sib::static_type_name<Ts>());
         std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
@@ -1247,7 +1245,6 @@ int main()
         END;
         EXE(static_assert(sib::is_sorted_v<STs>));
         END;
-        stp_s = Types_to_Str(STs{});
     }
 #endif TEST_TYPE_PACK
 
@@ -1340,7 +1337,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = gen_TL<50>);
+        EXE(using Ts = gen_TL<20>);
         std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Types_to_Str(Ts{}));
@@ -1353,7 +1350,6 @@ int main()
         END;
         EXE(static_assert(sib::is_sorted_v<STs>));
         END;
-        stl_s = Types_to_Str(STs{});
     }
 #endif TEST_TYPE_LIST
 
@@ -1471,12 +1467,15 @@ int main()
         END;
     } {
         BEG;
-        EXE(sib::instantiate_templ_t<sib::TUniqueTuple _ sib::sorted_type_pack_t<gen_TP<20>>> ut{});
-        std::cout << "    length     = " << sib::static_type_name<decltype(ut)>().size() << "\n";
-        std::cout << "    type count = " << sib::type_pack_size_v<decltype(ut)::pack> << "\n";
+        EXE(sib::MakeUniqueTuple<gen_TP<50>> ut1{});
+        std::cout << "    length     = " << sib::static_type_name<decltype(ut1)>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<decltype(ut1)::pack>::size << "\n";
         END;
-    } {
-        BEG;
+        EXE(sib::MakeUniqueTuple<gen_TL<50>> ut2{});
+        std::cout << "    length     = " << sib::static_type_name<decltype(ut2)>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<decltype(ut2)::pack>::size << "\n";
+        END;
+        EXE(std::is_same_v<decltype(ut1), decltype(ut2)>);
         END;
     } {
         BEG;
@@ -1490,15 +1489,6 @@ int main()
     }
 #endif TEST_UNIQUE_TUPLE
 
-    std::cout << "\n";
-    std::cout << "\n";
-    std::cout << "\n";
-    std::cout << (stp_s == stl_s) << "\n";
-    std::cout << stp_s << "\n";
-    std::cout << stl_s << "\n";
-    std::cout << "\n";
-    std::cout << "\n";
-    std::cout << "\n";
 
 
     std::cout << "\n";

@@ -29,7 +29,8 @@ namespace sib {
         using type = Templ<Ts...>;
     };
 
-    template <template <typename...> typename Templ, typename... Ts> using  specialization_templ_t = typename specialization_templ<Templ, Ts...>::type;
+    template <template <typename...> typename Templ, typename... Ts>
+    using specialization_templ_t = typename specialization_templ<Templ, Ts...>::type;
 
 
 
@@ -409,6 +410,12 @@ namespace sib {
         using pack = sorted_type_pack_t<Ts...>;
     };
 
+    template <typename... Ts>
+    struct sorted_type_pack<type_list<Ts...>>
+    {
+        using pack = sorted_type_pack_t<Ts...>;
+    };
+
 
 
     struct ___sorted_type_list_base___ { struct PASS {}; };
@@ -483,6 +490,12 @@ namespace sib {
 
     template <typename... Ts>
     struct sorted_type_list<type_list<Ts...>>
+    {
+        using list = sorted_type_list_t<Ts...>;
+    };
+
+    template <typename... Ts>
+    struct sorted_type_list<type_pack<Ts...>>
     {
         using list = sorted_type_list_t<Ts...>;
     };
