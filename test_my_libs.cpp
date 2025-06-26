@@ -60,13 +60,51 @@ _MAFT(std::array<int _ 5>   ,      not      ,      not      ,      not      ,   
 _MAFT(sib::TArray<int _ 5>  ,      not      ,               ,               ,      not      ,      not      ,      not      ,               )
 //                          |---------------|---------------|---------------|---------------|---------------|---------------|---------------|
 
+
+
 template <size_t... idx_>
-consteval auto gen_impl(std::index_sequence<idx_...>)
+consteval auto gen_TP_impl(std::index_sequence<idx_...>)
 {
-    return sib::type_list< sib::type_tagN<idx_>...> {};
+    return sib::type_pack< sib::int_tag<idx_> ... > {};
 }
 
-template <size_t N> using  gen_t = decltype(gen_impl(std::make_index_sequence<N>{}));
+template <size_t... idx_>
+consteval auto gen_TL_impl(std::index_sequence<idx_...>)
+{
+    return sib::type_list< sib::int_tag<idx_> ... > {};
+}
+
+template <size_t N> using gen_TP = decltype(gen_TP_impl(std::make_index_sequence<N>{}));
+template <size_t N> using gen_TL = decltype(gen_TL_impl(std::make_index_sequence<N>{}));
+
+template <typename... Ts>
+inline std::string Types_to_Str()
+{
+    if constexpr (sizeof...(Ts) == 0)
+    {
+        return "<>";
+    }
+    else if constexpr (sizeof...(Ts) == 1)
+    {
+        return "<" + std::to_string(sib::types_first_t<Ts...>::value) + ">";
+    }
+    else
+    {
+        std::string res = "<";
+        ((res += std::to_string(Ts::value) + ", "), ...);
+        res[res.size() - 2] = '>';
+        return res;
+    }
+}
+
+template <template <typename...> typename Templ, typename... Ts>
+    requires(std::is_base_of_v<sib::container_of_types, Templ<>>)
+inline std::string Types_to_Str(Templ<Ts...> const &)
+{
+    return Types_to_Str<Ts...>();
+}
+
+
 
 struct A {};
 struct B {};
@@ -131,8 +169,9 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 //#define TEST_POINTER
 //#define TEST_ARRAY
 //#define TEST_WRAPPER
+#define TEST_TYPE_PACK
 #define TEST_TYPE_LIST
-#define TEST_UNIQUE_TUPLE
+//#define TEST_UNIQUE_TUPLE
 
 #define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
@@ -142,6 +181,8 @@ int main()
 
     //sib::WaitAnyKey();
     //return 0;
+
+    std::string stp_s, stl_s;
 
 #ifdef TEST_NULLPTR
     {
@@ -1103,114 +1144,216 @@ int main()
     }
 #endif TEST_WRAPPER
 
+#ifdef TEST_TYPE_PACK
+    {
+        std::cout << "\n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "                                           type pack                                              \n";
+        std::cout << "**************************************************************************************************\n";
+        std::cout << "\n";
+    } {
+        BEG;
+        EXE(using f1  = sib::types_first_t<A _ B _ C>);
+        EXE(using f2  = sib::types_first_t<C _ B _ B>);
+        EXE(using f3  = sib::types_first_t<D _ D _ B>);
+      //EXE(using f4  = sib::types_first_t<>);
+        EXE(using f5  = sib::types_first_t<E>);
+        EXE(using f6  = sib::types_first_t<sib::type_pack<A _ B _ C>>);
+        EXE(using f7  = sib::types_first_t<sib::type_pack<C _ B _ B>>);
+        EXE(using f8  = sib::types_first_t<sib::type_pack<D _ D _ B>>);
+      //EXE(using f9  = sib::types_first_t<sib::type_pack<>>);
+        EXE(using f10 = sib::types_first_t<sib::type_pack<E>>);
+        EXE(using f11 = sib::types_first_t<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>);
+        EXE(using f12 = sib::types_first_t<sib::type_pack<sib::type_pack<D _ B>>>);
+        EXE(using f13 = sib::types_first_t<sib::type_pack<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>>);
+        DEFA(f1 , v1 , , A);
+        DEFA(f2 , v2 , , C);
+        DEFA(f3 , v3 , , D);
+      //DEF (f4 , v4 ,    );
+        DEFA(f5 , v5 , , E);
+        DEFA(f6 , v6 , , A);
+        DEFA(f7 , v7 , , C);
+        DEFA(f8 , v8 , , D);
+      //DEF (f9 , v9 ,    );
+        DEFA(f10, v10, , E);
+        DEFA(f11, v11, , sib::type_pack<A _ E>);
+        DEFA(f12, v12, , sib::type_pack<D _ B>);
+        DEFA(f13, v13, , sib::type_pack<A _ E>);
+        END;
+    } {
+        BEG;
+        EXE(using f1  = sib::types_last_t<A _ B _ C>);
+        EXE(using f2  = sib::types_last_t<C _ B _ B>);
+        EXE(using f3  = sib::types_last_t<D _ D _ B>);
+      //EXE(using f4  = sib::types_last_t<>);
+        EXE(using f5  = sib::types_last_t<E>);
+        EXE(using f6  = sib::types_last_t<sib::type_pack<A _ B _ C>>);
+        EXE(using f7  = sib::types_last_t<sib::type_pack<C _ B _ B>>);
+        EXE(using f8  = sib::types_last_t<sib::type_pack<D _ D _ B>>);
+      //EXE(using f9  = sib::types_last_t<sib::type_pack<>>);
+        EXE(using f10 = sib::types_last_t<sib::type_pack<E>>);
+        EXE(using f11 = sib::types_last_t<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>);
+        EXE(using f12 = sib::types_last_t<sib::type_pack<sib::type_pack<D _ B>>>);
+        EXE(using f13 = sib::types_last_t<sib::type_pack<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>>);
+        DEFA(f1 , v1 , , C);
+        DEFA(f2 , v2 , , B);
+        DEFA(f3 , v3 , , B);
+      //DEF (f4 , v4 ,    );
+        DEFA(f5 , v5 , , E);
+        DEFA(f6 , v6 , , C);
+        DEFA(f7 , v7 , , B);
+        DEFA(f8 , v8 , , B);
+      //DEF (f9 , v9 ,    );
+        DEFA(f10, v10, , E);
+        DEFA(f11, v11, , sib::type_pack<D _ A>);
+        DEFA(f12, v12, , sib::type_pack<D _ B>);
+        DEFA(f13, v13, , sib::type_pack<D _ A>);
+        END;
+    } {
+        static constexpr int _C = 10;
+        static constexpr int _I = 7;
+        BEG;
+        EXE(using Ts = gen_TP<_C>);
+        PRN(sib::static_type_name<Ts>());
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Types_to_Str(Ts{}));
+        END;
+        EXE(using H = sib::types_head<_I _ Ts>);
+        PRN(sib::static_type_name<H>());
+        std::cout << "    length     = " << sib::static_type_name<H>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<H>::size << "\n";
+        PRN(Types_to_Str(H{}));
+        END;
+        EXE(using T = sib::types_tail<_I _ Ts>);
+        PRN(sib::static_type_name<T>());
+        std::cout << "    length     = " << sib::static_type_name<T>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<T>::size << "\n";
+        PRN(Types_to_Str(T{}));
+        END;
+    } {
+        BEG;
+        EXE(using Ts = gen_TP<50>);
+        PRN(sib::static_type_name<Ts>());
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Types_to_Str(Ts{}));
+        END;
+        EXE(using STs = sib::sorted_type_pack_t<Ts>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(Types_to_Str(STs{}));
+        END;
+        EXE(static_assert(sib::is_sorted_v<STs>));
+        END;
+        stp_s = Types_to_Str(STs{});
+    }
+#endif TEST_TYPE_PACK
+
 #ifdef TEST_TYPE_LIST
     {
         std::cout << "\n";
         std::cout << "**************************************************************************************************\n";
-        std::cout << "                                            type list                                             \n";
+        std::cout << "                                           type list                                              \n";
         std::cout << "**************************************************************************************************\n";
         std::cout << "\n";
     } {
         BEG;
-
-        EXE(using f1 = sib::type_first_t<A _ B _ C>);
-        EXE(using f2 = sib::type_first_t<C _ B _ B>);
-        EXE(using f3 = sib::type_first_t<D _ D _ B>);
-        EXE(using f4 = sib::type_first_t<E>);
-        DEFA(f1, v1, , A);
-        DEFA(f2, v2, , C);
-        DEFA(f3, v3, , D);
-        DEFA(f4, v4, , E);
-
-        EXE(using f5 = sib::type_first_t<sib::type_list<A _ B _ C>>);
-        EXE(using f6 = sib::type_first_t<sib::type_list<C _ B _ B>>);
-        EXE(using f7 = sib::type_first_t<sib::type_list<D _ D _ B>>);
-        EXE(using f8 = sib::type_first_t<sib::type_list<E>>);
-        DEFA(f5, v5, , A);
-        DEFA(f6, v6, , C);
-        DEFA(f7, v7, , D);
-        DEFA(f8, v8, , E);
-
-        EXE(using f9 = sib::type_first_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
-        EXE(using f0 = sib::type_first_t<sib::type_list<sib::type_list<D _ B>>>);
-        EXE(using f_ = sib::type_first_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
-        DEFA(f9, v9, , sib::type_list<A _ E>);
-        DEFA(f0, v0, , sib::type_list<D _ B>);
-        DEFA(f_, v_, , sib::type_list<A _ E>);
-
+        EXE(using f1  = sib::types_first_t<A _ B _ C>);
+        EXE(using f2  = sib::types_first_t<C _ B _ B>);
+        EXE(using f3  = sib::types_first_t<D _ D _ B>);
+      //EXE(using f4  = sib::types_first_t<>);
+        EXE(using f5  = sib::types_first_t<E>);
+        EXE(using f6  = sib::types_first_t<sib::type_list<A _ B _ C>>);
+        EXE(using f7  = sib::types_first_t<sib::type_list<C _ B _ B>>);
+        EXE(using f8  = sib::types_first_t<sib::type_list<D _ D _ B>>);
+      //EXE(using f9  = sib::types_first_t<sib::type_list<>>);
+        EXE(using f10 = sib::types_first_t<sib::type_list<E>>);
+        EXE(using f11 = sib::types_first_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
+        EXE(using f12 = sib::types_first_t<sib::type_list<sib::type_list<D _ B>>>);
+        EXE(using f13 = sib::types_first_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
+        DEFA(f1 , v1 , , A);
+        DEFA(f2 , v2 , , C);
+        DEFA(f3 , v3 , , D);
+      //DEF (f4 , v4 ,    );
+        DEFA(f5 , v5 , , E);
+        DEFA(f6 , v6 , , A);
+        DEFA(f7 , v7 , , C);
+        DEFA(f8 , v8 , , D);
+      //DEF (f9 , v9 ,    );
+        DEFA(f10, v10, , E);
+        DEFA(f11, v11, , sib::type_list<A _ E>);
+        DEFA(f12, v12, , sib::type_list<D _ B>);
+        DEFA(f13, v13, , sib::type_list<A _ E>);
         END;
     } {
         BEG;
-
-        EXE(using f1 = sib::type_last_t<A, B, C>);
-        EXE(using f2 = sib::type_last_t<C, B, B>);
-        EXE(using f3 = sib::type_last_t<D, D, B>);
-        EXE(using f4 = sib::type_last_t<E>);
-        DEFA(f1, v1, , C);
-        DEFA(f2, v2, , B);
-        DEFA(f3, v3, , B);
-        DEFA(f4, v4, , E);
-
-        EXE(using f5 = sib::type_last_t<sib::type_list<A _ B _ C>>);
-        EXE(using f6 = sib::type_last_t<sib::type_list<C _ B _ B>>);
-        EXE(using f7 = sib::type_last_t<sib::type_list<D _ D _ B>>);
-        EXE(using f8 = sib::type_last_t<sib::type_list<E>>);
-        DEFA(f5, v5, , C);
-        DEFA(f6, v6, , B);
-        DEFA(f7, v7, , B);
-        DEFA(f8, v8, , E);
-
-        EXE(using f9 = sib::type_last_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
-        EXE(using f0 = sib::type_last_t<sib::type_list<sib::type_list<D _ B>>>);
-        EXE(using f_ = sib::type_last_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
-        DEFA(f9, v9, , sib::type_list<D _ A>);
-        DEFA(f0, v0, , sib::type_list<D _ B>);
-        DEFA(f_, v_, , sib::type_list<D _ A>);
-
+        EXE(using f1  = sib::types_last_t<A _ B _ C>);
+        EXE(using f2  = sib::types_last_t<C _ B _ B>);
+        EXE(using f3  = sib::types_last_t<D _ D _ B>);
+      //EXE(using f4  = sib::types_last_t<>);
+        EXE(using f5  = sib::types_last_t<E>);
+        EXE(using f6  = sib::types_last_t<sib::type_list<A _ B _ C>>);
+        EXE(using f7  = sib::types_last_t<sib::type_list<C _ B _ B>>);
+        EXE(using f8  = sib::types_last_t<sib::type_list<D _ D _ B>>);
+      //EXE(using f9  = sib::types_last_t<sib::type_list<>>);
+        EXE(using f10 = sib::types_last_t<sib::type_list<E>>);
+        EXE(using f11 = sib::types_last_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
+        EXE(using f12 = sib::types_last_t<sib::type_list<sib::type_list<D _ B>>>);
+        EXE(using f13 = sib::types_last_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
+        DEFA(f1 , v1 , , C);
+        DEFA(f2 , v2 , , B);
+        DEFA(f3 , v3 , , B);
+      //DEF (f4 , v4 ,    );
+        DEFA(f5 , v5 , , E);
+        DEFA(f6 , v6 , , C);
+        DEFA(f7 , v7 , , B);
+        DEFA(f8 , v8 , , B);
+      //DEF (f9 , v9 ,    );
+        DEFA(f10, v10, , E);
+        DEFA(f11, v11, , sib::type_list<D _ A>);
+        DEFA(f12, v12, , sib::type_list<D _ B>);
+        DEFA(f13, v13, , sib::type_list<D _ A>);
         END;
     } {
+        static constexpr int _C = 10;
+        static constexpr int _I = 7;
         BEG;
-        DEF(auto, tl, = gen_t<10>{});
-        std::cout << "    length     = " << sib::static_type_name<decltype(tl)>().size() << "\n";
-        std::cout << "    type count = " << decltype(tl)::size << "\n";
+        EXE(using Ts = gen_TL<_C>);
+        PRN(sib::static_type_name<Ts>());
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Types_to_Str(Ts{}));
         END;
-        DEF(auto, stl, = sib::sorted_type_list_tl<decltype(tl)>{});
-        std::cout << "    length     = " << sib::static_type_name<decltype(stl)>().size() << "\n";
-        std::cout << "    type count = " << decltype(stl)::size << "\n";
-        END;
-    } {
-        #define _C 10
-        #define _I 8
-        BEG;
-        EXE(using TL = gen_t<_C>);
-        EXE(TL tl);
-        std::cout << "    length     = " << sib::static_type_name<TL>().size() << "\n";
-        std::cout << "    type count = " << TL::size << "\n";
-        END;
-        EXE(using H = sib::head_type_list<_I _ TL>);
-        EXE(H h);
+        EXE(using H = sib::types_head<_I _ Ts>);
+        PRN(sib::static_type_name<H>());
         std::cout << "    length     = " << sib::static_type_name<H>().size() << "\n";
-        std::cout << "    type count = " << H::size << "\n";
+        std::cout << "    type count = " << sib::types_info<H>::size << "\n";
+        PRN(Types_to_Str(H{}));
         END;
-        EXE(using T = sib::tail_type_list<_I _ TL>);
-        EXE(T t);
+        EXE(using T = sib::types_tail<_I _ Ts>);
+        PRN(sib::static_type_name<T>());
         std::cout << "    length     = " << sib::static_type_name<T>().size() << "\n";
-        std::cout << "    type count = " << T::size << "\n";
+        std::cout << "    type count = " << sib::types_info<T>::size << "\n";
+        PRN(Types_to_Str(T{}));
         END;
     } {
         BEG;
-        EXE(using TL = gen_t<10>);
-        EXE(TL tl);
-        std::cout << "    length     = " << sib::static_type_name<TL>().size() << "\n";
-        std::cout << "    type count = " << TL::size << "\n";
+        EXE(using Ts = gen_TL<50>);
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Types_to_Str(Ts{}));
         END;
-        EXE(using STL = sib::sorted_type_list_tl<decltype(tl)>);
-        EXE(STL stl);
-        std::cout << "    length     = " << sib::static_type_name<STL>().size() << "\n";
-        std::cout << "    type count = " << STL::size << "\n";
+        EXE(using STs = sib::sorted_type_list_t<Ts>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(Types_to_Str(STs{}));
         END;
-        EXE(static_assert(sib::is_sorted_v<STL>));
+        EXE(static_assert(sib::is_sorted_v<STs>));
         END;
+        stl_s = Types_to_Str(STs{});
     }
 #endif TEST_TYPE_LIST
 
@@ -1328,9 +1471,9 @@ int main()
         END;
     } {
         BEG;
-        EXE(sib::instantiate_templ_t<sib::TUniqueTuple _ sib::sorted_type_list_tl<gen_t<20>>> ut{});
-        std::cout << "    length = " << sib::static_type_name<decltype(ut)>().size() << "\n";
-        std::cout << "    type count = " << decltype(ut)::typelist::size << "\n";
+        EXE(sib::instantiate_templ_t<sib::TUniqueTuple _ sib::sorted_type_pack_t<gen_TP<20>>> ut{});
+        std::cout << "    length     = " << sib::static_type_name<decltype(ut)>().size() << "\n";
+        std::cout << "    type count = " << sib::type_pack_size_v<decltype(ut)::pack> << "\n";
         END;
     } {
         BEG;
@@ -1346,6 +1489,17 @@ int main()
         END;
     }
 #endif TEST_UNIQUE_TUPLE
+
+    std::cout << "\n";
+    std::cout << "\n";
+    std::cout << "\n";
+    std::cout << (stp_s == stl_s) << "\n";
+    std::cout << stp_s << "\n";
+    std::cout << stl_s << "\n";
+    std::cout << "\n";
+    std::cout << "\n";
+    std::cout << "\n";
+
 
     std::cout << "\n";
     sib::WaitKeyCodes(

@@ -23,7 +23,7 @@ namespace sib {
             template <ConvertibleToFrom<Ts...> AnyT>
             using conversion_type_to = TWrapper<conversion_base_type_to<AnyT>>;
         public:
-            using typelist = type_list<Ts...>;
+            using pack = type_pack<Ts...>;
 
             template <ConvertibleFromTo<Ts...>... Args>
             _TUniqueTuple_(Args&&... args) noexcept : conversion_type_from<Args>(args) ... {}
@@ -45,7 +45,7 @@ namespace sib {
     using TUniqueTuple = detail::_TUniqueTuple_<Ts...>;
 
     template <typename... Ts>
-    using MakeUniqueTuple = instantiate_templ_t<detail::_TUniqueTuple_, sorted_type_list_tl<Ts...>>;
+    using MakeUniqueTuple = specialization_templ_t<detail::_TUniqueTuple_, sorted_type_pack_t<Ts...>>;
 
     template <typename... Args>
     constexpr MakeUniqueTuple<Args...> make_unique_tuple(Args&&... args)

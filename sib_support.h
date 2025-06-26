@@ -21,6 +21,18 @@ namespace sib {
 
 
 
+    // specialization of template
+
+    template <template <typename...> typename Templ, typename... Ts>
+    struct specialization_templ
+    {
+        using type = Templ<Ts...>;
+    };
+
+    template <template <typename...> typename Templ, typename... Ts> using  specialization_templ_t = typename specialization_templ<Templ, Ts...>::type;
+
+
+
     // ----------------------------------------------------------------------------------- type name
 
     /* https://stackoverflow.com/a/56766138/23601704 */
@@ -79,165 +91,259 @@ namespace sib {
     }
 
 
+    // ----------------------------------------------------------------------------------- containers of types
 
-    // ----------------------------------------------------------------------------------- type list
+    // INTERFACE
 
-    template<int N> struct type_tagN { static constexpr int value = N; };
+                template<int      N> struct int_tag;
+                template<typename T> struct type_tag;
+
+                struct container_of_types;
+                template <typename...> struct types_interface;
+
+                template <typename...> struct type_pack;
+                template <typename...> struct type_list;
+
+                template <typename...> struct types_info_helper;
+                template <typename...> struct types_info_spec;
+
+                template <typename...> struct types_first;
+                template <typename...> struct types_last;
+
+                template <typename, typename> struct types_summ;
+                template <size_t  , typename> struct types_separat;
+
+                template <typename...> struct sorted_type_pack;
+                template <typename...> struct sorted_type_list;
+
+    // USING & CONST
+
+                template <typename L, typename R> constexpr bool type_less_v = (sib::static_type_name<L>() < sib::static_type_name<R>());
+                template <typename L, typename R> constexpr bool type_more_v = (sib::static_type_name<L>() > sib::static_type_name<R>());
+                template <typename L, typename R> constexpr bool type_equal_v = std::is_same_v<L, R>;
+
+                template <typename... Ts> using types_info = typename types_info_spec<Ts...>::type;
+
+                template <typename... Ts> using types_first_t = typename types_first<Ts...>::type;
+                template <typename... Ts> using types_last_t  = typename types_last <Ts...>::type;
+
+                template <typename Ts1, typename Ts2> using types_summ_t = typename types_summ<Ts1, Ts2>::type;
+
+                template <size_t N, typename Ts> using types_head = typename types_separat<N, Ts>::head;
+                template <size_t N, typename Ts> using types_tail = typename types_separat<N, Ts>::tail;
+
+                template <typename... Ts> using  sorted_type_pack_t = typename sorted_type_pack<Ts...>::pack;
+                template <typename... Ts> using  sorted_type_list_t = typename sorted_type_list<Ts...>::list;
+
+    // IMPLEMENTATION
+
+    // tags
+    template<int N> struct int_tag { static constexpr int value = N; };
     template<typename T> struct type_tag { using type = T; };
 
 
 
-    template <typename... Ts>
-    struct type_list
+    // compare
+    template <typename L, typename R> struct type_less  : std::bool_constant<type_less_v<L, R>> {};
+    template <typename L, typename R> struct type_more  : std::bool_constant<type_more_v<L, R>> {};
+    template <typename L, typename R> using  type_equal = std::is_same  <L, R>;
+    
+
+
+    // specialization
+    template <
+        template <typename...> typename Templ,
+        template <typename...> typename TsTempl,
+        typename... Ts
+    >
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct specialization_templ<Templ, TsTempl<Ts...>>
     {
+        using type = Templ<Ts...>;
+    };
+
+
+
+    // container
+
+    struct container_of_types {};
+
+
+    // type_pack
+
+    template <typename... Ts> struct type_pack : container_of_types {};
+
+
+
+    // type_list
+
+    template <>
+    struct type_list<> : container_of_types
+    {
+        template <size_t N> requires(N == 0) static consteval auto get_tail()
+        {
+            return type_list<>{};
+        }
+    };
+
+    template <typename F, typename... Ts>
+    struct type_list<F, Ts...> : type_list<Ts...>
+    {
+        template <size_t N, typename... Ps> consteval auto get_head()
+        {
+            if constexpr (N == 0) { return type_list<Ps...   >{}; } else
+            if constexpr (N == 1) { return type_list<Ps..., F>{}; } else
+                                  { return type_list<   Ts...>{}.get_head<N-1, Ps..., F>(); }
+        }
+
+        template <size_t N> consteval auto get_tail()
+        {
+            if constexpr (N == 0) { return type_list<F, Ts...>{}; } else
+            if constexpr (N == 1) { return type_list<   Ts...>{}; } else
+                                  { return type_list<   Ts...>{}.get_tail<N-1>(); }
+        }
+    };
+
+
+
+    // info spec
+
+    template <typename... Ts>
+    struct types_info_spec {
+        using type = types_info_helper<Ts...>;
+    };
+
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_info_spec<TsTempl<Ts...>>
+    {
+        using type = types_info_helper<Ts...>;
+    };
+
+
+
+    // info helper
+
+    template <typename... Ts>
+    struct types_info_helper
+    {
+        using pack = type_pack<Ts...>;
+        using list = type_list<Ts...>;
+
         static constexpr size_t size = sizeof...(Ts);
     };
 
 
 
-    template <typename...   > struct type_first {};
-    template <typename... Ts> using  type_first_t = typename type_first<Ts...>::type;
+    // first
 
     template <typename T, typename... Ts>
-    struct type_first<T, Ts...>
+    struct types_first<T, Ts...>
     {
         using type = T;
     };
 
-    template <typename... Ts>
-    struct type_first<type_list<Ts...>>
+    template <template <typename...> typename TsTempl, typename T, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_first<TsTempl<T, Ts...>>
     {
-        using type = type_first_t<Ts...>;
-    };
-
-    template <typename... Ts>
-    struct type_first<type_list<type_list<Ts...>>>
-    {
-        using type = type_list<Ts... >;
+        using type = T;
     };
 
 
+
+    // last
 
     template<typename... Ts>
-    struct type_last
+    struct types_last
     {
         using type = typename decltype((type_tag<Ts>{}, ...))::type;
     };
 
-    template <typename... Ts> using  type_last_t = typename type_last<Ts...>::type;
-
-    template <typename... Ts>
-    struct type_last<type_list<Ts...>>
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_last<TsTempl<Ts...>>
     {
-        using type = type_last_t<Ts...>;
-    };
-
-    template <typename... Ts>
-    struct type_last<type_list<type_list<Ts...>>>
-    {
-        using type = type_list<Ts... >;
+        using type = typename decltype((type_tag<Ts>{}, ...))::type;
     };
 
 
 
-    template <typename    , typename    > struct concat_type_list;
-    template <typename TL1, typename TL2> using  concat_type_list_tl = typename concat_type_list<TL1, TL2>::typelist;
+    // summ
 
-    template <typename... Ts>
-    struct concat_type_list<type_list<>, type_list<Ts...>>
+    template <template <typename...> typename TsTempl, typename T, typename... Ts>
+        requires(
+            not std::is_base_of_v<container_of_types, T>
+            and std::is_base_of_v<container_of_types, TsTempl<>>
+        )
+    struct types_summ<T, TsTempl<Ts...>>
     {
-        using typelist = type_list<Ts...>;
+        using type = TsTempl<T, Ts...>;
     };
 
-    template <typename... Ts>
-    struct concat_type_list<type_list<Ts...>, type_list<>>
+    template <template <typename...> typename TsTempl, typename T, typename... Ts>
+        requires(
+            not std::is_base_of_v<container_of_types, T>
+            and std::is_base_of_v<container_of_types, TsTempl<>>
+        )
+    struct types_summ<TsTempl<Ts...>, T>
     {
-        using typelist = type_list<Ts...>;
+        using type = TsTempl<Ts..., T>;
     };
 
-    template <typename... Ts1, typename... Ts2>
-    struct concat_type_list<type_list<Ts1...>, type_list<Ts2...>>
+    template <template <typename...> typename TsTempl, typename... Ts1, typename... Ts2>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_summ<TsTempl<Ts1...>, TsTempl<Ts2...>>
     {
-        using typelist = type_list<Ts1..., Ts2...>;
+        using type = TsTempl<Ts1..., Ts2...>;
     };
 
 
 
-    template <size_t      , typename   > struct separat_type_list;
-    template <size_t Count, typename TL> using  head_type_list = typename separat_type_list<Count, TL>::head;
-    template <size_t Count, typename TL> using  tail_type_list = typename separat_type_list<Count, TL>::tail;
-    
-    template <typename... Ts>
-    struct separat_type_list<0, type_list<Ts...>>
+    // separat
+  
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_separat<0, TsTempl<Ts...>>
     {
-        using head = type_list<>;
-        using tail = type_list<Ts...>;
+        using head = TsTempl<>;
+        using tail = TsTempl<Ts...>;
     };
 
-    template <typename F, typename... Ts>
-    struct separat_type_list<1, type_list<F, Ts...>>
+    template <template <typename...> typename TsTempl, typename F, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_separat<1, TsTempl<F, Ts...>>
     {
-        using head = type_list<F>;
-        using tail = type_list<Ts...>;
+        using head = TsTempl<F>;
+        using tail = TsTempl<Ts...>;
     };
 
-    template <size_t Count, typename... Ts>
-    struct separat_type_list<Count, type_list<Ts...>>
+    template <size_t N, typename... Ts>
+        requires(N > 1)
+    struct types_separat<N, type_pack<Ts...>>
     {
-        using head = concat_type_list_tl<
-            head_type_list<        Count / 2, type_list<Ts...>>,
-            head_type_list<Count - Count / 2, tail_type_list<Count / 2, type_list<Ts...>>>
+        using head = types_summ_t<
+            types_head<    N/2, type_pack<Ts...>>,
+            types_head<N - N/2, types_tail<N/2, type_pack<Ts...>>>
         >;
-        using tail = tail_type_list<
-            Count - Count / 2,
-            tail_type_list<Count / 2, type_list<Ts...>>
-        >;
+        using tail = types_tail<N - N/2, types_tail<N/2, type_pack<Ts...>>>;
     };
 
-
-
-    template <template <typename...> typename      , typename...> struct extract_type_list {};
-    template <template <typename...> typename Templ, typename T > using  extract_type_list_tl = typename extract_type_list<Templ, T>::typelist;
-
-    template <template <typename...> typename Templ, typename... Ts>
-    struct extract_type_list<Templ, Templ<Ts...>>
+    template <size_t N, typename... Ts>
+        requires(N > 1)
+    struct types_separat<N, type_list<Ts...>>
     {
-        using typelist = type_list<Ts...>;
+        using head = decltype(type_list<Ts...>{}.get_head<N>());
+        using tail = decltype(type_list<Ts...>{}.get_tail<N>());
     };
 
 
 
-    template <template <typename...> typename      , typename...   > struct instantiate_templ {};
-    template <template <typename...> typename Templ, typename... Ts> using  instantiate_templ_t = typename instantiate_templ<Templ, Ts...>::type;
-
-    template <template <typename...> typename Templ, typename... Ts>
-    struct instantiate_templ<Templ, Ts...>
-    {
-        using type = Templ<Ts...>;
-    };
-
-    template <template <typename...> typename Templ, typename... Ts>
-    struct instantiate_templ<Templ, type_list<Ts...>>
-    {
-        using type = Templ<Ts...>;
-    };
-
-
-
-    template <typename Left, typename Right>
-    static constexpr bool type_less_v = ( sib::static_type_name<Left>() < sib::static_type_name<Right>() );
-
-    template <typename Left, typename Right>
-    struct type_less : std::bool_constant<type_less_v<Left, Right>> {};
-
-
+    // sort
 
     // https://stackoverflow.com/a/64795244/23601704
-    template <typename...   > struct sorted_type_list;
-    template <typename... Ts> using  sorted_type_list_tl = typename sorted_type_list<Ts...>::typelist;
-
     template <typename... Types>
-    struct sorted_type_list
+    struct sorted_type_pack
     {
     private:
 
@@ -245,83 +351,160 @@ namespace sib {
         template <typename TL1, typename TL2> using  merge_t = typename merge<TL1, TL2>::type;
 
         template <typename... Ts>
-        struct merge<type_list<>, type_list<Ts...>>
+        struct merge<type_pack<>, type_pack<Ts...>>
         {
-            using type = type_list<Ts...>;
+            using type = type_pack<Ts...>;
         };
 
         template <typename... Ts>
-        struct merge<type_list<Ts...>, type_list<>>
+        struct merge<type_pack<Ts...>, type_pack<>>
         {
-            using type = type_list<Ts...>;
+            using type = type_pack<Ts...>;
         };
 
         template <typename A, typename... As, typename B, typename... Bs>
-        struct merge<type_list<A, As...>, type_list<B, Bs...>>
+        struct merge<type_pack<A, As...>, type_pack<B, Bs...>>
         {
             using type = std::conditional_t<
                 type_less_v<A, B>,
-                concat_type_list_tl<type_list<A>, merge_t<type_list<As...>, type_list<B, Bs...>>>,
-                concat_type_list_tl<type_list<B>, merge_t<type_list<A, As...>, type_list<Bs...>>>
+                types_summ_t<type_pack<A>, merge_t<type_pack<As...>, type_pack<B, Bs...>>>,
+                types_summ_t<type_pack<B>, merge_t<type_pack<A, As...>, type_pack<Bs...>>>
             >;
         };
 
 
 
         template <typename   > struct sort;
-        template <typename TL> using  sort_tl = typename sort<TL>::typelist;
+        template <typename TL> using  sort_t = typename sort<TL>::pack;
+
+        template <typename T>
+        struct sort<type_pack<T>>
+        {
+            using pack = type_pack<T>;
+        };
+
+        template <typename A, typename B>
+        struct sort<type_pack<A, B>>
+        {
+            using pack = std::conditional_t<type_less_v<A, B>, type_pack<A, B>, type_pack<B, A>>;
+        };
+
+        template <typename... Ts>
+        struct sort<type_pack<Ts...>>
+        {
+            static constexpr size_t middle = sizeof...(Ts) / 2;
+            using pack = merge_t<
+                sort_t<typename types_separat<middle, type_pack<Ts...>>::head>,
+                sort_t<typename types_separat<middle, type_pack<Ts...>>::tail>
+            >;
+        };
+
+    public:
+        using pack = sort_t<type_pack<Types...>>;
+    };
+
+    template <typename... Ts>
+    struct sorted_type_pack<type_pack<Ts...>>
+    {
+        using pack = sorted_type_pack_t<Ts...>;
+    };
+
+
+
+    struct ___sorted_type_list_base___ { struct PASS {}; };
+        
+    template <typename... Types>
+    struct sorted_type_list : protected ___sorted_type_list_base___
+    {
+    private:
+
+        template <typename...   > struct collapse;
+        template <typename... Ts> using  collapse_t = collapse<Ts...>::type;
+
+        template <>
+        struct collapse<>
+        {
+            using type = type_list<>;
+        };
+
+        template <typename F, typename... Ts>
+        struct collapse<F, Ts...>
+        {
+            using type = std::conditional_t<std::is_same_v<F, PASS>, collapse_t<Ts...>, types_summ_t<F, collapse_t<Ts...>>>;
+        };
+
+        template <typename Cond, typename... Ts>
+        using left  = collapse_t< std::conditional_t<type_less_v<Ts, Cond>, Ts, PASS> ... >;
+
+        template <typename Cond, typename... Ts>
+        using right = collapse_t< std::conditional_t<type_more_v<Ts, Cond>, Ts, PASS> ... >;
+
+        template <typename...   > struct sort;
+
+        template <>
+        struct sort<type_list<>>
+        {
+            using type = type_list<>;
+        };
 
         template <typename T>
         struct sort<type_list<T>>
         {
-            using typelist = type_list<T>;
+            using type = type_list<T>;
         };
 
         template <typename A, typename B>
         struct sort<type_list<A, B>>
         {
-            using typelist = std::conditional_t<type_less_v<A, B>, type_list<A, B>, type_list<B, A>>;
+            using type = std::conditional_t<type_less_v<A, B>, type_list<A, B>, type_list<B, A>>;
         };
 
-        template <typename... Ts>
-        struct sort<type_list<Ts...>>
+        template <typename...> struct Ls_M_Rs;
+
+        template <typename M, typename... Ls, typename... Rs>
+        struct Ls_M_Rs<type_list<Ls...>, M, type_list<Rs...>>
         {
-            static constexpr size_t middle = sizeof...(Ts) / 2;
-            using split = separat_type_list<middle, type_list<Ts...>>;
-            using head = split::head;
-            using tail = split::tail;
-            using typelist = merge_t< sort_tl<head>, sort_tl<tail> >;
+            using res = type_list<Ls..., M, Rs...>;
+        };
+
+        template <typename F, typename... Ts>
+        struct sort<type_list<F, Ts...>>
+        {
+            using type = typename Ls_M_Rs<
+                typename sort<left <F, Ts...>>::type,
+                F,
+                typename sort<right<F, Ts...>>::type
+            >::res;
         };
 
     public:
-        using typelist = sort_tl<type_list<Types...>>;
+        using list = typename sort<type_list<Types...>>::type;
     };
 
     template <typename... Ts>
     struct sorted_type_list<type_list<Ts...>>
     {
-        using typelist = sorted_type_list_tl<Ts...>;
+        using list = sorted_type_list_t<Ts...>;
     };
-
 
     // ----------------------------------------------------------------------------------- type traits
 
-    // instantiation
+    // specialization
 
     template <template <typename...> typename, typename...>
-    struct  is_instantiation : std::false_type {};
+    struct  is_specialization : std::false_type {};
 
     template <template <typename...> typename Templ, typename... Ts>
-    struct  is_instantiation<Templ, Templ<Ts...>> : std::true_type {};
+    struct  is_specialization<Templ, Templ<Ts...>> : std::true_type {};
 
     template <template <typename...> typename Templ, typename... Ts>
-    struct not_instantiation : std::bool_constant<is_instantiation<Templ, Templ<Ts...>>::value> {};
+    struct not_specialization : std::bool_constant<is_specialization<Templ, Templ<Ts...>>::value> {};
 
-    template <template <typename...> typename Templ, typename... Ts> constexpr bool  is_instantiation_v = is_instantiation<Templ, Templ<Ts...>>::value;
-    template <template <typename...> typename Templ, typename... Ts> constexpr bool not_instantiation_v = not_instantiation<Templ, Templ<Ts...>>::value;
+    template <template <typename...> typename Templ, typename... Ts> constexpr bool  is_specialization_v =  is_specialization<Templ, Templ<Ts...>>::value;
+    template <template <typename...> typename Templ, typename... Ts> constexpr bool not_specialization_v = not_specialization<Templ, Templ<Ts...>>::value;
 
-    template <typename T, template <typename...> typename Templ>  concept     Instantiation = is_instantiation_v<Templ, T>;
-    template <typename T, template <typename...> typename Templ>  concept not_Instantiation = not_instantiation_v<Templ, T>;
+    template <typename T, template <typename...> typename Templ>  concept     Specialization =  is_specialization_v<Templ, T>;
+    template <typename T, template <typename...> typename Templ>  concept not_Specialization = not_specialization_v<Templ, T>;
 
 
 
@@ -333,7 +516,7 @@ namespace sib {
     template <typename T, typename... Ts> struct  is_any_of : std::bool_constant< is_any_of_v<T, Ts...>> {};
     template <typename T, typename... Ts> struct not_any_of : std::bool_constant<not_any_of_v<T, Ts...>> {};
 
-    template <typename T, typename... Ts> concept     AnyOf = is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept     AnyOf =  is_any_of_v<T, Ts...>;
     template <typename T, typename... Ts> concept not_AnyOf = not_any_of_v<T, Ts...>;
 
 
@@ -349,7 +532,7 @@ namespace sib {
     template <typename From, typename... To> struct  is_convertible_form_to : std::bool_constant< is_convertible_from_to_v<From, To...>> {};
     template <typename From, typename... To> struct not_convertible_form_to : std::bool_constant<not_convertible_from_to_v<From, To...>> {};
 
-    template <typename From, typename... To> concept     ConvertibleFromTo = is_convertible_from_to_v<From, To...>;
+    template <typename From, typename... To> concept     ConvertibleFromTo =  is_convertible_from_to_v<From, To...>;
     template <typename From, typename... To> concept not_ConvertibleFromTo = not_convertible_from_to_v<From, To...>;
 
 
@@ -363,7 +546,7 @@ namespace sib {
     template <typename To, typename... From> struct  is_convertible_to_from : std::bool_constant< is_convertible_to_from_v<To, From...>> {};
     template <typename To, typename... From> struct not_convertible_to_from : std::bool_constant<not_convertible_to_from_v<To, From...>> {};
 
-    template <typename To, typename... From> concept     ConvertibleToFrom = is_convertible_to_from_v<To, From...>;
+    template <typename To, typename... From> concept     ConvertibleToFrom =  is_convertible_to_from_v<To, From...>;
     template <typename To, typename... From> concept not_ConvertibleToFrom = not_convertible_to_from_v<To, From...>;
 
 
@@ -406,17 +589,21 @@ namespace sib {
     constexpr bool is_container_v =
         // до лучших времён
         // requires ( requires (T v) { for (auto it : v) {} } )
-        (requires (T & v) {
-            { std::begin(v) == std::end(v) } -> std::same_as<bool>;
-    }
-            )
+        (
+            requires (T & v)
+            {
+                { std::begin(v) == std::end(v) } -> std::same_as<bool>;
+            }
+        )
         and
-        (requires (decltype(std::begin(std::declval<T&>())) it) {
-            { *it };
-            { ++it } -> std::same_as<decltype(it)&>;
-    }
-            )
-        ;
+        (
+            requires (decltype(std::begin(std::declval<T&>())) it)
+            {
+                { *it };
+                { ++it } -> std::same_as<decltype(it)&>;
+            }
+        )
+    ;
 
     template <typename T>
     constexpr bool not_container_v = not is_container_v<T>;
@@ -522,19 +709,19 @@ namespace sib {
 
     template <typename T>
         requires (
-    std::is_pointer_v<T>
-        or (
-            not_function_v<T>
-            and
-            std::is_convertible_v<T, void const*>
+            std::is_pointer_v<T>
+            or
+            (       not_function_v<T>
+                and
+                    std::is_convertible_v<T, void const*>
             )
-        or (
-            is_like_pointer<decltype(std::declval<T>().operator->())>::value
-            and
-            std::is_same_v<
-            std::remove_pointer_t< decltype(std::declval<T>().operator->()) >,
-            decltype(std::declval<T>().operator *())
-            >
+            or
+            (       is_like_pointer<decltype(std::declval<T>().operator->())>::value
+                and
+                    std::is_same_v<
+                        std::remove_pointer_t< decltype(std::declval<T>().operator->()) >,
+                        decltype(std::declval<T>().operator *())
+                    >
             )
         )
         struct is_like_pointer<T> : std::true_type {};
@@ -620,7 +807,7 @@ namespace sib {
     template <typename T>
     struct not_like_string : std::bool_constant<not is_like_string<T>::value> {};
 
-    template <typename T> constexpr bool  is_like_string_v = is_like_string<T>::value;
+    template <typename T> constexpr bool  is_like_string_v =  is_like_string<T>::value;
     template <typename T> constexpr bool not_like_string_v = not_like_string<T>::value;
 
     template <typename T> concept     LikeString = is_like_string_v<T>;
@@ -641,10 +828,10 @@ namespace sib {
     constexpr bool is_unique_v<T> = true;
 
     template <typename... Ts>
-    constexpr bool is_unique_v<type_list<Ts...>> = is_unique_v<Ts...>;
+    constexpr bool is_unique_v<type_pack<Ts...>> = is_unique_v<Ts...>;
 
     template <typename... Ts>
-    constexpr bool is_unique_v<type_list<type_list<Ts...>>> = true;
+    constexpr bool is_unique_v<type_pack<type_pack<Ts...>>> = true;
 
 
 
@@ -658,12 +845,12 @@ namespace sib {
     struct is_sorted_helper
     {
         static constexpr size_t middle = sizeof...(Ts) / 2;
-        using split = separat_type_list<middle, type_list<Ts...>>;
+        using split = types_separat<middle, type_pack<Ts...>>;
         using head = typename split::head;
         using tail = typename split::tail;
 
         static constexpr bool value =
-                type_less_v< type_last_t<head>, type_first_t<tail> >
+                type_less_v< types_last_t<head>, types_first_t<tail> >
             and is_sorted_helper<head>::value
             and is_sorted_helper<tail>::value
         ;
@@ -671,6 +858,18 @@ namespace sib {
 
     template <typename T>
     struct is_sorted_helper<T>
+    {
+        static constexpr bool value = true;
+    };
+
+    template <typename... Ts>
+    struct is_sorted_helper<type_pack<Ts...>>
+    {
+        static constexpr bool value = is_sorted_v<Ts...>;
+    };
+
+    template <typename... Ts>
+    struct is_sorted_helper<type_pack<type_pack<Ts...>>>
     {
         static constexpr bool value = true;
     };
@@ -686,6 +885,16 @@ namespace sib {
     {
         static constexpr bool value = true;
     };
+
+
+
+// ----------------------------------------------------------------------------------- pointer
+
+    template <typename T>
+    static constexpr inline auto ptr_to_int(T* pointer) noexcept
+    {
+        return reinterpret_cast<std::uintptr_t const>(pointer);
+    }
 
 
 
