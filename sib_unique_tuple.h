@@ -45,10 +45,11 @@ namespace sib {
     using TUniqueTuple = detail::_TUniqueTuple_<Ts...>;
 
     template <typename... Ts>
-    using MakeUniqueTuple = specialization_templ_t<detail::_TUniqueTuple_, sorted_type_list_t<Ts...>>;
+        requires(sib::is_unique_v<Ts...>)
+    using MakeUniqueTuple = specialization_templ_t<detail::_TUniqueTuple_, types_sequence_t<type_list<Ts...>>>;
 
     template <typename... Args>
-    constexpr MakeUniqueTuple<Args...> make_unique_tuple(Args&&... args)
+    constexpr auto make_unique_tuple(Args&&... args)
         noexcept(noexcept(MakeUniqueTuple<Args...>(args...)))
     {
         return MakeUniqueTuple<Args...>(args...);

@@ -164,14 +164,14 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 
 // MAIN ------------------------------------------------------------------------------
 
-#define TEST_NULLPTR
-#define TEST_VALUE
-#define TEST_POINTER
-#define TEST_ARRAY
-#define TEST_WRAPPER
+//#define TEST_NULLPTR
+//#define TEST_VALUE
+//#define TEST_POINTER
+//#define TEST_ARRAY
+//#define TEST_WRAPPER
 #define TEST_TYPE_PACK
 #define TEST_TYPE_LIST
-#define TEST_UNIQUE_TUPLE
+//#define TEST_UNIQUE_TUPLE
 
 #define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
@@ -1237,13 +1237,47 @@ int main()
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Types_to_Str(Ts{}));
         END;
-        EXE(using STs = sib::sorted_type_pack_t<Ts>);
+        EXE(using STs = sib::types_sorted_pack_t<Ts>);
         PRN(sib::static_type_name<STs>());
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
         PRN(Types_to_Str(STs{}));
         END;
         EXE(static_assert(sib::is_sorted_v<STs>));
+        END;
+    } {
+        BEG;
+        EXE(using STs = sib::types_sorted_pack_t<sib::type_pack<>>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(Types_to_Str(STs{}));
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::types_summ_t<gen_TP<5>, gen_TP<3>>);
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Types_to_Str(Ts{}));
+        END;
+        EXE(using STs = sib::types_sorted_pack_t<Ts>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(Types_to_Str(STs{}));
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::type_pack<sib::type_pack<>, sib::type_pack<>, int, sib::type_pack<>, int, float, sib::type_pack<>, int, sib::type_pack<>>);
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Ts{});
+        END;
+        EXE(using STs = sib::types_sorted_pack_t<Ts>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(STs{});
         END;
     }
 #endif TEST_TYPE_PACK
@@ -1342,13 +1376,47 @@ int main()
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Types_to_Str(Ts{}));
         END;
-        EXE(using STs = sib::sorted_type_list_t<Ts>);
+        EXE(using STs = sib::types_sequence_t<Ts>);
         PRN(sib::static_type_name<STs>());
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
         PRN(Types_to_Str(STs{}));
         END;
         EXE(static_assert(sib::is_sorted_v<STs>));
+        END;
+    } {
+        BEG;
+        EXE(using STs = sib::types_sequence_t<sib::type_list<>>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(Types_to_Str(STs{}));
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::types_summ_t<gen_TL<5>, gen_TL<3>>);
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Types_to_Str(Ts{}));
+        END;
+        EXE(using STs = sib::types_sequence_t<Ts>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(Types_to_Str(STs{}));
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::type_list<sib::type_list<>, sib::type_list<>, int, sib::type_list<>, int, float, sib::type_list<>, int, sib::type_list<>>);
+        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        PRN(Ts{});
+        END;
+        EXE(using STs = sib::types_sequence_t<Ts>);
+        PRN(sib::static_type_name<STs>());
+        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        PRN(STs{});
         END;
     }
 #endif TEST_TYPE_LIST

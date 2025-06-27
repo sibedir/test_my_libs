@@ -10,13 +10,13 @@
 
 namespace sib {
 
-    template <typename>
+    template <typename...>
     using always_false = std::false_type;
 
-    template <typename T>
-    constexpr bool always_false_v = always_false<T>::value;
+    template <typename... Ts>
+    constexpr bool always_false_v = always_false<Ts...>::value;
 
-    template <typename>
+    template <typename...>
     using always_void_t = void;
 
 
@@ -114,8 +114,9 @@ namespace sib {
                 template <typename, typename> struct types_summ;
                 template <size_t  , typename> struct types_separat;
 
-                template <typename...> struct sorted_type_pack;
-                template <typename...> struct sorted_type_list;
+                template <typename...> struct types_sorted_pack;
+                
+                template <typename> struct types_sequence;
 
     // USING & CONST
 
@@ -133,8 +134,8 @@ namespace sib {
                 template <size_t N, typename Ts> using types_head = typename types_separat<N, Ts>::head;
                 template <size_t N, typename Ts> using types_tail = typename types_separat<N, Ts>::tail;
 
-                template <typename... Ts> using  sorted_type_pack_t = typename sorted_type_pack<Ts...>::pack;
-                template <typename... Ts> using  sorted_type_list_t = typename sorted_type_list<Ts...>::list;
+                template <typename... Ts> using types_sorted_pack_t = typename types_sorted_pack<Ts...>::pack;
+                template <typename    Ts> using types_sequence_t    = typename types_sequence   <Ts   >::types;
 
     // IMPLEMENTATION
 
@@ -344,7 +345,7 @@ namespace sib {
 
     // https://stackoverflow.com/a/64795244/23601704
     template <typename... Types>
-    struct sorted_type_pack
+    struct types_sorted_pack
     {
     private:
 
@@ -378,6 +379,12 @@ namespace sib {
         template <typename   > struct sort;
         template <typename TL> using  sort_t = typename sort<TL>::pack;
 
+        template <>
+        struct sort<type_pack<>>
+        {
+            using pack = type_pack<>;
+        };
+
         template <typename T>
         struct sort<type_pack<T>>
         {
@@ -405,23 +412,26 @@ namespace sib {
     };
 
     template <typename... Ts>
-    struct sorted_type_pack<type_pack<Ts...>>
+    struct types_sorted_pack<type_pack<Ts...>>
     {
-        using pack = sorted_type_pack_t<Ts...>;
+        using pack = types_sorted_pack_t<Ts...>;
     };
 
     template <typename... Ts>
-    struct sorted_type_pack<type_list<Ts...>>
+    struct types_sorted_pack<type_list<Ts...>>
     {
-        using pack = sorted_type_pack_t<Ts...>;
+        using pack = types_sorted_pack_t<Ts...>;
     };
 
 
 
-    struct ___sorted_type_list_base___ { struct PASS {}; };
+    // sequence
+
+    struct ___types_sequence_base___ { struct PASS {}; };
         
-    template <typename... Types>
-    struct sorted_type_list : protected ___sorted_type_list_base___
+    template <template <typename...> typename TsTempl, typename... Types>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_sequence<TsTempl<Types...>> : protected ___types_sequence_base___
     {
     private:
 
@@ -431,7 +441,7 @@ namespace sib {
         template <>
         struct collapse<>
         {
-            using type = type_list<>;
+            using type = TsTempl<>;
         };
 
         template <typename F, typename... Ts>
@@ -446,59 +456,50 @@ namespace sib {
         template <typename Cond, typename... Ts>
         using right = collapse_t< std::conditional_t<type_more_v<Ts, Cond>, Ts, PASS> ... >;
 
-        template <typename...   > struct sort;
+        template <typename   > struct organizer;
+        template <typename TL> using  organizer_t = organizer<TL>::types;
 
         template <>
-        struct sort<type_list<>>
+        struct organizer<type_list<>>
         {
-            using type = type_list<>;
+            using types = TsTempl<>;
         };
 
         template <typename T>
-        struct sort<type_list<T>>
+        struct organizer<TsTempl<T>>
         {
-            using type = type_list<T>;
+            using types = TsTempl<T>;
         };
 
         template <typename A, typename B>
-        struct sort<type_list<A, B>>
+        struct organizer<TsTempl<A, B>>
         {
-            using type = std::conditional_t<type_less_v<A, B>, type_list<A, B>, type_list<B, A>>;
+            using types = std::conditional_t<type_less_v<A, B>, TsTempl<A, B>, TsTempl<B, A>>;
         };
 
         template <typename...> struct Ls_M_Rs;
 
         template <typename M, typename... Ls, typename... Rs>
-        struct Ls_M_Rs<type_list<Ls...>, M, type_list<Rs...>>
+        struct Ls_M_Rs<TsTempl<Ls...>, M, TsTempl<Rs...>>
         {
-            using res = type_list<Ls..., M, Rs...>;
+            using res = TsTempl<Ls..., M, Rs...>;
         };
 
         template <typename F, typename... Ts>
-        struct sort<type_list<F, Ts...>>
+        struct organizer<TsTempl<F, Ts...>>
         {
-            using type = typename Ls_M_Rs<
-                typename sort<left <F, Ts...>>::type,
+            using types = typename Ls_M_Rs<
+                typename organizer_t<left <F, Ts...>>,
                 F,
-                typename sort<right<F, Ts...>>::type
+                typename organizer_t<right<F, Ts...>>
             >::res;
         };
 
     public:
-        using list = typename sort<type_list<Types...>>::type;
+        using types = organizer_t<TsTempl<Types...>>;
     };
 
-    template <typename... Ts>
-    struct sorted_type_list<type_list<Ts...>>
-    {
-        using list = sorted_type_list_t<Ts...>;
-    };
 
-    template <typename... Ts>
-    struct sorted_type_list<type_pack<Ts...>>
-    {
-        using list = sorted_type_list_t<Ts...>;
-    };
 
     // ----------------------------------------------------------------------------------- type traits
 
