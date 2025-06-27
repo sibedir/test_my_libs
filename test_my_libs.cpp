@@ -1418,11 +1418,6 @@ int main()
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
         PRN(STs{});
         END;
-    } {
-        BEG;
-        EXE(using Ts = sib::types_sequence_t<gen_TL<100>>);
-        PRN(Types_to_Str(Ts{}));
-        END;
     }
 #endif TEST_TYPE_LIST
 
