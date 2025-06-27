@@ -169,9 +169,9 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 //#define TEST_POINTER
 //#define TEST_ARRAY
 //#define TEST_WRAPPER
-#define TEST_TYPE_PACK
-#define TEST_TYPE_LIST
-//#define TEST_UNIQUE_TUPLE
+//#define TEST_TYPE_PACK
+//#define TEST_TYPE_LIST
+#define TEST_UNIQUE_TUPLE
 
 #define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
@@ -1231,7 +1231,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = gen_TP<20>);
+        EXE(using Ts = sib::types_tail<10, gen_TP<30>>);
         PRN(sib::static_type_name<Ts>());
         std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
@@ -1371,7 +1371,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = gen_TL<20>);
+        EXE(using Ts = sib::types_tail<10, gen_TL<30>>);
         std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Types_to_Str(Ts{}));
@@ -1535,15 +1535,20 @@ int main()
         END;
     } {
         BEG;
-        EXE(sib::MakeUniqueTuple<gen_TP<50>> ut1{});
-        std::cout << "    length     = " << sib::static_type_name<decltype(ut1)>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<decltype(ut1)::pack>::size << "\n";
+        EXE(using UT1 = sib::MakeUniqueTuple<gen_TP<10>>);
+        EXE(UT1 ut1{});
+        std::cout << "    length     = " << sib::static_type_name<UT1>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<UT1::types<sib::type_pack>>::size << "\n";
+        PRN(Types_to_Str(UT1::types<sib::type_pack>{}));
         END;
-        EXE(sib::MakeUniqueTuple<gen_TL<50>> ut2{});
-        std::cout << "    length     = " << sib::static_type_name<decltype(ut2)>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<decltype(ut2)::pack>::size << "\n";
+        EXE(using TL = decltype(gen_TL<20>{}.get_tail<10>()));
+        EXE(using UT2 = sib::MakeUniqueTuple<TL>);
+        EXE(UT2 ut2{});
+        std::cout << "    length     = " << sib::static_type_name<UT2>().size() << "\n";
+        std::cout << "    type count = " << sib::types_info<UT2::types<sib::type_list>>::size << "\n";
+        PRN(Types_to_Str(UT2::types<sib::type_list>{}));
         END;
-        EXE(std::is_same_v<decltype(ut1), decltype(ut2)>);
+        PRN(std::is_same_v<UT1 _ UT2>);
         END;
     } {
         BEG;

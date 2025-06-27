@@ -36,30 +36,40 @@ namespace sib {
 
     // ----------------------------------------------------------------------------------- type name
 
-    /* https://stackoverflow.com/a/56766138/23601704 */
+    /* https://stackoverflow.com/a/64490578/23601704 */
+
+    namespace detail {
+
+        template <typename T>
+        constexpr std::string_view __STN__() noexcept
+        {
+            #ifdef __clang__
+                return __PRETTY_FUNCTION__;
+            #elif defined(__GNUC__)
+                return __PRETTY_FUNCTION__;
+            #elif defined(_MSC_VER)
+                return __FUNCSIG__;
+            #else
+                #error "Unsupported compiler!"
+            #endif
+        }
+
+    }
+
     template <typename T>
-    constexpr auto static_type_name() noexcept
+    constexpr std::string_view static_type_name() noexcept
     {
-        std::string_view name, prefix, suffix;
-#ifdef __clang__
-        name = __PRETTY_FUNCTION__;
-        prefix = "auto sib::static_type_name() [T = ";
-        suffix = "]";
-#elif defined(__GNUC__)
-        name = __PRETTY_FUNCTION__;
-        prefix = "constexpr auto sib::static_type_name() [with T = ";
-        suffix = "]";
-#elif defined(_MSC_VER)
-        name = __FUNCSIG__;
-        prefix = "auto __cdecl sib::static_type_name<";
-        suffix = ">(void) noexcept";
-#else
-        static_assert(false, "Unsupported compiler!");
-#endif
-        name.remove_prefix(prefix.size());
-        name.remove_suffix(suffix.size());
+        constexpr auto prefix = detail::__STN__<void>().find("void");
+        constexpr auto suffix = detail::__STN__<void>().size() - prefix - 4;
+
+        auto name = detail::__STN__<T>();
+
+        name.remove_prefix(prefix);
+        name.remove_suffix(suffix);
+
         return name;
     }
+
 
     template <typename T>
     constexpr auto static_type_name(T&& arg) noexcept
