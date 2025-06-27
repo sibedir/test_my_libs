@@ -114,8 +114,7 @@ namespace sib {
                 template <typename, typename> struct types_summ;
                 template <size_t  , typename> struct types_separat;
 
-                template <typename...> struct types_sorted_pack;
-                
+                template <typename> struct types_sorted;
                 template <typename> struct types_sequence;
 
     // USING & CONST
@@ -134,8 +133,8 @@ namespace sib {
                 template <size_t N, typename Ts> using types_head = typename types_separat<N, Ts>::head;
                 template <size_t N, typename Ts> using types_tail = typename types_separat<N, Ts>::tail;
 
-                template <typename... Ts> using types_sorted_pack_t = typename types_sorted_pack<Ts...>::pack;
-                template <typename    Ts> using types_sequence_t    = typename types_sequence   <Ts   >::types;
+                template <typename Ts> using types_sorted_t   = typename types_sorted   <Ts>::types;
+                template <typename Ts> using types_sequence_t = typename types_sequence <Ts>::types;
 
     // IMPLEMENTATION
 
@@ -344,8 +343,9 @@ namespace sib {
     // sort
 
     // https://stackoverflow.com/a/64795244/23601704
-    template <typename... Types>
-    struct types_sorted_pack
+    template <template <typename...> typename TsTempl, typename... Types>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct types_sorted<TsTempl<Types...>>
     {
     private:
 
@@ -353,24 +353,24 @@ namespace sib {
         template <typename TL1, typename TL2> using  merge_t = typename merge<TL1, TL2>::type;
 
         template <typename... Ts>
-        struct merge<type_pack<>, type_pack<Ts...>>
+        struct merge<TsTempl<>, TsTempl<Ts...>>
         {
-            using type = type_pack<Ts...>;
+            using type = TsTempl<Ts...>;
         };
 
         template <typename... Ts>
-        struct merge<type_pack<Ts...>, type_pack<>>
+        struct merge<TsTempl<Ts...>, TsTempl<>>
         {
-            using type = type_pack<Ts...>;
+            using type = TsTempl<Ts...>;
         };
 
         template <typename A, typename... As, typename B, typename... Bs>
-        struct merge<type_pack<A, As...>, type_pack<B, Bs...>>
+        struct merge<TsTempl<A, As...>, TsTempl<B, Bs...>>
         {
             using type = std::conditional_t<
                 type_less_v<A, B>,
-                types_summ_t<type_pack<A>, merge_t<type_pack<As...>, type_pack<B, Bs...>>>,
-                types_summ_t<type_pack<B>, merge_t<type_pack<A, As...>, type_pack<Bs...>>>
+                types_summ_t<TsTempl<A>, merge_t<TsTempl<As...>, TsTempl<B, Bs...>>>,
+                types_summ_t<TsTempl<B>, merge_t<TsTempl<A, As...>, TsTempl<Bs...>>>
             >;
         };
 
@@ -380,47 +380,35 @@ namespace sib {
         template <typename TL> using  sort_t = typename sort<TL>::pack;
 
         template <>
-        struct sort<type_pack<>>
+        struct sort<TsTempl<>>
         {
-            using pack = type_pack<>;
+            using pack = TsTempl<>;
         };
 
         template <typename T>
-        struct sort<type_pack<T>>
+        struct sort<TsTempl<T>>
         {
-            using pack = type_pack<T>;
+            using pack = TsTempl<T>;
         };
 
         template <typename A, typename B>
-        struct sort<type_pack<A, B>>
+        struct sort<TsTempl<A, B>>
         {
-            using pack = std::conditional_t<type_less_v<A, B>, type_pack<A, B>, type_pack<B, A>>;
+            using pack = std::conditional_t<type_less_v<A, B>, TsTempl<A, B>, TsTempl<B, A>>;
         };
 
         template <typename... Ts>
-        struct sort<type_pack<Ts...>>
+        struct sort<TsTempl<Ts...>>
         {
             static constexpr size_t middle = sizeof...(Ts) / 2;
             using pack = merge_t<
-                sort_t<typename types_separat<middle, type_pack<Ts...>>::head>,
-                sort_t<typename types_separat<middle, type_pack<Ts...>>::tail>
+                sort_t<typename types_separat<middle, TsTempl<Ts...>>::head>,
+                sort_t<typename types_separat<middle, TsTempl<Ts...>>::tail>
             >;
         };
 
     public:
-        using pack = sort_t<type_pack<Types...>>;
-    };
-
-    template <typename... Ts>
-    struct types_sorted_pack<type_pack<Ts...>>
-    {
-        using pack = types_sorted_pack_t<Ts...>;
-    };
-
-    template <typename... Ts>
-    struct types_sorted_pack<type_list<Ts...>>
-    {
-        using pack = types_sorted_pack_t<Ts...>;
+        using types = sort_t<TsTempl<Types...>>;
     };
 
 
@@ -436,7 +424,7 @@ namespace sib {
     private:
 
         template <typename...   > struct collapse;
-        template <typename... Ts> using  collapse_t = collapse<Ts...>::type;
+        template <typename... Ts> using  collapse_t = typename collapse<Ts...>::type;
 
         template <>
         struct collapse<>
@@ -457,10 +445,10 @@ namespace sib {
         using right = collapse_t< std::conditional_t<type_more_v<Ts, Cond>, Ts, PASS> ... >;
 
         template <typename   > struct organizer;
-        template <typename TL> using  organizer_t = organizer<TL>::types;
+        template <typename Ts> using  organizer_t = typename organizer<Ts>::types;
 
         template <>
-        struct organizer<type_list<>>
+        struct organizer<TsTempl<>>
         {
             using types = TsTempl<>;
         };
@@ -841,64 +829,52 @@ namespace sib {
     template <typename T>
     constexpr bool is_unique_v<T> = true;
 
-    template <typename... Ts>
-    constexpr bool is_unique_v<type_pack<Ts...>> = is_unique_v<Ts...>;
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    constexpr bool is_unique_v<TsTempl<Ts...>> = is_unique_v<Ts...>;
 
-    template <typename... Ts>
-    constexpr bool is_unique_v<type_pack<type_pack<Ts...>>> = true;
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    constexpr bool is_unique_v<TsTempl<TsTempl<Ts...>>> = true;
 
 
 
     // sorted
 
-    template <typename...   >         struct is_sorted_helper;
-    template <typename... Ts> constexpr bool is_sorted_v = is_sorted_helper<Ts...>::value;
-    template <typename... Ts>         struct is_sorted : std::bool_constant<is_sorted_v<Ts...>> {};
+    template <typename... Ts>         struct is_sorted;
+    template <typename... Ts> constexpr bool is_sorted_v = is_sorted<Ts...>::value;
 
-    template <typename... Ts>
-    struct is_sorted_helper
-    {
-        static constexpr size_t middle = sizeof...(Ts) / 2;
-        using split = types_separat<middle, type_pack<Ts...>>;
-        using head = typename split::head;
-        using tail = typename split::tail;
+    //template <typename... Ts>
+    //struct is_sorted_helper
+    //{
+    //    static constexpr size_t middle = sizeof...(Ts) / 2;
+    //    using split = types_separat<middle, type_pack<Ts...>>;
+    //    using head = typename split::head;
+    //    using tail = typename split::tail;
 
-        static constexpr bool value =
-                type_less_v< types_last_t<head>, types_first_t<tail> >
-            and is_sorted_helper<head>::value
-            and is_sorted_helper<tail>::value
-        ;
-    };
+    //    static constexpr bool value =
+    //            type_less_v< types_last_t<head>, types_first_t<tail> >
+    //        and is_sorted_helper<head>::value
+    //        and is_sorted_helper<tail>::value
+    //    ;
+    //};
+
+    template <>
+    struct is_sorted<> : std::bool_constant<true> {};
 
     template <typename T>
-    struct is_sorted_helper<T>
-    {
-        static constexpr bool value = true;
-    };
+    struct is_sorted<T> : std::bool_constant<true> {};
 
-    template <typename... Ts>
-    struct is_sorted_helper<type_pack<Ts...>>
-    {
-        static constexpr bool value = is_sorted_v<Ts...>;
-    };
+    template <typename A, typename B, typename... Ts>
+    struct is_sorted<A, B, Ts...> : std::bool_constant<type_less_v<A, B> and is_sorted_v<B, Ts...>> {};
 
-    template <typename... Ts>
-    struct is_sorted_helper<type_pack<type_pack<Ts...>>>
-    {
-        static constexpr bool value = true;
-    };
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct is_sorted<TsTempl<Ts...>> : std::bool_constant<is_sorted_v<Ts...>> {};
 
-    template <typename... Ts>
-    struct is_sorted_helper<type_list<Ts...>>
-    {
-        static constexpr bool value = is_sorted_v<Ts...>;
-    };
-
-    template <typename... Ts>
-    struct is_sorted_helper<type_list<type_list<Ts...>>>
-    {
-        static constexpr bool value = true;
-    };
+    template <template <typename...> typename TsTempl, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+    struct is_sorted<TsTempl<TsTempl<Ts...>>> : std::bool_constant<true> {};
 
 
 

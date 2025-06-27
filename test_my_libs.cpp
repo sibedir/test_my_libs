@@ -1237,7 +1237,7 @@ int main()
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Types_to_Str(Ts{}));
         END;
-        EXE(using STs = sib::types_sorted_pack_t<Ts>);
+        EXE(using STs = sib::types_sorted_t<Ts>);
         PRN(sib::static_type_name<STs>());
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
@@ -1247,7 +1247,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using STs = sib::types_sorted_pack_t<sib::type_pack<>>);
+        EXE(using STs = sib::types_sorted_t<sib::type_pack<>>);
         PRN(sib::static_type_name<STs>());
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
@@ -1260,7 +1260,7 @@ int main()
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Types_to_Str(Ts{}));
         END;
-        EXE(using STs = sib::types_sorted_pack_t<Ts>);
+        EXE(using STs = sib::types_sorted_t<Ts>);
         PRN(sib::static_type_name<STs>());
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
@@ -1273,7 +1273,7 @@ int main()
         std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
         PRN(Ts{});
         END;
-        EXE(using STs = sib::types_sorted_pack_t<Ts>);
+        EXE(using STs = sib::types_sorted_t<Ts>);
         PRN(sib::static_type_name<STs>());
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
@@ -1417,6 +1417,11 @@ int main()
         std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
         std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
         PRN(STs{});
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::types_sequence_t<gen_TL<100>>);
+        PRN(Types_to_Str(Ts{}));
         END;
     }
 #endif TEST_TYPE_LIST
