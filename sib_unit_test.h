@@ -1,254 +1,374 @@
 ﻿#pragma once
 
-#include <utility>
-#include <iostream>
+#ifdef SIB_DEBUG
 
-#include "sib_type_info.h"
-#include "sib_support.h"
+    #include <iostream>
+    #include <sstream>
+    #include <utility>
+    #include <string>
+    #include <mutex>
+    
+    using namespace std::string_literals;
+    
+    #include "sib_type_info.h"
+    #include "sib_support.h"
+   
+    namespace sib {
+    namespace debug {
+    
+        extern bool const is_initialized_unit_test_module;
 
-extern bool const is_initialized_unit_test_module;
-
-// ----------------------------------------------------------------------------------- debug print
-
-struct debug_endl_t {};
-
-constexpr debug_endl_t debug_endl;
-
-namespace {
-
-    struct fake_outstream_type
-    {
-        template <typename T>
-        void operator << (T const &) const { std::cout << "???"; }
-    };
-
-    static constexpr fake_outstream_type fake_outstream{};
-
-    template <typename T = char>
-    constexpr auto& outstream() {
-        if      constexpr (requires (T const & v) { std:: cout << v; }) { return std::cout     ; }
-        else if constexpr (requires (T const & v) { std::wcout << v; }) { return std::wcout    ; }
-        else                                                            { return fake_outstream; }
-    }
-
-    template <sib::Char Ch>
-    inline void _debug_print_char(Ch ch)
-    {
-        if constexpr (sib::is_any_of_v<Ch, char8_t, char16_t, char32_t>)
+        inline std::mutex mtx{};
+    
+        #ifdef SIB_DEBUG_CUSTOM_STREAM
+            inline auto& outstream = SIB_DEBUG_CUSTOM_STREAM;
+        #else
+            inline auto& outstream = std::cout;
+        #endif // SIB_DEBUG_STREAM_CUSTOM
+    
+        using TOutStream = std::remove_reference_t<decltype(outstream)>;
+        using OutStrmCh = typename TOutStream::char_type;
+        using OutStrmTr = typename TOutStream::traits_type;
+        using TBufer = std::basic_ostringstream<OutStrmCh, OutStrmTr, std::allocator<OutStrmCh>>;
+    
+        class string : public decltype(std::declval<TBufer>().str())
         {
-            outstream() << '#' << static_cast<long>(ch);
+        public:
+            using basic_string = decltype(std::declval<TBufer>().str());
+    
+            string() = default;
+
+            string(basic_string const & str) : basic_string(          str ) {}
+            string(basic_string      && str) : basic_string(std::move(str)) {}
+    
+            template <LikeString Str>
+            string(Str const & str) : basic_string(str.begin(), str.end()) {}
+    
+            template <Char Ch>
+            string(Ch const * const ptr) : string(std::basic_string<Ch, std::char_traits<Ch>, std::allocator<Ch>>(ptr)) {}
+    
+            string(value_type ch) : basic_string{ ch } {}
+        };
+    
+        inline void under_lock_print(string const& str)
+        {
+            std::lock_guard lock(mtx);
+            outstream << str;
+            outstream.flush();
         }
-        else
+    
+        // Преобразование символов в строку, для вывода в outstream
+        //   - управляющие символы выводятся как \<ESC> (<ESC> — символ, обозначающий Escape sequences)
+        //   - символы в диапазоне OutStrmCh выводятся как есть
+        //   - остальные выводятся как \i<NUM> (<NUM> — числовое значение по основанию 10)
+        template <Char Ch>
+        string bufer_char(Ch ch)
         {
             switch (ch)
             {
-                case '\0': outstream() << "\\0"; break;
-                case '\a': outstream() << "\\a"; break;
-                case '\b': outstream() << "\\b"; break;
-                case '\t': outstream() << "\\t"; break;
-                case '\n': outstream() << "\\n"; break;
-                case '\v': outstream() << "\\v"; break;
-                case '\f': outstream() << "\\f"; break;
-                case '\r': outstream() << "\\r"; break;
-                default:   outstream<Ch>() << ch;
+                case '\0': return "\\0" ; // Null character 
+                case '\a': return "\\a" ; // Alert (bell)   
+                case '\b': return "\\b" ; // Backspace      
+                case '\t': return "\\t" ; // Horizontal tab 
+                case '\n': return "\\n" ; // New line       
+                case '\v': return "\\v" ; // Vertical tab   
+                case '\f': return "\\f" ; // Form feed      
+                case '\r': return "\\r" ; // Carriage return
+                case  27 : return "\\e" ; // Escape         
+                case '\\': return "\\\\"; // Backslash      
+                case '\"': return "\\\""; // Double quote   
             }
-        }
-    }
-
-    template <typename T>
-    inline void _debug_print(T const & val)
-    {
-        if      constexpr (std::is_same_v<T, debug_endl_t>)
-        {
-            outstream() << '\n';
-        }
-        else if constexpr (std::is_same_v<T, bool>)
-        {
-            outstream() << (val ? "true" : "false");
-        }
-        else if constexpr (sib::is_char_v<T>)
-        {
-            outstream() << "'";
-            _debug_print_char(val);
-            outstream() << "'";
-        }
-        else if constexpr (sib::is_container_v<T>)
-        {
-            if constexpr (sib::is_like_string_v<T>) {
-                outstream() << "\"";
-                auto begin = std::begin(val);
-                auto end   = std::end  (val);
-                for (auto it = begin; it != end; ++it)
-                {
-                    if (it - begin > 32) {
-                        outstream() << "...";
-                        break;
-                    }
-                    _debug_print_char(*it);
-                }
-                outstream() << "\"";
-            }
-            else
+    
+            auto sch = static_cast<OutStrmCh>(ch);
+            if (static_cast<Ch>(sch) == ch)
             {
-                if (std::begin(val) == std::end(val))
-                {
-                    outstream() << "{}";
-                    return;
-                }
-
-                outstream() << "{ ";
-                auto end   = std::end  (val);
-                auto it    = std::begin(val);
-                _debug_print(*it);
-                for (++it; it != end; ++it)
-                {
-                    outstream() << ", ";
-                    _debug_print(*it);
-                }
-                outstream() << " }";
+                return sch;
             }
+                       
+            return "\\i" + std::to_string(static_cast<unsigned>(ch));
         }
-        else if constexpr (sib::is_like_function_v<T>)
+    
+    
+    
+        inline int DISCLOSURE_STRING_LENGTH = 16;
+    
+        template <typename T>
+        string disclosure(T const & val)
         {
-            outstream() << "function";
-        }
-        else if constexpr (sib::is_like_pointer_v<T>)
-        {
-            if (!val)
+            TBufer data1;
             {
-                outstream() << nullptr;
-                return;
-            }
-
-            if constexpr (std::is_convertible_v<T, void const*>)
-            {
-                outstream() << static_cast<void const*>(val);
-            }
-            else
-            {
-                outstream() << val;
-            }
-
-            if constexpr (sib::may_be_indirect_v<T>)
-            {
-                if constexpr (sib::is_char_v<sib::base_indirection_type<T>>)
-                {
-                    outstream() << " \"";
-                    for (sib::base_indirection_type<T>* it = val; *it != '\0'; ++it)
-                    {
-                        if (it - val > 16)
+                if constexpr                                                    ( std::is_same_v<T, bool>           ) {
+    
+                    if constexpr (requires { TBufer() << std::boolalpha; })
+                        { return (TBufer() << std::boolalpha << val).str(); }
+                    else
+                        { return val ? "true" : "false";                    }
+    
+                } else if constexpr                                             ( sib::is_char_v<T>                 ) {
+    
+                    return (TBufer() << '\'' << bufer_char(val) << '\'').str();
+    
+                } else if constexpr                                             ( sib::is_container_v<T>            ) {
+    
+                    if constexpr (sib::is_like_string_v<T>) {
+    
+                        if (std::size(val) == 0)
                         {
-                            outstream() << "...";
-                            break;
+                            return "\"\"";
                         }
-                        _debug_print_char(*it);
+                        else
+                        {
+                            TBufer data;
+                            data << "\"";
+                            auto begin = std::begin(val);
+                            auto end   = std::end  (val);
+                            for (auto it = begin; it != end; ++it)
+                            {
+                                if (it - begin > DISCLOSURE_STRING_LENGTH)
+                                {
+                                    data << "...";
+                                    return data.str();
+                                }
+                                data << bufer_char(*it);
+                            }
+                            data << "\"";
+                            return data.str();
+                        }
+    
+                    } else {
+    
+                        if (std::size(val) == 0)
+                        {
+                            return "{}";
+                        }
+                        else
+                        {
+                            TBufer data;
+                            data << "{ ";
+                            auto begin = std::begin(val);
+                            auto end   = std::end(val);
+                            auto it    = begin;
+                            data << disclosure(*it);
+                            for (++it; it != end; ++it)
+                            {
+                                if (it - begin > DISCLOSURE_STRING_LENGTH)
+                                {
+                                    data << "...";
+                                    return data.str();
+                                }
+                                data << ", " << disclosure(*it);
+                            }
+                            data << " }";
+                            return data.str();
+                        }
+    
                     }
-                    outstream() << "\"";
-                }
-                else
-                {
-                    outstream() << " { ";
-                    _debug_print(*val);
-                    outstream() << " }";
+    
+                } else if constexpr                                             ( sib::is_like_function_v<T>        ) {
+    
+                    return "function";
+    
+                } else if constexpr                                             ( sib::is_like_pointer_v<T>         ) {
+    
+                    TBufer data;
+                    data << '[' << static_cast<void const * const>(val) << ']';
+                    if constexpr (sib::may_be_indirect_v<T>)
+                    {
+                        if (static_cast<bool>(val))
+                        {
+                            using Content = sib::base_indirection_type<T>;
+    
+                            if constexpr (sib::is_char_v<Content>)
+                            {
+                                data << " \"";
+                                for (Content* it = val; *it != '\0'; ++it)
+                                {
+                                    if (it - val > DISCLOSURE_STRING_LENGTH)
+                                    {
+                                        data << "...";
+                                        return data.str();
+                                    }
+                                    data << bufer_char(*it);
+                                }
+                                data << "\"";
+                            }
+                            else
+                            {
+                                data << " { " << disclosure(*val) << " }";
+                            }
+                        }
+                    }
+                    return data.str();
+    
+                } else {
+    
+                    if constexpr (requires (T const& v) { TBufer{} << v; })
+                        { return (TBufer() << val).str(); }
+                    else
+                        { return "???";                   }
+    
                 }
             }
-        }
-        else
+        };
+
+        template <typename... Args>
+        string msg(Args&&... args)
         {
-            outstream<decltype(val)>() << val;
+            TBufer buf;
+            (buf << ... << std::forward<Args>(args));
+            return buf.str();
         }
-    }
-}
+    
+    
+    
+    // ----------------------------------------------------------------------------------- debugging step by step
 
-template <typename T>
-inline void debug_print(T const & first)
-{
-    _debug_print(first);
-}
+        enum TBreakPointLevel { BP_ALL = 0, BP_END, BP_BEGIN, BP_CUSTOM, BP_NONE };
+        
+        inline TBreakPointLevel current_break_level = BP_CUSTOM;
+        
+        inline sib::Tconsole_reactions_to_keys debugging_reactions_to_keys{};
+        
+        bool const is_initialized_unit_test_module = []()
+            {
+                debugging_reactions_to_keys[sib::KC_ESC  ] = []() { abort();                         };
+                debugging_reactions_to_keys[sib::KC_ENTER] = []() {                                  };
+                debugging_reactions_to_keys[sib::KC_F5   ] = []() { current_break_level = BP_CUSTOM; };
+                debugging_reactions_to_keys[sib::KC_F10  ] = []() { current_break_level = BP_BEGIN;  };
+                debugging_reactions_to_keys[sib::KC_F11  ] = []() { current_break_level = BP_END;    };
+                debugging_reactions_to_keys[sib::KC_F12  ] = []() { current_break_level = BP_ALL;    };
+                return true;
+            }
+        ();
+        
+        inline void SetBreakPoint(TBreakPointLevel bp_level = BP_ALL)
+        {
+            static std::set<sib::TKeyCode> const debugging_keys = []()
+                {
+                    std::set<sib::TKeyCode> res;
+                    for (auto it = debugging_reactions_to_keys.begin(); it != debugging_reactions_to_keys.end(); ++it)
+                    {
+                        res.insert(it->first);
+                    }
+                    return res;
+                }
+            ();
+        
+            if (current_break_level > bp_level) return;
+            if (current_break_level == BP_END and bp_level == BP_BEGIN) return;
+        
+            if (bp_level == BP_CUSTOM)
+            {
+                under_lock_print("       - break point -       [Enter] - continue   [Esc] - abort\n");
+            }
+        
+            sib::WaitReactToKeyCodes(debugging_keys, debugging_reactions_to_keys);
+        }
+        
+        static int BEG_COUNTR = 0;
 
-template <typename T, typename... Ts>
-inline void debug_print(T const & first, Ts&& ... others)
-{
-    _debug_print(first);
-     debug_print(std::forward<Ts>(others)...);
-}
+    } // namespace debug 
+    } // namespace sib
+
+    #define _STR(...) #__VA_ARGS__
+
+    #define BEG                                                     \
+        do {                                                        \
+            sib::debug::TBufer buf;                                 \
+            buf << ++sib::debug::BEG_COUNTR                         \
+                << " ----------------------------------------------------------------------------------------------\n"; \
+            sib::debug::under_lock_print(buf.str());                \
+        } while(0);                                                 \
+        sib::debug::SetBreakPoint(sib::debug::BP_BEGIN)             \
+    
+    #define DEF(type, inst, init)                                   \
+        type inst init;                                             \
+        do {                                                        \
+            auto __typ__ = sib::type_name<decltype(inst)>();        \
+            sib::debug::TBufer buf;                                 \
+            buf <<   "d   " << sib::debug::string(_STR(type))        \
+                <<      " " << sib::debug::string(_STR(inst))        \
+                <<      " " << sib::debug::string(_STR(init))        \
+                << "  ->  " << __typ__                              \
+                << "\n";                                            \
+            sib::debug::under_lock_print(buf.str());                \
+        } while(0);                                                 \
+        sib::debug::SetBreakPoint(sib::debug::BP_ALL)               \
+    
+    #define DEFA(type, inst, init, type_assert)                     \
+        DEF(type, inst, init);                                      \
+        static_assert(                                              \
+            std::is_same_v<decltype(inst), type_assert>,            \
+            "Incorrect assumption in DEFA about the inferred type ( decltype("#inst") is not "#type_assert" )." \
+        )                                                           \
+    
+    #define PRN(inst)                                               \
+        do {                                                        \
+            auto __typ__ = sib::type_name<decltype(inst)>();        \
+            sib::debug::TBufer buf;                                 \
+            buf << "p       |" << sib::debug::string(_STR(inst))     \
+                <<     "  =  " << sib::debug::disclosure(inst)      \
+                <<      " -> " << __typ__                           \
+                << "\n";                                            \
+            sib::debug::under_lock_print(buf.str());                \
+        } while(0);                                                 \
+        sib::debug::SetBreakPoint(sib::debug::BP_ALL)               \
+    
+    #define PRNAS(inst, type_as)                                    \
+        do {                                                        \
+            auto __typ__ = sib::type_name<decltype(inst)>();        \
+            sib::debug::TBufer buf;                                 \
+            buf << "p       |" << sib::debug::string(_STR(inst))     \
+                <<        " {" << __typ__  << "}"                   \
+                <<     " -> {" << sib::debug::string(_STR(type_as)) << "}" \
+                <<     "  =  " << sib::debug::disclosure(static_cast<type_as>(inst)) \
+                << "\n";                                            \
+            sib::debug::under_lock_print(buf.str());                \
+        } while(0);                                                 \
+        sib::debug::SetBreakPoint(sib::debug::BP_ALL)               \
+
+    #define EXE(...)                                                \
+        do {                                                        \
+            sib::debug::TBufer buf;                                 \
+            buf << "e   " << #__VA_ARGS__ << ";\n";                 \
+            sib::debug::under_lock_print(buf.str());                \
+        } while(0);                                                 \
+        __VA_ARGS__;                                                \
+        sib::debug::SetBreakPoint(sib::debug::BP_ALL)               \
+
+    #define MSG(...)                                                \
+        do {                                                        \
+            sib::debug::TBufer buf;                                 \
+            buf << "m   " << sib::debug::msg(__VA_ARGS__) << "\n"; \
+            sib::debug::under_lock_print(buf.str());                \
+        } while(0);                                                 \
+        sib::debug::SetBreakPoint(sib::debug::BP_ALL)               \
 
 
+    #define BP sib::debug::SetBreakPoint(sib::debug::BP_CUSTOM)     \
 
-// ----------------------------------------------------------------------------------- debugging step by step
+    #define END                                                     \
+        sib::debug::under_lock_print('\n');                         \
+        sib::debug::SetBreakPoint(sib::debug::BP_END)               \
 
-enum TBreakPointLevel { BP_ALL = 0, BP_END, BP_BEGIN, BP_CUSTOM, BP_NONE };
+#else
 
-extern TBreakPointLevel current_break_level; // debin default value is BP_CUSTOM;
+    #define BEG
+    
+    #define DEF(type, inst, init) type inst init
+    
+    #define DEFA(type, inst, init, type_assert) DEF(type, inst, init)
+    
+    #define PRN(inst)
+    
+    #define PRNAS(inst, type_as)
 
-extern inline void SetBreakPoint(TBreakPointLevel bp_level = BP_ALL);
+    #define EXE(...) __VA_ARGS__
 
-#define STR(...) #__VA_ARGS__
+    #define MSG(...)
 
-#define _ ,
+    #define BP
 
-static int BEG_COUNTR = 0;
+    #define END
 
-#define BEG                                                     \
-    std::cout << ++BEG_COUNTR << " ----------------------------------------------------------------------------------------------\n\n";\
-    SetBreakPoint(BP_BEGIN)                                     \
-
-#define DEF(type, inst, init)                                   \
-    type inst init;                                             \
-    do {                                                        \
-        auto __typ__ = sib::type_name(inst);                    \
-        std::string inst_str { STR(init) };                     \
-        std::cout                                               \
-            <<   "d   " << STR(type)                            \
-            <<      " " << #inst                                \
-            <<      " " << inst_str                             \
-            << "  ->  " << __typ__                              \
-            << "\n";                                            \
-    } while(0);                                                 \
-    SetBreakPoint(BP_ALL)                                       \
-
-
-#define DEFA(type, inst, init, type_assert)                     \
-    DEF(type, inst, init);                                      \
-    static_assert(                                              \
-        std::is_same_v<decltype(inst), type_assert>,            \
-        "Incorrect assumption in DEFA about the inferred type ( decltype("#inst") is not "#type_assert" )." \
-    )                                                           \
-
-#define PRN(instance)                                           \
-    do {                                                        \
-        auto __typ__ = sib::type_name(instance);                \
-        std::cout                                               \
-            << "p       |" << STR(instance)                     \
-            <<     "  =  ";                                     \
-        debug_print(instance);                                  \
-        std::cout                                               \
-            <<      " -> " << __typ__                           \
-            << '\n';                                            \
-    } while(0);                                                 \
-    SetBreakPoint(BP_ALL)                                       \
-
-#define PRNAS(instance, type_as)                                \
-    do {                                                        \
-        auto __typ__    = sib::type_name(instance);             \
-        std::cout                                               \
-            << "p       |" << STR(instance)                     \
-            <<        " {" << __typ__  << "}"                   \
-            <<     " -> {" << #type_as << "}"                   \
-            <<     "  =  ";                                     \
-        debug_print(static_cast<type_as>(instance));            \
-        std::cout                                               \
-            << '\n';                                            \
-    } while(0);                                                 \
-    SetBreakPoint(BP_ALL)                                       \
-
-#define EXE(...)                                                \
-    std::cout << "e   " << #__VA_ARGS__ << ";\n";               \
-    __VA_ARGS__;                                                \
-    SetBreakPoint(BP_ALL)                                       \
-
-#define BP SetBreakPoint(BP_CUSTOM)                             \
-
-#define END                                                     \
-    std::cout << "\n";                                          \
-    SetBreakPoint(BP_END)                                       \
+#endif // SIB_DEBUG                                          

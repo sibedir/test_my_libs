@@ -7,12 +7,13 @@
 #include "sib_wrapper.h"
 #include "sib_unique_tuple.h"
 #include "sib_support.h"
+
+//#define SIB_DEBUG
 #include "sib_unit_test.h"
 
 using namespace std::string_literals;
 
 // -----------------------------------------------------------------------------------
-
 
 #define MY_ASSERTIONS_FOR_TYPES(type, p, lp, mbi, f, lf, a, c)                              \
                                                                                             \
@@ -25,6 +26,8 @@ using namespace std::string_literals;
     static_assert( c   sib::is_container_v     <type>, #type" "#c  " is_container"     );   \
 
 #define _MAFT MY_ASSERTIONS_FOR_TYPES
+
+#define _ ,
 
 // -----------------------------------------------------------------------------------
 
@@ -98,8 +101,7 @@ inline std::string Types_to_Str()
 }
 
 template <template <typename...> typename Templ, typename... Ts>
-    requires(std::is_base_of_v<sib::container_of_types, Templ<>>)
-inline std::string Types_to_Str(Templ<Ts...> const &)
+inline std::string Types_to_Str(Templ<Ts...> const&)
 {
     return Types_to_Str<Ts...>();
 }
@@ -144,10 +146,10 @@ struct _function
 
 struct MyClass
 {
-    MyClass() = default;
-    MyClass(MyClass const&) = default;
-    MyClass(MyClass&&) = default;
-    ~MyClass() { std::cout << "~MyClass()"; }
+    MyClass()                { std::cout << "MyClass()\n"               ; }
+    MyClass(MyClass const &) { std::cout << "MyClass(MyClass const &)\n"; }
+    MyClass(MyClass      &&) { std::cout << "MyClass(MyClass &&)\n"     ; }
+    ~MyClass() { std::cout << "~MyClass()\n"; }
     operator char const* () const { return "MyClass"; }
 };
 
@@ -164,31 +166,97 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 
 // MAIN ------------------------------------------------------------------------------
 
-//#define TEST_NULLPTR
-//#define TEST_VALUE
-//#define TEST_POINTER
-//#define TEST_ARRAY
-//#define TEST_WRAPPER
-//#define TEST_TYPE_PACK
-//#define TEST_TYPE_LIST
+#define TEST_UNIT_TEST
+#define TEST_NULLPTR
+#define TEST_VALUE
+#define TEST_POINTER
+#define TEST_ARRAY
+#define TEST_WRAPPER
+#define TEST_TYPE_PACK
+#define TEST_TYPE_LIST
 #define TEST_UNIQUE_TUPLE
 
-#define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
+#ifdef TEST_UNIT_TEST
+    #ifndef SIB_DEBUG
+        #undef TEST_UNIT_TEST
+    #endif
+#endif
+
+//#define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
 int main()
 {
-    setlocale(LC_ALL, "Russian");
+    setlocale(LC_ALL, "ru-ru");
 
-    //sib::WaitAnyKey();
-    //return 0;
+    #ifdef SIB_DEBUG
+        sib::debug::DISCLOSURE_STRING_LENGTH = 32;
+    #endif // SIB_DEBUG
+
+    //sib::WaitAnyKey(); return 0;
+
+#ifdef TEST_UNIT_TEST
+    {
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                            unit test                                             ");
+        MSG("**************************************************************************************************");
+        MSG();
+    } {
+        BEG;
+        for (int i = 0; i < 33; ++i)
+        {
+            MSG(i, " - '", sib::debug::bufer_char(char(i)), "'");
+        }
+        END;
+    } {
+        BEG;
+        MSG();
+        MSG(sib::debug::bufer_char(char(1)));
+        MSG(sib::debug::bufer_char(char(10)));
+        MSG(sib::debug::bufer_char(char(100)));
+        MSG(sib::debug::bufer_char(char(-56)));
+        MSG();
+        MSG(sib::debug::bufer_char(unsigned char(1)));
+        MSG(sib::debug::bufer_char(unsigned char(10)));
+        MSG(sib::debug::bufer_char(unsigned char(100)));
+        MSG(sib::debug::bufer_char(unsigned char(-56)));
+        MSG();
+        MSG(sib::debug::bufer_char(char8_t(1)));
+        MSG(sib::debug::bufer_char(char8_t(10)));
+        MSG(sib::debug::bufer_char(char8_t(100)));
+        MSG(sib::debug::bufer_char(char8_t(-56)));
+        MSG();
+        MSG(sib::debug::bufer_char(char16_t(1)));
+        MSG(sib::debug::bufer_char(char16_t(10)));
+        MSG(sib::debug::bufer_char(char16_t(100)));
+        MSG(sib::debug::bufer_char(char16_t(-56)));
+        MSG(sib::debug::bufer_char(char16_t(1000)));
+        MSG(sib::debug::bufer_char(char16_t(-1000)));
+        MSG();
+        MSG(sib::debug::bufer_char(char32_t(1)));
+        MSG(sib::debug::bufer_char(char32_t(10)));
+        MSG(sib::debug::bufer_char(char32_t(100)));
+        MSG(sib::debug::bufer_char(char32_t(-56)));
+        MSG(sib::debug::bufer_char(char32_t(1000)));
+        MSG(sib::debug::bufer_char(char32_t(-1000)));
+        MSG();
+        MSG(sib::debug::bufer_char(wchar_t(1)));
+        MSG(sib::debug::bufer_char(wchar_t(10)));
+        MSG(sib::debug::bufer_char(wchar_t(100)));
+        MSG(sib::debug::bufer_char(wchar_t(-56)));
+        MSG(sib::debug::bufer_char(wchar_t(1000)));
+        MSG(sib::debug::bufer_char(wchar_t(-1000)));
+        END;
+    }
+#endif TEST_UNIT_TEST
 
 #ifdef TEST_NULLPTR
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                             sib::TNullPtr                                             \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                         sib::TNullPtr                                            ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         DEFA(sib::TNullPtr, ptr, = nullptr, sib::TNullPtr);
@@ -243,11 +311,11 @@ int main()
 
 #ifdef TEST_VALUE
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                              sib::TValue                                              \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                            sib::TValue                                           ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         EXE(int   _i5 = 555);
@@ -446,9 +514,11 @@ int main()
         PRN(E);
         PRN(V);
         END;
+
         EXE(E = e_2);
         PRN(E);
         END;
+
         EXE(E = V);
         PRN(E);
         END;
@@ -457,7 +527,6 @@ int main()
         DEF(TEnum, e1, =               e_1);
         DEF(TEnumClass, e2, = TEnumClass::e_2);
         DEF(TEnumClass123, e3, = TEnumClass123::_3);
-
         PRN(e1);
         PRNAS(e2, std::underlying_type_t<decltype(e2)>);
         PRNAS(e3, std::underlying_type_t<decltype(e3)>);
@@ -522,8 +591,6 @@ int main()
         PRNAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
-        using qqq = typename sib::TValue<TEnum>::underlying_type;
-
         DEF(sib::TValue<TEnum        >, ve1, { e_1 });
         DEF(sib::TValue<TEnumClass   >, ve2, { 100 });
         DEF(sib::TValue<TEnumClass123>, ve3, { 100 });
@@ -542,6 +609,7 @@ int main()
         PRN(fcr1);
         PRN(fcr2);
         END;
+
         EXE(val = 42);
         PRN(val);
         PRN(fcr2);
@@ -556,24 +624,33 @@ int main()
         PRN(val);
         PRN(ir);
         END;
+
         EXE(val = 0);
         PRN(val);
         PRN(ir);
         END;
+
         EXE(ir = 42);
         PRN(val);
         PRN(ir);
+        END;
+    } {
+        BEG;
+        EXE(sib::TNullPtr i = nullptr);
+        EXE(sib::TValue<void *> v = i);
+        PRN(i);
+        PRN(v);
         END;
     }
 #endif TEST_VALUE
 
 #ifdef TEST_POINTER
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                             sib::TPointer                                             \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                         sib::TPointer                                            ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         DEF(TFn*, ptrFoo, (foo));
@@ -582,6 +659,7 @@ int main()
         PRN(ptrFoo);
         PRN(PointerFoo);
         END;
+
         EXE(auto r1 = (*foo)(4.2f));
         EXE(auto r2 = (*ptrFoo)(4.2f));
         EXE(auto r3 = (*PointerFoo)(4.2f));
@@ -589,6 +667,7 @@ int main()
         PRN(r2);
         PRN(r3);
         END;
+
         EXE(r1 = foo(1.2f));
         EXE(r2 = ptrFoo(1.2f));
         EXE(r3 = PointerFoo(1.2f));
@@ -603,6 +682,7 @@ int main()
         PRN(ptr);
         PRN(&i);
         END;
+
         EXE(*ptr = 999);
         EXE(int i2 = *ptr);
         PRN(ptr);
@@ -621,6 +701,7 @@ int main()
         DEF(sib::TPointer<int>, ptr, );
         PRN(ptr);
         END;
+
         DEF(int, i, = 10);
         EXE(ptr = &i);
         EXE(*ptr = 222222);
@@ -631,6 +712,7 @@ int main()
         DEF(sib::TPointer<int const>, ptr, );
         PRN(ptr);
         END;
+
         DEF(int, i, = 10);
         EXE(ptr = &i);
         PRN(ptr);
@@ -640,22 +722,27 @@ int main()
         DEF(sib::TPointer<int>, ptr, );
         PRN(ptr);
         END;
+
         EXE(ptr = new int);
         PRN(ptr);
         END;
+
         EXE(*ptr = 99);
         PRN(ptr);
         END;
+
         DEF(int*, ip, = ptr);
         EXE(ptr = static_cast<int*>(operator new(sizeof(int))));
         PRN(ptr);
         PRN(ip);
         EXE(delete ip);
         END;
+
         DEF(void*, vp, = static_cast<void*>(ptr));
         PRN(vp);
         EXE(delete ptr);
         END;
+
         DEF(int, i, = 78778787);
         EXE(ptr = &i);
         PRN(ptr);
@@ -666,9 +753,11 @@ int main()
         DEFA(sib::TPointer, ptr, (&s), sib::TPointer<std::string>);
         PRN(ptr);
         END;
+
         EXE(s = "!!!!!!!!!!!!");
         PRN(ptr);
         END;
+
         EXE((*ptr)[2] = '_');
         PRN(s);
         END;
@@ -679,6 +768,7 @@ int main()
         DEFA(sib::TPointer, ptr, (&s1), sib::TPointer<std::string const>);
         PRN(ptr);
         END;
+
         EXE(ptr = &s2);
         PRN(ptr);
         END;
@@ -688,6 +778,7 @@ int main()
         DEF(sib::TPointer<std::string const> const, ptr, (&s));
         PRN(ptr);
         END;
+
         EXE(s = "!!!!!!!!");
         PRN(ptr);
         END;
@@ -699,6 +790,7 @@ int main()
         PRN(cptr_i);
         PRN(ptr_ci);
         END;
+
         EXE(ptr_ci = cptr_i);
         EXE(i = 222);
         PRN(cptr_i);
@@ -709,6 +801,7 @@ int main()
         DEFA(sib::TPointer, ptr, ("qwerty"), sib::TPointer<char const>);
         PRN(ptr);
         END;
+
         EXE(ptr = "!!!!!!!!!!!!!!");
         PRN(ptr);
         END;
@@ -722,10 +815,12 @@ int main()
         DEF(sib::TPointer<void>, ptr, (nullptr));
         PRN(ptr);
         END;
+
         DEF(int, i, = 777);
         EXE(ptr = &i);
         PRN(ptr);
         END;
+
         EXE(ptr = nullptr);
         DEF(int*, ip, = static_cast<int*>(ptr));
         PRN(ip);
@@ -752,22 +847,32 @@ int main()
         PRN(ptr);
         EXE(delete ptr);
         END;
+
+        DEF(MyClass, o,);
+        EXE(ptr = &o);
+        PRN(ptr);
+        END;
     } {
         BEG;
         DEF(int, i, = 10);
         DEF(sib::TPointer, ptr, = &i);
         PRN(ptr);
         END;
+
         PRN(ptr++);
         END;
+
         PRN(--ptr);
         END;
+
         EXE(--ptr);
         PRN(ptr);
         END;
+
         EXE(ptr += 4);
         PRN(ptr);
         END;
+
         EXE(ptr = ptr - 3);
         PRN(ptr);
         END;
@@ -793,11 +898,11 @@ int main()
 
 #ifdef TEST_ARRAY
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                              sib::TArray                                              \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                           sib::TArray                                            ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         DEF(int, i, = 222);
@@ -817,6 +922,7 @@ int main()
         DEFA(sib::TArray, arr, { 1 _ 2 _ 3 _ 4 _ 5 }, sib::TArray<int _ 5>);
         PRN(arr);
         END;
+
         EXE(arr = { 8 _ 7 _ 6 _ 5 _ 4 });
         PRN(arr);
         END;
@@ -832,6 +938,7 @@ int main()
         DEFA(sib::TArray, arr, { '1' _ '2' _ '3' _ '4' _ '5' _ '\0' }, sib::TArray<char _ 6>);
         PRN(arr);
         END;
+
         EXE(arr = "87654");
         PRN(arr);
         END;
@@ -842,11 +949,13 @@ int main()
         PRN(ch10);
         PRN(arr);
         END;
+
         EXE(arr = "123456789");
         EXE(strcpy_s(ch10, arr.data()));
         PRN(arr);
         PRN(ch10);
         END;
+
         EXE(ch10[3] = 0);
         PRN(ch10);
         PRN(arr);
@@ -854,6 +963,7 @@ int main()
         PRN(ch10);
         PRN(arr);
         END;
+
         EXE(std::cout << ch10 << '\n');
         EXE(std::cout << arr << '\n');
         END;
@@ -864,6 +974,7 @@ int main()
         PRN(arr1);
         PRN(arr2);
         END;
+
         EXE(arr1 = arr2);
         EXE(arr2[1] = '0');
         PRN(arr1);
@@ -883,6 +994,7 @@ int main()
         DEFA(sib::TArray, arr, { cch _ cch _ cch _ cch0 }, sib::TArray<char _ 4>);
         PRN(arr);
         END;
+
         EXE(using ch_c_arr4 = char const [4]);
         EXE(ch_c_arr4& ch_c_arr4_r = arr);
         PRN(ch_c_arr4_r);
@@ -897,11 +1009,13 @@ int main()
         DEFA(sib::TArray, arr, = "999", sib::TArray<char _ 4>);
         PRN(arr);
         END;
+
         EXE(using ch_c_arr4 = char const [4]);
         EXE(ch_c_arr4 & ch_c_arr4_r = arr);
         EXE(arr[0] = '_');
         PRN(ch_c_arr4_r);
         END;
+
         EXE(using ch_arr4 = char[4]);
         EXE(ch_arr4 & ch_arr4_r = arr);
         EXE(ch_arr4_r[2] = '_');
@@ -913,25 +1027,30 @@ int main()
         DEF(sib::TArray<char const _ 7>, arr1, = "qwerty");
         PRN(arr1);
         END;
+
         DEF(sib::TArray<char _ 7>, arr2, = arr1);
         PRN(arr2);
         END;
+
         DEF(char const *, ch, = arr1);
         EXE(arr2[1] = '_');
         PRN(arr1);
         PRN(arr2);
         PRN(ch);
         END;
+
         EXE(using ch_arr = char [7]);
         EXE(ch_arr& ch_arr_r = arr2);
         EXE(arr2 = "asdfgh");
         PRN(arr2);
         PRN(ch_arr_r);
         END;
+
         EXE(ch_arr_r[4] = '_');
         PRN(arr2);
         PRN(ch_arr_r);
         END;
+
         EXE(*arr2.begin() = '_');
         PRN(arr2);
         PRN(ch_arr_r);
@@ -949,9 +1068,11 @@ int main()
         DEFA(sib::TArray, arr, = charr, sib::TArray<char _ 10>);
         PRN(arr);
         END;
+
         EXE(arr = "!!!!!!000");
         PRN(arr);
         END;
+
         EXE(arr[2] = '_');
         PRN(arr);
         END;
@@ -966,9 +1087,11 @@ int main()
         DEFA(sib::TArray, arr, = starr, sib::TArray<int _ 4>);
         PRN(arr);
         END;
+
         EXE(arr = { 8 _ 8 _ 8 _ 8 });
         PRN(arr);
         END;
+
         EXE(arr[2] = 0);
         PRN(arr);
         END;
@@ -989,11 +1112,11 @@ int main()
 
 #ifdef TEST_WRAPPER
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                              TWrapper                                              \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                         sib::TWrapper                                            ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         DEF(int, i, = 1);
@@ -1001,11 +1124,13 @@ int main()
         PRN(i);
         PRN(w);
         END;
+
         EXE(w = 2);
         EXE(i = w);
         PRN(i);
         PRN(w);
         END;
+
         EXE(i = 3);
         EXE(w = i);
         PRN(i);
@@ -1055,6 +1180,7 @@ int main()
         PRN(i);
         PRN(w);
         END;
+
         EXE(*w = 3);
         PRN(i);
         PRN(w);
@@ -1076,7 +1202,7 @@ int main()
         DEF(decltype(auto), w, (sib::to_wrap(a)));
         PRN(a);
         PRN(w);
-        EXE(std::wcout << w << '\n');
+        EXE(std::cout << w << '\n');
         END;
     } {
         BEG;
@@ -1099,6 +1225,7 @@ int main()
         PRN(TEnum(tmp));
         PRNAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
         END;
+
         EXE(static_cast<int&>(tmp) = 444);
         EXE(static_cast<TEnum&>(tmp) = e_3);
         EXE(static_cast<TEnumClass123&>(tmp) = TEnumClass123::_1);
@@ -1107,9 +1234,11 @@ int main()
         PRN(TEnum(tmp));
         PRNAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
         END;
+
         DEF(TEnum, e, = tmp);
         PRN(e);
         END;
+
         EXE(e = e_2);
         EXE(sib::TValue<TEnum> ve);
         EXE(ve = e);
@@ -1144,11 +1273,11 @@ int main()
 
 #ifdef TEST_TYPE_PACK
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                           type pack                                              \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                           type pack                                              ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         EXE(using f1  = sib::types_first_t<A _ B _ C>);
@@ -1213,70 +1342,76 @@ int main()
         BEG;
         EXE(using Ts = gen_TP<_C>);
         PRN(sib::static_type_name<Ts>());
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
         END;
+
         EXE(using H = sib::types_head<_I _ Ts>);
         PRN(sib::static_type_name<H>());
-        std::cout << "    length     = " << sib::static_type_name<H>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<H>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<H>().size());
+        MSG("    type count = ", sib::types_info<H>::count);
         PRN(Types_to_Str(H{}));
         END;
+
         EXE(using T = sib::types_tail<_I _ Ts>);
         PRN(sib::static_type_name<T>());
-        std::cout << "    length     = " << sib::static_type_name<T>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<T>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<T>().size());
+        MSG("    type count = ", sib::types_info<T>::count);
         PRN(Types_to_Str(T{}));
         END;
     } {
         BEG;
         EXE(using Ts = sib::types_tail<10, gen_TP<30>>);
         PRN(sib::static_type_name<Ts>());
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
         END;
+
         EXE(using STs = sib::types_sorted_t<Ts>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
+
         EXE(static_assert(sib::is_sorted_v<STs>));
         END;
     } {
         BEG;
         EXE(using STs = sib::types_sorted_t<sib::type_pack<>>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
     } {
         BEG;
         EXE(using Ts = sib::types_summ_t<gen_TP<5>, gen_TP<3>>);
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
         END;
+
         EXE(using STs = sib::types_sorted_t<Ts>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
     } {
         BEG;
         EXE(using Ts = sib::type_pack<sib::type_pack<>, sib::type_pack<>, int, sib::type_pack<>, int, float, sib::type_pack<>, int, sib::type_pack<>>);
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Ts{});
         END;
+
         EXE(using STs = sib::types_sorted_t<Ts>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(STs{});
         END;
     }
@@ -1284,11 +1419,11 @@ int main()
 
 #ifdef TEST_TYPE_LIST
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                           type list                                              \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                           type list                                              ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         EXE(using f1  = sib::types_first_t<A _ B _ C>);
@@ -1353,69 +1488,75 @@ int main()
         BEG;
         EXE(using Ts = gen_TL<_C>);
         PRN(sib::static_type_name<Ts>());
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
         END;
+
         EXE(using H = sib::types_head<_I _ Ts>);
         PRN(sib::static_type_name<H>());
-        std::cout << "    length     = " << sib::static_type_name<H>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<H>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<H>().size());
+        MSG("    type count = ", sib::types_info<H>::count);
         PRN(Types_to_Str(H{}));
         END;
+
         EXE(using T = sib::types_tail<_I _ Ts>);
         PRN(sib::static_type_name<T>());
-        std::cout << "    length     = " << sib::static_type_name<T>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<T>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<T>().size());
+        MSG("    type count = ", sib::types_info<T>::count);
         PRN(Types_to_Str(T{}));
         END;
     } {
         BEG;
         EXE(using Ts = sib::types_tail<10, gen_TL<30>>);
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
         END;
+
         EXE(using STs = sib::types_sequence_t<Ts>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
+
         EXE(static_assert(sib::is_sorted_v<STs>));
         END;
     } {
         BEG;
         EXE(using STs = sib::types_sequence_t<sib::type_list<>>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
     } {
         BEG;
         EXE(using Ts = sib::types_summ_t<gen_TL<5>, gen_TL<3>>);
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
         END;
+
         EXE(using STs = sib::types_sequence_t<Ts>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
     } {
         BEG;
         EXE(using Ts = sib::type_list<sib::type_list<>, sib::type_list<>, int, sib::type_list<>, int, float, sib::type_list<>, int, sib::type_list<>>);
-        std::cout << "    length     = " << sib::static_type_name<Ts>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<Ts>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<Ts>().size());
+        MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Ts{});
         END;
+
         EXE(using STs = sib::types_sequence_t<Ts>);
         PRN(sib::static_type_name<STs>());
-        std::cout << "    length     = " << sib::static_type_name<STs>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<STs>::size << "\n";
+        MSG("    length     = ", sib::static_type_name<STs>().size());
+        MSG("    type count = ", sib::types_info<STs>::count);
         PRN(STs{});
         END;
     }
@@ -1423,11 +1564,11 @@ int main()
 
 #ifdef TEST_UNIQUE_TUPLE
     {
-        std::cout << "\n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "                                           TUniqueTuple                                           \n";
-        std::cout << "**************************************************************************************************\n";
-        std::cout << "\n";
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                        sib::TUniqueTuple                                         ");
+        MSG("**************************************************************************************************");
+        MSG();
     } {
         BEG;
         EXE(
@@ -1498,9 +1639,11 @@ int main()
         PRN(tmp.as<std::string>());
         PRN(tmp);
         END;
+
         EXE(tmp.as<int>() = 3.3);
         PRN(tmp.as<int>());
         END;
+
         DEF(float, f, = tmp);
         PRN(f);
         END;
@@ -1523,9 +1666,9 @@ int main()
         END;
     } {
         BEG;
-        DEF(auto, ut, = sib::make_unique_tuple("qwerty"s _ 111));
+        DEF(auto, ut, = sib::make_unique_tuple(L"qwerty"s _ 111));
         DEF(float, f, = ut);
-        DEF(std::string, s, = ut);
+        DEF(std::wstring, s, = ut);
         PRN(f);
         PRN(s);
         PRN(ut);
@@ -1537,17 +1680,19 @@ int main()
         BEG;
         EXE(using UT1 = sib::MakeUniqueTuple<gen_TP<10>>);
         EXE(UT1 ut1{});
-        std::cout << "    length     = " << sib::static_type_name<UT1>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<UT1::types<sib::type_pack>>::size << "\n";
-        PRN(Types_to_Str(UT1::types<sib::type_pack>{}));
+        MSG("    length     = ", sib::static_type_name<UT1>().size());
+        MSG("    type count = ", sib::types_info<UT1::types<sib::type_pack>>::count);
+        PRN(Types_to_Str(ut1));
         END;
+
         EXE(using TL = decltype(gen_TL<20>{}.get_tail<10>()));
         EXE(using UT2 = sib::MakeUniqueTuple<TL>);
         EXE(UT2 ut2{});
-        std::cout << "    length     = " << sib::static_type_name<UT2>().size() << "\n";
-        std::cout << "    type count = " << sib::types_info<UT2::types<sib::type_list>>::size << "\n";
-        PRN(Types_to_Str(UT2::types<sib::type_list>{}));
+        MSG("    length     = ", sib::static_type_name<UT2>().size());
+        MSG("    type count = ", sib::types_info<UT2::types<sib::type_list>>::count);
+        PRN(Types_to_Str(ut2));
         END;
+
         PRN(std::is_same_v<UT1 _ UT2>);
         END;
     } {
@@ -1557,12 +1702,11 @@ int main()
         BEG;
         END;
     } {
+    } {
         BEG;
         END;
     }
 #endif TEST_UNIQUE_TUPLE
-
-
 
     std::cout << "\n";
     sib::WaitKeyCodes(

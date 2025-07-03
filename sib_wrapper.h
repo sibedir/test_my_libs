@@ -104,18 +104,26 @@ namespace sib {
     public:
         using data_type = T;
     private:
+        using base_ptr_type = std::remove_pointer_t<T>;
         T data;
     public:
         constexpr TValue(     ) noexcept : data{   } {}
         constexpr TValue(T val) noexcept : data(val) {}
     
+        template <typename... Args>
+            requires (std::is_constructible_v<T, Args...>)
+        constexpr TValue(Args&&... args)
+            noexcept(noexcept(T(std::forward<Args>(args) ...)))
+            : data(std::forward<Args>(args) ...)
+        {}
+
         template <typename AnyT>
             requires (std::is_constructible_v<T, AnyT>)
-        constexpr TValue(TValue<AnyT> other)
+        constexpr TValue(TWrapper<AnyT> other)
             noexcept(noexcept(T(std::declval<AnyT>())))
             : data(other)
         {}
-    
+        
         constexpr operator T const & () const noexcept { return data; }
         constexpr operator T       & ()       noexcept { return data; }
 

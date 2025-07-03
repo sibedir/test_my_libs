@@ -122,7 +122,7 @@ namespace sib {
     template <typename T>
     auto type_name(T&&) noexcept
     {
-        return TTypeInfo<T>::full_name();
+        return type_name<T>();
     }
 
 } // namespace sib

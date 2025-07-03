@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <cstdlib>
+#include <iostream>
 #include <concepts>
 #include <string>
 #include <set>
@@ -31,6 +31,20 @@ namespace sib {
 
     template <template <typename...> typename Templ, typename... Ts>
     using specialization_templ_t = typename specialization_templ<Templ, Ts...>::type;
+
+
+
+    template <template <typename...> typename Templ, typename Like>
+    struct specialization_like;
+
+    template <template <typename...> typename Templ, template <typename...> typename Like, typename... Ts>
+    struct specialization_like<Templ, Like<Ts...>>
+    {
+        using type = Templ<Ts...>;
+    };
+
+    template <template <typename...> typename Templ, typename Like>
+    using specialization_like_t = typename specialization_like<Templ, Like>::type;
 
 
 
@@ -184,6 +198,8 @@ namespace sib {
 
     template <typename... Ts> struct type_pack : container_of_types {};
 
+    template <typename T>
+    using get_types_pack = specialization_like_t<type_pack, T>;
 
 
     // type_list
@@ -217,6 +233,11 @@ namespace sib {
 
 
 
+    template <typename T>
+    using get_types_list = specialization_like_t<type_list, T>;
+
+
+
     // info spec
 
     template <typename... Ts>
@@ -241,7 +262,7 @@ namespace sib {
         using pack = type_pack<Ts...>;
         using list = type_list<Ts...>;
 
-        static constexpr size_t size = sizeof...(Ts);
+        static constexpr size_t count = sizeof...(Ts);
     };
 
 
@@ -757,7 +778,7 @@ namespace sib {
 
     template <typename T>
     constexpr bool may_be_indirect_v =
-        is_like_pointer_v<T>
+            is_like_pointer_v<T>
         and not_function_v<T>
         and requires(T t) { *t; }
     ;
@@ -946,7 +967,15 @@ namespace sib {
     }
     */
 
-// ----------------------------------------------------------------------------------- working with console
+// ----------------------------------------------------------------------------------- convertion
+
+    extern inline std::wstring string_to_wstring(std::string const& str);
+
+    extern inline std::string wstring_to_string(std::wstring const& str);
+
+
+
+// ----------------------------------------------------------------------------------- console std::cout
 
     using TKeyCode = int;
 
