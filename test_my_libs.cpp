@@ -8,7 +8,7 @@
 #include "sib_unique_tuple.h"
 #include "sib_support.h"
 
-//#define SIB_DEBUG
+#define SIB_DEBUG
 #include "sib_unit_test.h"
 
 using namespace std::string_literals;
