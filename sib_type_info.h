@@ -22,7 +22,7 @@ namespace sib {
     struct TTypeInfo<T> {
     private:
         using rr_type = std::remove_reference_t<T>;
-    public:
+
         TTypeInfo() {};
         TTypeInfo(T&) {};
 
@@ -42,7 +42,6 @@ namespace sib {
             //    return #type;
             //}
             //else
-
 
                 _SIB_IF_ELSE_(std::vector<bool>)
                 _SIB_IF_ELSE_(std::vector<char>)

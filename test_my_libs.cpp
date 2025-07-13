@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <variant>
 
 #include "sib_wrapper.h"
 #include "sib_unique_tuple.h"
@@ -31,12 +32,16 @@ using namespace std::string_literals;
 
 // -----------------------------------------------------------------------------------
 
-static int foo(float f) { return static_cast<int>(f); }
-static int bar(float f) { return static_cast<int>(-f); }
+void anyproc1(float arg)       { std::cout << "anyproc1("   << arg <<   ");"; }
+void anyproc2(std::string arg) { std::cout << "anyproc2(\"" << arg << "\");"; }
+void anyproc3()                { std::cout << "anyproc3("          <<   ");"; }
 
-static auto baz(int         const &) { return "do baz(int)"s;          }
-static auto baz(double      const &) { return "do baz(double)"s;       }
-static auto baz(std::string const &) { return "do baz(std::string&)"s; }
+int foo(float f) { return static_cast<int>(f); }
+int bar(float f) { return static_cast<int>(-f); }
+
+auto baz(int         const &) { return "do baz(int)"s;          }
+auto baz(double      const &) { return "do baz(double)"s;       }
+auto baz(std::string const &) { return "do baz(std::string&)"s; }
 
 using TFn = decltype(foo);
 
@@ -149,6 +154,10 @@ struct MyClass
     MyClass()                { std::cout << "MyClass()\n"               ; }
     MyClass(MyClass const &) { std::cout << "MyClass(MyClass const &)\n"; }
     MyClass(MyClass      &&) { std::cout << "MyClass(MyClass &&)\n"     ; }
+
+    template <typename T>
+    MyClass(T arg) { std::cout << "MyClass(" << sib::type_name<T>() << ")\n"; }
+
     ~MyClass() { std::cout << "~MyClass()\n"; }
     operator char const* () const { return "MyClass"; }
 };
@@ -167,6 +176,7 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 // MAIN ------------------------------------------------------------------------------
 
 #define TEST_UNIT_TEST
+#define TEST_SUPPORT
 #define TEST_NULLPTR
 #define TEST_VALUE
 #define TEST_POINTER
@@ -189,10 +199,10 @@ int main()
     setlocale(LC_ALL, "ru-ru");
 
     #ifdef SIB_DEBUG
-        sib::debug::DISCLOSURE_STRING_LENGTH = 32;
+    sib::debug::DISCLOSURE_STRING_LENGTH = 32;
     #endif // SIB_DEBUG
 
-    //sib::WaitAnyKey(); return 0;
+    //sib::WaitAnyKey("...end"); return 0;
 
 #ifdef TEST_UNIT_TEST
     {
@@ -247,8 +257,128 @@ int main()
         MSG(sib::debug::bufer_char(wchar_t(1000)));
         MSG(sib::debug::bufer_char(wchar_t(-1000)));
         END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
     }
 #endif TEST_UNIT_TEST
+
+#ifdef TEST_SUPPORT
+    {
+        MSG();
+        MSG("**************************************************************************************************");
+        MSG("                                            unit test                                             ");
+        MSG("**************************************************************************************************");
+        MSG();
+    } {
+        BEG;
+        PRN(sib::is_convertible_from_tooneof_v<int _ float _ std::string>);
+        PRN(sib::convert_from_tooneof_t<int _ float _ std::string>{});
+        PRN(sib::is_convertible_from_tooneof_v<int _ float _ char _ std::string>);
+        PRN(sib::is_convertible_from_tooneof_v<int _ std::string _ std::vector<int>>);
+        PRN(sib::is_convertible_from_tooneof_v<int _ std::string _ sib::TWrapper<float> _ std::vector<int>>);
+        PRN(sib::convert_from_tooneof_t<int _ std::string _ sib::TWrapper<float> _ std::vector<int>>{});
+        PRN(sib::is_convertible_from_tooneof_v<int _ std::string _ sib::TWrapper<float> _ std::vector<int> _ sib::TWrapper<int>>);
+        END;
+    } {
+        struct C1 {};
+        struct C2 { // -> int
+            int i;
+            operator int const & () const { return i; }
+            operator int& () { return i; }
+        };
+        struct C3 { // -> C2
+            C2 c2;
+            C3() {};
+            C3(int const &) {};
+            operator C2& () { return c2; }
+        };
+        struct C4 { // -> C2
+            C2 c2;
+            C4() = default;
+            C4(C4 const&) = default;
+            C4(C4 &&) = default;
+            C4(int const &) {};
+            C4& operator= (C4 const& other) = default;
+        };
+
+        BEG;
+        EXE(static_assert(!std::is_convertible_v<C2, C4>));
+        EXE(static_assert( std::is_constructible_v<C4, C2>));
+        EXE(static_assert(!sib::is_convertible_from_to_v<C2, C4>));
+        EXE(static_assert( sib::is_constructible_to_from_v<C4, C2>));
+        END;
+        EXE(static_assert(!sib::is_convertible_from_tooneof_v<C1, C2, C3>));
+        EXE(static_assert( sib::is_convertible_from_tooneof_v<C3, C1, C2, C1>));
+        PRN( sib::convert_from_tooneof_t<C3 _ C1 _ C2 _ C1>{} );
+        EXE(static_assert( sib::is_convertible_from_tooneof_v<C3, C2, C1, int>));
+        PRN( sib::convert_from_tooneof_t<C3 _ C2 _ C1 _ int>{} );
+        EXE(static_assert( sib::is_convertible_from_tooneof_v<C2, C2, C1, C3>));
+        PRN( sib::convert_from_tooneof_t<C2 _ C2 _ C1 _ C3>{} );
+        EXE(static_assert( sib::is_convertible_from_tooneof_v<C2, C1, int, C3>));
+        PRN( sib::convert_from_tooneof_t<C2 _ C1 _ int _ C3>{} );
+        END;
+        EXE(static_assert(!sib::is_convertible_to_fromoneof_v<C1, C2, C3>));
+        EXE(static_assert( sib::is_convertible_to_fromoneof_v<int, C1, C2, C3>));
+        PRN( sib::convert_to_fromoneof_t<int _ C1 _ C2 _ C3>{} );
+        EXE(static_assert( sib::is_convertible_to_fromoneof_v<C3, C2, C1, int>));
+        EXE(static_assert( sib::is_convertible_to_fromoneof_v<C3, C1, int, MyClass>));
+        PRN( sib::convert_to_fromoneof_t<C3 _ C1 _ int _ MyClass>{} );
+        EXE(static_assert(!sib::is_convertible_to_fromoneof_v<C2, C2, C1, C3>));
+        EXE(static_assert( sib::is_convertible_to_fromoneof_v<C2, C2>));
+        EXE(static_assert(!sib::is_convertible_to_fromoneof_v<C2, C1>));
+        EXE(static_assert( sib::is_convertible_to_fromoneof_v<C2, C3>));
+        EXE(static_assert( sib::is_convertible_to_fromoneof_v<C2, C1, int, C3>));
+        PRN( sib::convert_to_fromoneof_t<C2 _ C1 _ int _ C3>{} );
+        END;
+    } {
+        struct C1 {}; // <- C1, C4
+        struct C2 {}; // <- C2
+        struct C3 {   // <- C2, C3
+            C3() {}
+            C3(C2 const&) {}
+        };
+        struct C4 : C1 { // <- C2, C4
+            C4() {}
+            C4(C2 const&) {}
+        };
+        struct C5 { // <- C2, C4
+            C5() {}
+            C5(C3 const&) {}
+        };
+
+        BEG;
+        EXE(static_assert(!sib::is_constructible_from_tooneof_v<C1, C2, C4, C3>));
+        EXE(static_assert( sib::is_constructible_from_tooneof_v<C1, C2, C1, C3>));
+        PRN( sib::construct_from_tooneof_t<C1 _ C2 _ C1 _ C3>{} );
+        EXE(static_assert( sib::is_constructible_from_tooneof_v<C4, C2, C1, C3>));
+        PRN( sib::construct_from_tooneof_t<C4 _ C2 _ C1 _ C3>{} );
+        EXE(static_assert(!sib::is_constructible_from_tooneof_v<C4, C2, C1, C4>));
+        END;
+        EXE(static_assert(!sib::is_constructible_to_fromoneof_v<C5, C1, C2, C3>));
+        EXE(static_assert( sib::is_constructible_to_fromoneof_v<C1, C2, C4, C3>));
+        PRN( sib::construct_to_fromoneof_t<C1 _ C2 _ C4 _ C3>{});
+        EXE(static_assert( sib::is_constructible_to_fromoneof_v<C1, C2, C1, C3>));
+        PRN( sib::construct_to_fromoneof_t<C1 _ C2 _ C1 _ C3>{});
+        EXE(static_assert(!sib::is_constructible_to_fromoneof_v<C1, C2, C4, C1, C3>));
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
+    } {
+        BEG;
+        END;
+    }
+#endif TEST_SUPPORT
 
 #ifdef TEST_NULLPTR
     {
@@ -1571,6 +1701,32 @@ int main()
         MSG();
     } {
         BEG;
+        using Ts = sib::types_sequence_t<sib::type_pack<int, std::set<int>, std::string>>;
+        using TsF = sib::types_first_t<Ts>;
+        using UT = sib::MakeUniqueTuple<int, std::set<int>, std::string>;
+        using UTTs = UT::types<sib::type_pack>;
+        using UTTsF = sib::types_first_t<UTTs>;
+        PRN(Ts{});
+        PRN(TsF{});
+        PRN(UT{});
+        PRN(UTTs{});
+        PRN(UTTsF{});
+
+        PRN(sib::is_constructible_from_tooneof_v<float _ int _ std::set<int> _ std::string>);
+        PRN(sib::is_constructible_from_to_v<float _ int>);
+        PRN(sib::is_constructible_from_to_v<float _ std::set<int>>);
+        PRN(sib::is_constructible_from_to_v<float _ std::string>);
+
+        PRN(sib::make_unique_tuple(42 _ std::string("qwerty") _ std::set<int>{}));
+        PRN(sib::make_unique_tuple(std::set<int>{} _ 42 _ std::string("qwerty")));
+        PRN(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}));
+        PRN(sib::make_unique_tuple(42 _ std::string("qwerty") _ std::set<int>{}).c_str());
+        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), int);
+        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), float);
+        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), std::vector<int>);
+        END;
+    } {
+        BEG;
         EXE(
             static_assert(std::is_same_v<
                 sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
@@ -1654,7 +1810,8 @@ int main()
         END;
     } {
         BEG;
-        DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
+        //DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
+        DEF(sib::MakeUniqueTuple<int _ std::string>, ut,);
         DEF(float, f, = ut);
         DEF(std::string, s, = ut);
         PRN(f);
@@ -1666,7 +1823,8 @@ int main()
         END;
     } {
         BEG;
-        DEF(auto, ut, = sib::make_unique_tuple(L"qwerty"s _ 111));
+        DEF(auto, ut, = sib::MakeUniqueTuple<std::wstring _ int>());
+        //DEF(auto, ut, = sib::make_unique_tuple(L"qwerty"s _ 111));
         DEF(float, f, = ut);
         DEF(std::wstring, s, = ut);
         PRN(f);
@@ -1702,6 +1860,8 @@ int main()
         BEG;
         END;
     } {
+        BEG;
+        END;
     } {
         BEG;
         END;

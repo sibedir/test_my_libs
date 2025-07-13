@@ -207,7 +207,8 @@ namespace sib {
     template <>
     struct type_list<> : container_of_types
     {
-        template <size_t N> requires(N == 0) static consteval auto get_tail()
+        template <size_t N> requires(N == 0)
+        static consteval auto get_tail()
         {
             return type_list<>{};
         }
@@ -216,14 +217,16 @@ namespace sib {
     template <typename F, typename... Ts>
     struct type_list<F, Ts...> : type_list<Ts...>
     {
-        template <size_t N, typename... Ps> consteval auto get_head()
+        template <size_t N, typename... Ps>
+        consteval auto get_head()
         {
             if constexpr (N == 0) { return type_list<Ps...   >{}; } else
             if constexpr (N == 1) { return type_list<Ps..., F>{}; } else
                                   { return type_list<   Ts...>{}.get_head<N-1, Ps..., F>(); }
         }
 
-        template <size_t N> consteval auto get_tail()
+        template <size_t N>
+        consteval auto get_tail()
         {
             if constexpr (N == 0) { return type_list<F, Ts...>{}; } else
             if constexpr (N == 1) { return type_list<   Ts...>{}; } else
@@ -335,7 +338,7 @@ namespace sib {
     // separat
   
     template <template <typename...> typename TsTempl, typename... Ts>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+//        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_separat<0, TsTempl<Ts...>>
     {
         using head = TsTempl<>;
@@ -343,16 +346,17 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename F, typename... Ts>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+//        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_separat<1, TsTempl<F, Ts...>>
     {
         using head = TsTempl<F>;
         using tail = TsTempl<Ts...>;
     };
 
-    template <size_t N, typename... Ts>
+    template <size_t N, template <typename...> typename TsTempl, typename... Ts>
+//        requires((N > 1) and (std::is_base_of_v<container_of_types, TsTempl<>>))
         requires(N > 1)
-    struct types_separat<N, type_pack<Ts...>>
+    struct types_separat<N, TsTempl<Ts...>>
     {
         using head = types_summ_t<
             types_head<    N/2, type_pack<Ts...>>,
@@ -446,13 +450,12 @@ namespace sib {
 
     // sequence
 
-    struct ___types_sequence_base___ { struct PASS {}; };
-        
     template <template <typename...> typename TsTempl, typename... Types>
         requires(std::is_base_of_v<container_of_types, TsTempl<>>)
-    struct types_sequence<TsTempl<Types...>> : protected ___types_sequence_base___
+    struct types_sequence<TsTempl<Types...>>
     {
     private:
+        struct PASS {};
 
         template <typename...   > struct collapse;
         template <typename... Ts> using  collapse_t = typename collapse<Ts...>::type;
@@ -530,89 +533,287 @@ namespace sib {
     template <template <typename...> typename Templ, typename... Ts>
     struct  is_specialization<Templ, Templ<Ts...>> : std::true_type {};
 
-    template <template <typename...> typename Templ, typename... Ts>
-    struct not_specialization : std::bool_constant<is_specialization<Templ, Templ<Ts...>>::value> {};
+    template <template <typename...> typename Templ, typename... Ts> constexpr bool is_specialization_v = is_specialization<Templ, Templ<Ts...>>::value;
 
-    template <template <typename...> typename Templ, typename... Ts> constexpr bool  is_specialization_v =  is_specialization<Templ, Templ<Ts...>>::value;
-    template <template <typename...> typename Templ, typename... Ts> constexpr bool not_specialization_v = not_specialization<Templ, Templ<Ts...>>::value;
-
-    template <typename T, template <typename...> typename Templ>  concept     Specialization =  is_specialization_v<Templ, T>;
-    template <typename T, template <typename...> typename Templ>  concept not_Specialization = not_specialization_v<Templ, T>;
+    template <typename T, template <typename...> typename Templ> concept Specialization =  is_specialization_v<Templ, T>;
 
 
 
     // any of ...
 
-    template <typename T, typename... Ts> constexpr bool  is_any_of_v = (std::is_same_v<T, Ts> or ...);
-    template <typename T, typename... Ts> constexpr bool not_any_of_v = not is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> constexpr bool is_any_of_v = (std::is_same_v<T, Ts> or ...);
 
-    template <typename T, typename... Ts> struct  is_any_of : std::bool_constant< is_any_of_v<T, Ts...>> {};
-    template <typename T, typename... Ts> struct not_any_of : std::bool_constant<not_any_of_v<T, Ts...>> {};
+    template <typename T, typename... Ts> struct is_any_of : std::bool_constant<is_any_of_v<T, Ts...>> {};
 
-    template <typename T, typename... Ts> concept     AnyOf =  is_any_of_v<T, Ts...>;
-    template <typename T, typename... Ts> concept not_AnyOf = not_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept AnyOf = is_any_of_v<T, Ts...>;
 
 
 
-    // convertible
+    // convert From To...
 
-    template <typename From, typename... To>
-    constexpr bool  is_convertible_from_to_v = (std::is_convertible_v<From, To> or ...);
+    template <typename From, typename To>
+    constexpr bool is_convertible_from_to_v = std::is_convertible_v<From, To>;
 
-    template <typename From, typename... To>
-    constexpr bool not_convertible_from_to_v = not is_convertible_from_to_v<From, To...>;
-
-    template <typename From, typename... To> struct  is_convertible_form_to : std::bool_constant< is_convertible_from_to_v<From, To...>> {};
-    template <typename From, typename... To> struct not_convertible_form_to : std::bool_constant<not_convertible_from_to_v<From, To...>> {};
-
-    template <typename From, typename... To> concept     ConvertibleFromTo =  is_convertible_from_to_v<From, To...>;
-    template <typename From, typename... To> concept not_ConvertibleFromTo = not_convertible_from_to_v<From, To...>;
-
-
-
-    template <typename To, typename... From>
-    constexpr bool  is_convertible_to_from_v = (std::is_convertible_v<From, To> or ...);
-
-    template <typename To, typename... From>
-    constexpr bool not_convertible_to_from_v = not is_convertible_to_from_v<To, From...>;
-
-    template <typename To, typename... From> struct  is_convertible_to_from : std::bool_constant< is_convertible_to_from_v<To, From...>> {};
-    template <typename To, typename... From> struct not_convertible_to_from : std::bool_constant<not_convertible_to_from_v<To, From...>> {};
-
-    template <typename To, typename... From> concept     ConvertibleToFrom =  is_convertible_to_from_v<To, From...>;
-    template <typename To, typename... From> concept not_ConvertibleToFrom = not_convertible_to_from_v<To, From...>;
-
-
+    template <typename From, typename To>
+    concept ConvertibleFromTo = is_convertible_from_to_v<From, To>;
 
     template <typename From, typename... To>
-    struct select_conversion_from_to {};
+    constexpr bool is_convertible_from_tosome_v = (is_convertible_from_to_v<From, To> or ...);
 
     template <typename From, typename... To>
-    using select_conversion_from_to_t = typename select_conversion_from_to<From, To...>::type;
-
-    template <typename From, typename To, typename... To_others>
-        requires(is_convertible_from_to_v<From, To>)
-    struct select_conversion_from_to<From, To, To_others...> { using type = To; };
-
-    template <typename From, typename To, typename... To_others>
-        requires(is_convertible_from_to_v<From, To_others...>)
-    struct select_conversion_from_to<From, To, To_others...> { using type = select_conversion_from_to_t<From, To_others...>; };
+    concept ConvertibleFromToSome = is_convertible_from_tosome_v<From, To...>;
 
 
+
+    template <typename From, typename To, typename... To_other> struct convert_from_tooneof;
+
+    template <typename From, typename To, typename... To_other>
+    constexpr bool is_convertible_from_tooneof_v = convert_from_tooneof<From, To, To_other...>::exist;
+
+    template <typename From, typename... To>
+    using convert_from_tooneof_t = typename convert_from_tooneof<From, To...>::type;
+
+            template <typename From, typename To>
+            struct convert_from_tooneof<From, To>
+            {
+                static constexpr bool exist = false;
+            };
+
+            template <typename From, typename To>
+                requires (is_convertible_from_to_v<From, To>)
+            struct convert_from_tooneof<From, To>
+            {
+                static constexpr bool exist = true;
+                using type = To;
+            };
+          
+            template <typename From, typename To, typename... To_other>
+            struct convert_from_tooneof<From, To, To_other...>
+            {
+                static constexpr bool exist = false;
+            };
+          
+            template <typename From, typename To, typename... To_other>
+                requires (     (    is_convertible_from_to_v    <From, To>         )
+                           and (not is_convertible_from_tosome_v<From, To_other...>) )
+            struct convert_from_tooneof<From, To, To_other...>
+            {
+                static constexpr bool exist = true;
+                using type = To;
+            };
+          
+            template <typename From, typename To, typename... To_other>
+                requires (     (not is_convertible_from_to_v     <From, To>         )
+                           and (    is_convertible_from_tooneof_v<From, To_other...>) )
+            struct convert_from_tooneof<From, To, To_other...>
+            {
+                static constexpr bool exist = true;
+                using type = typename convert_from_tooneof<From, To_other...>::type;
+            };
+
+    template <typename From, typename... To>
+    concept ConvertibleFromToOneOf = is_convertible_from_tooneof_v<From, To...>;
+
+
+
+    // convert To From...
+
+    template <typename To, typename From>
+    constexpr bool  is_convertible_to_from_v = std::is_convertible_v<From, To>;
+
+    template <typename To, typename From>
+    concept ConvertibleToFrom = is_convertible_to_from_v<To, From>;
 
     template <typename To, typename... From>
-    struct select_conversion_to_from {};
+    constexpr bool  is_convertible_to_fromsome_v = (is_convertible_to_from_v<To, From> or ...);
 
     template <typename To, typename... From>
-    using select_conversion_to_from_t = typename select_conversion_to_from<To, From...>::type;
+    concept ConvertibleToFromSome = is_convertible_to_fromsome_v<To, From...>;
 
-    template <typename To, typename From, typename... From_others>
-        requires(is_convertible_to_from_v<To, From>)
-    struct select_conversion_to_from<To, From, From_others...> { using type = From; };
 
-    template <typename To, typename From, typename... From_others>
-        requires(is_convertible_to_from_v<To, From_others...>)
-    struct select_conversion_to_from<To, From, From_others...> { using type = select_conversion_to_from_t<To, From_others...>; };
+
+    template <typename To, typename From, typename... From_other> struct convert_to_fromoneof;
+
+    template <typename To, typename From, typename... From_other>
+    constexpr bool is_convertible_to_fromoneof_v = convert_to_fromoneof<To, From, From_other...>::exist;
+
+    template <typename To, typename... From>
+    using convert_to_fromoneof_t = typename convert_to_fromoneof<To, From...>::type;
+
+            template <typename To, typename From>
+            struct convert_to_fromoneof<To, From>
+            {
+                static constexpr bool exist = false;
+            };
+
+            template <typename To, typename From>
+                requires (is_convertible_to_from_v<To, From>)
+            struct convert_to_fromoneof<To, From>
+            {
+                static constexpr bool exist = true;
+                using type = From;
+            };
+          
+            template <typename To, typename From, typename... From_other>
+            struct convert_to_fromoneof<To, From, From_other...>
+            {
+                static constexpr bool exist = false;
+            };
+          
+            template <typename To, typename From, typename... From_other>
+                requires (     (    is_convertible_to_from_v    <To, From>         )
+                           and (not is_convertible_to_fromsome_v<To, From_other...>) )
+            struct convert_to_fromoneof<To, From, From_other...>
+            {
+                static constexpr bool exist = true;
+                using type = From;
+            };
+          
+            template <typename To, typename From, typename... From_other>
+                requires (     (not is_convertible_to_from_v     <To, From>         )
+                           and (    is_convertible_to_fromoneof_v<To, From_other...>) )
+            struct convert_to_fromoneof<To, From, From_other...>
+            {
+                static constexpr bool exist = true;
+                using type = typename convert_to_fromoneof<To, From_other...>::type;
+            };
+
+    template <typename To, typename... From>
+    concept ConvertibleToFromOneOf = is_convertible_to_fromoneof_v<To, From...>;
+
+
+
+    // construct From To...
+
+    template <typename From, typename To>
+    constexpr bool is_constructible_from_to_v = std::is_constructible_v<To, From>;
+
+    template <typename From, typename To>
+    concept ConstructibleFromTo = is_constructible_from_to_v<From, To>;
+
+    template <typename From, typename... To>
+    constexpr bool is_constructible_from_tosome_v = (is_constructible_from_to_v<From, To> or ...);
+
+    template <typename From, typename... To>
+    concept ConstructibleFromToSome = is_constructible_from_tosome_v<From, To...>;
+
+
+
+    template <typename From, typename To, typename... To_other> struct construct_from_tooneof;
+
+    template <typename From, typename To, typename... To_other>
+    constexpr bool is_constructible_from_tooneof_v = construct_from_tooneof<From, To, To_other...>::exist;
+
+    template <typename From, typename... To>
+    using construct_from_tooneof_t = typename construct_from_tooneof<From, To...>::type;
+
+            template <typename From, typename To>
+            struct construct_from_tooneof<From, To>
+            {
+                static constexpr bool exist = false;
+            };
+
+            template <typename From, typename To>
+                requires (is_constructible_from_to_v<From, To>)
+            struct construct_from_tooneof<From, To>
+            {
+                static constexpr bool exist = true;
+                using type = To;
+            };
+          
+            template <typename From, typename To, typename... To_other>
+            struct construct_from_tooneof<From, To, To_other...>
+            {
+                static constexpr bool exist = false;
+            };
+          
+            template <typename From, typename To, typename... To_other>
+                requires (     (    is_constructible_from_to_v    <From, To>         )
+                           and (not is_constructible_from_tosome_v<From, To_other...>) )
+            struct construct_from_tooneof<From, To, To_other...>
+            {
+                static constexpr bool exist = true;
+                using type = To;
+            };
+          
+            template <typename From, typename To, typename... To_other>
+                requires (     (not is_constructible_from_to_v     <From, To>         )
+                           and (    is_constructible_from_tooneof_v<From, To_other...>) )
+            struct construct_from_tooneof<From, To, To_other...>
+            {
+                static constexpr bool exist = true;
+                using type = typename construct_from_tooneof<From, To_other...>::type;
+            };
+
+    template <typename From, typename... To>
+    concept ConstructibleFromToOneOf = is_constructible_from_tooneof_v<From, To...>;
+
+
+
+    // construct To From...
+
+    template <typename To, typename From>
+    constexpr bool is_constructible_to_from_v = std::is_constructible_v<To, From>;
+
+    template <typename To, typename From>
+    concept ConstructibleToFrom = is_constructible_to_from_v<To, From>;
+
+    template <typename To, typename... From>
+    constexpr bool  is_constructible_to_fromsome_v = (is_constructible_to_from_v<To, From> or ...);
+
+    template <typename To, typename... From>
+    concept ConstructibleToFromSome = is_constructible_to_fromsome_v<To, From...>;
+
+
+
+    template <typename To, typename From, typename... From_other> struct construct_to_fromoneof;
+
+    template <typename To, typename From, typename... From_other>
+    constexpr bool is_constructible_to_fromoneof_v = construct_to_fromoneof<To, From, From_other...>::exist;
+
+    template <typename To, typename... From>
+    using construct_to_fromoneof_t = typename construct_to_fromoneof<To, From...>::type;
+
+            template <typename To, typename From>
+            struct construct_to_fromoneof<To, From>
+            {
+                static constexpr bool exist = false;
+            };
+
+            template <typename To, typename From>
+                requires (is_constructible_to_from_v<To, From>)
+            struct construct_to_fromoneof<To, From>
+            {
+                static constexpr bool exist = true;
+                using type = From;
+            };
+          
+            template <typename To, typename From, typename... From_other>
+            struct construct_to_fromoneof<To, From, From_other...>
+            {
+                static constexpr bool exist = false;
+            };
+          
+            template <typename To, typename From, typename... From_other>
+                requires (     (    is_constructible_to_from_v    <To, From>         )
+                           and (not is_constructible_to_fromsome_v<To, From_other...>) )
+            struct construct_to_fromoneof<To, From, From_other...>
+            {
+                static constexpr bool exist = true;
+                using type = From;
+            };
+          
+            template <typename To, typename From, typename... From_other>
+                requires (     (not is_constructible_to_from_v     <To, From>         )
+                           and (    is_constructible_to_fromoneof_v<To, From_other...>) )
+            struct construct_to_fromoneof<To, From, From_other...>
+            {
+                static constexpr bool exist = true;
+                using type = typename construct_to_fromoneof<To, From_other...>::type;
+            };
+
+    template <typename To, typename... From>
+    concept ConstructibleToFromOneOf = is_constructible_to_fromoneof_v<To, From...>;
 
 
 
@@ -852,9 +1053,9 @@ namespace sib {
 
     template <typename T, typename... Ts>
     constexpr bool is_unique_v =
-            not (std::is_convertible_v<T, Ts> || ...)
-        and not (std::is_convertible_v<Ts, T> || ...)
-        and (is_unique_v<Ts...>)
+            (not is_convertible_to_fromsome_v<T, Ts...>)
+        and (not is_convertible_from_tosome_v<T, Ts...>)
+        and (    is_unique_v<Ts...>)
     ;
 
     template <typename T>
