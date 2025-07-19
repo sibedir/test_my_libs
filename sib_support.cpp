@@ -1,9 +1,8 @@
-﻿#include "sib_support.h"
-
-#include <random>
+﻿#include <random>
 #include <chrono>
-#include <iostream>
 #include <conio.h>
+
+#include "sib_support.h"
 
 namespace sib {
 

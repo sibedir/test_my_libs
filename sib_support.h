@@ -124,7 +124,6 @@ namespace sib {
                 template<typename T> struct type_tag;
 
                 struct container_of_types;
-                template <typename...> struct types_interface;
 
                 template <typename...> struct type_pack;
                 template <typename...> struct type_list;
@@ -138,8 +137,8 @@ namespace sib {
                 template <typename, typename> struct types_summ;
                 template <size_t  , typename> struct types_separat;
 
-                template <typename> struct types_sorted;
-                template <typename> struct types_sequence;
+                template <typename...> struct types_sorted;
+                template <typename...> struct types_sequence;
 
     // USING & CONST
 
@@ -157,8 +156,8 @@ namespace sib {
                 template <size_t N, typename Ts> using types_head = typename types_separat<N, Ts>::head;
                 template <size_t N, typename Ts> using types_tail = typename types_separat<N, Ts>::tail;
 
-                template <typename Ts> using types_sorted_t   = typename types_sorted   <Ts>::types;
-                template <typename Ts> using types_sequence_t = typename types_sequence <Ts>::types;
+                template <typename... Ts> using types_sorted_t   = typename types_sorted   <Ts...>::types;
+                template <typename... Ts> using types_sequence_t = typename types_sequence <Ts...>::types;
 
     // IMPLEMENTATION
 
@@ -249,7 +248,7 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename... Ts>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_info_spec<TsTempl<Ts...>>
     {
         using type = types_info_helper<Ts...>;
@@ -262,8 +261,9 @@ namespace sib {
     template <typename... Ts>
     struct types_info_helper
     {
-        using pack = type_pack<Ts...>;
-        using list = type_list<Ts...>;
+        template <template <typename...> typename TsTempl = type_pack>
+            requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        using types = TsTempl<Ts...>;
 
         static constexpr size_t count = sizeof...(Ts);
     };
@@ -279,7 +279,7 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename T, typename... Ts>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_first<TsTempl<T, Ts...>>
     {
         using type = T;
@@ -296,7 +296,7 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename... Ts>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_last<TsTempl<Ts...>>
     {
         using type = typename decltype((type_tag<Ts>{}, ...))::type;
@@ -308,8 +308,8 @@ namespace sib {
 
     template <template <typename...> typename TsTempl, typename T, typename... Ts>
         requires(
-            not std::is_base_of_v<container_of_types, T>
-            and std::is_base_of_v<container_of_types, TsTempl<>>
+                not std::is_base_of_v<container_of_types, T>
+            and     std::is_base_of_v<container_of_types, TsTempl<>>
         )
     struct types_summ<T, TsTempl<Ts...>>
     {
@@ -318,8 +318,8 @@ namespace sib {
 
     template <template <typename...> typename TsTempl, typename T, typename... Ts>
         requires(
-            not std::is_base_of_v<container_of_types, T>
-            and std::is_base_of_v<container_of_types, TsTempl<>>
+                not std::is_base_of_v<container_of_types, T>
+            and     std::is_base_of_v<container_of_types, TsTempl<>>
         )
     struct types_summ<TsTempl<Ts...>, T>
     {
@@ -338,7 +338,7 @@ namespace sib {
     // separat
   
     template <template <typename...> typename TsTempl, typename... Ts>
-//        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_separat<0, TsTempl<Ts...>>
     {
         using head = TsTempl<>;
@@ -346,7 +346,7 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename F, typename... Ts>
-//        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_separat<1, TsTempl<F, Ts...>>
     {
         using head = TsTempl<F>;
@@ -354,7 +354,7 @@ namespace sib {
     };
 
     template <size_t N, template <typename...> typename TsTempl, typename... Ts>
-//        requires((N > 1) and (std::is_base_of_v<container_of_types, TsTempl<>>))
+        //requires((N > 1) and (std::is_base_of_v<container_of_types, TsTempl<>>))
         requires(N > 1)
     struct types_separat<N, TsTempl<Ts...>>
     {
@@ -376,6 +376,9 @@ namespace sib {
 
 
     // sort
+
+    template <typename... Ts>
+    struct types_sorted<Ts...> : types_sorted<type_pack<Ts...>> {};
 
     // https://stackoverflow.com/a/64795244/23601704
     template <template <typename...> typename TsTempl, typename... Types>
@@ -449,6 +452,9 @@ namespace sib {
 
 
     // sequence
+
+    template <typename... Ts>
+    struct types_sequence<Ts...> : types_sequence<type_pack<Ts...>> {};
 
     template <template <typename...> typename TsTempl, typename... Types>
         requires(std::is_base_of_v<container_of_types, TsTempl<>>)
@@ -1029,13 +1035,50 @@ namespace sib {
 
 
 
+    // as_basic_string
+
+    template <typename> struct as_basic_string;
+
+    template <typename T>
+    struct is_as_basic_string
+    {
+        friend as_basic_string<T>;
+    private:
+        static consteval void _test(...);
+
+        template<Char Ch, typename Tr, typename Al>
+        static consteval auto _test(std::basic_string<Ch, Tr, Al> const& arg) { return arg; };
+    public:
+        static constexpr bool value = !std::is_same_v<decltype(_test(std::declval<T>())), void>;
+    };
+
+    template <typename T>
+    constexpr bool is_as_basic_string_v = is_as_basic_string<T>::value;
+
+    template <typename T>
+    concept IsAsBasicString = is_as_basic_string_v<T>;
+
+    template <IsAsBasicString BS>
+    struct as_basic_string<BS>
+    {
+        using type           = decltype(is_as_basic_string<BS>::_test(std::declval<BS>()));
+        using value_type     = typename type::value_type    ; 
+        using traits_type    = typename type::traits_type   ;
+        using allocator_type = typename type::allocator_type;
+    };
+
+    template <IsAsBasicString BS>
+    using as_basic_string_t = typename as_basic_string<BS>::type;
+
+
+
     // like_string
 
     template <typename T>
     struct is_like_string : std::false_type {};
 
     template <Container T>
-        requires (is_char_v< std::remove_cvref_t< container_elem_t<T> > >)
+        requires (is_char_v<std::remove_cvref_t<container_elem_t<T>>>)
     struct is_like_string<T> : std::true_type {};
 
     template <typename T>
@@ -1221,22 +1264,22 @@ namespace sib {
     inline constexpr TKeyCode KC_NUM_PAGE_UP   = 73;
     inline constexpr TKeyCode KC_NUM_PAGE_DOWN = 81;
 
-    inline constexpr TKeyCode KC_INSERT    = (ByteConcat<TKeyCode>{  KC_NUM_INSERT   , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_DELETE    = (ByteConcat<TKeyCode>{  KC_NUM_DELETE   , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_HOME      = (ByteConcat<TKeyCode>{  KC_NUM_HOME     , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_END       = (ByteConcat<TKeyCode>{  KC_NUM_END      , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_PAGE_UP   = (ByteConcat<TKeyCode>{  KC_NUM_PAGE_UP  , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_PAGE_DOWN = (ByteConcat<TKeyCode>{  KC_NUM_PAGE_DOWN, KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_INSERT    = (ByteConcat<TKeyCode>{ KC_NUM_INSERT   , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_DELETE    = (ByteConcat<TKeyCode>{ KC_NUM_DELETE   , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_HOME      = (ByteConcat<TKeyCode>{ KC_NUM_HOME     , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_END       = (ByteConcat<TKeyCode>{ KC_NUM_END      , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_PAGE_UP   = (ByteConcat<TKeyCode>{ KC_NUM_PAGE_UP  , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_PAGE_DOWN = (ByteConcat<TKeyCode>{ KC_NUM_PAGE_DOWN, KC_COMM_2 }).value();
 
     inline constexpr TKeyCode KC_NUM_LEFT  = 75;
     inline constexpr TKeyCode KC_NUM_RIGHT = 77;
     inline constexpr TKeyCode KC_NUM_UP    = 72;
     inline constexpr TKeyCode KC_NUM_DOWN  = 80;
 
-    inline constexpr TKeyCode KC_LEFT  = (ByteConcat<TKeyCode>{  KC_NUM_LEFT , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_RIGHT = (ByteConcat<TKeyCode>{  KC_NUM_RIGHT, KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_UP    = (ByteConcat<TKeyCode>{  KC_NUM_UP   , KC_COMM_2 }).value();
-    inline constexpr TKeyCode KC_DOWN  = (ByteConcat<TKeyCode>{  KC_NUM_DOWN , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_LEFT  = (ByteConcat<TKeyCode>{ KC_NUM_LEFT , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_RIGHT = (ByteConcat<TKeyCode>{ KC_NUM_RIGHT, KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_UP    = (ByteConcat<TKeyCode>{ KC_NUM_UP   , KC_COMM_2 }).value();
+    inline constexpr TKeyCode KC_DOWN  = (ByteConcat<TKeyCode>{ KC_NUM_DOWN , KC_COMM_2 }).value();
 
     using Tconsole_reactions_to_keys = std::map<TKeyCode, std::function<void()>>;
 

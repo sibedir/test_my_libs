@@ -20,8 +20,8 @@
 
         inline std::mutex mtx{};
     
-        #ifdef SIB_DEBUG_CUSTOM_STREAM
-            inline auto& outstream = SIB_DEBUG_CUSTOM_STREAM;
+        #ifdef SIB_DEBUG_OUT_STREAM
+            inline auto& outstream = SIB_DEBUG_OUT_STREAM;
         #else
             inline auto& outstream = std::cout;
         #endif // SIB_DEBUG_STREAM_CUSTOM
@@ -163,6 +163,11 @@
                         }
     
                     }
+    
+                } else if constexpr                                             ( sib::is_as_basic_string_v<T>      ) {
+
+                    sib::as_basic_string_t<T> const & bs = val;
+                    return disclosure(bs);
     
                 } else if constexpr                                             ( sib::is_like_function_v<T>        ) {
     
@@ -320,8 +325,8 @@
             sib::debug::TBufer buf;                                 \
             buf << "p       |" << sib::debug::string(_STR(inst))     \
                 <<        " {" << __typ__  << "}"                   \
+                <<     "  ~  " << sib::debug::disclosure(static_cast<type_as>(inst)) \
                 <<     " -> {" << sib::debug::string(_STR(type_as)) << "}" \
-                <<     "  =  " << sib::debug::disclosure(static_cast<type_as>(inst)) \
                 << "\n";                                            \
             sib::debug::under_lock_print(buf.str());                \
         } while(0);                                                 \

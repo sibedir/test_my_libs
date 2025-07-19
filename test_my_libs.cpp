@@ -175,15 +175,15 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 
 // MAIN ------------------------------------------------------------------------------
 
-#define TEST_UNIT_TEST
-#define TEST_SUPPORT
-#define TEST_NULLPTR
-#define TEST_VALUE
-#define TEST_POINTER
-#define TEST_ARRAY
-#define TEST_WRAPPER
-#define TEST_TYPE_PACK
-#define TEST_TYPE_LIST
+//#define TEST_UNIT_TEST
+//#define TEST_SUPPORT
+//#define TEST_NULLPTR
+//#define TEST_VALUE
+//#define TEST_POINTER
+//#define TEST_ARRAY
+//#define TEST_WRAPPER
+//#define TEST_TYPE_PACK
+//#define TEST_TYPE_LIST
 #define TEST_UNIQUE_TUPLE
 
 #ifdef TEST_UNIT_TEST
@@ -202,7 +202,7 @@ int main()
     sib::debug::DISCLOSURE_STRING_LENGTH = 32;
     #endif // SIB_DEBUG
 
-    //sib::WaitAnyKey("...end"); return 0;
+    //sib::WaitAnyKey("\n...end"); return 0;
 
 #ifdef TEST_UNIT_TEST
     {
@@ -1855,6 +1855,12 @@ int main()
         END;
     } {
         BEG;
+        DEF(auto, ut, = sib::MakeUniqueTuple<int _ std::string _ B>(1));
+        EXE(ut = "qwerty");
+        PRN(ut);
+        PRNAS(ut, float);
+        PRNAS(ut, std::string);
+        PRNAS(ut, B);
         END;
     } {
         BEG;

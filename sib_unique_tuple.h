@@ -28,12 +28,6 @@ namespace sib {
         template <ConstructibleFromToSome<Ts...> AnyT>
         using construction_type_from = TWrapper<construction_base_type_from<AnyT>>;
 
-        template <ConstructibleToFromSome<Ts...> AnyT>
-        using construction_base_type_to = construct_to_fromoneof_t<AnyT, Ts...>;
-
-        template <ConstructibleToFromSome<Ts...> AnyT>
-        using construction_type_to = TWrapper<construction_base_type_to<AnyT>>;
-
         template <typename AnyT>
         static constexpr bool noexcept_constr = noexcept(TWrapper<construct_from_tooneof_t<AnyT, Ts...>>(std::declval<AnyT>()));
 
@@ -46,7 +40,7 @@ namespace sib {
         using types = TsTempl<Ts...>;
 
         template <ConstructibleFromToOneOf<Ts...>... AnyTs>
-            requires( sizeof...(Ts) == sib::types_info<sib::type_pack<construction_type_from<AnyTs>...>>::count)
+            requires( sizeof...(Ts) >= sib::types_info<sib::type_pack<construction_type_from<AnyTs>...>>::count)
         TUniqueTuple(AnyTs&&... other)
             noexcept(noexcept_constr_ts<AnyTs...>)
             : construction_type_from<AnyTs>(std::forward<AnyTs>(other)) ...
@@ -77,7 +71,7 @@ namespace sib {
         requires(sib::is_unique_v<Ts...>)
     struct MakeUniqueTupleSpec<Ts...>
     {
-        using type = specialization_templ_t<TUniqueTuple, types_sequence_t<type_list<Ts...>>>;
+        using type = specialization_templ_t<TUniqueTuple, types_sequence_t<type_pack<Ts...>>>;
     };
 
     template <template <typename...> typename TsTempl, typename... Ts>
