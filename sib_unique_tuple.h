@@ -74,7 +74,7 @@ namespace sib {
         template <HasAssignmentOperatorFromToOneOf<Ts...> AnyT>
         constexpr assignment_operator_from_tooneof_result<AnyT, Ts...> operator= (AnyT&& other)
             noexcept(noexcept(TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::declval<AnyT>())))
-        { return static_cast<assignment_operator_from_tooneof_select<AnyT, Ts...>&>(*this) = std::forward<AnyT>(other); }
+        { return static_cast<TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>>(*this) = std::forward<AnyT>(other); }
 
         template <AnyOf<Ts...> T> constexpr T const & get() const noexcept { return *this; }
         template <AnyOf<Ts...> T> constexpr T       & get()       noexcept { return *this; }
