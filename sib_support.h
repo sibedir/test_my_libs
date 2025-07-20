@@ -689,6 +689,89 @@ namespace sib {
 
 
 
+    // assignment operator from Source to Dest...
+
+    template <typename Dest, typename Source = Dest>
+    concept HasAssignmentOperator = requires(Dest& d, Source&& s) {
+        { d = std::forward<Source>(s) };
+    };
+
+    template <typename Dest, typename Source = Dest>
+    concept has_assignment_operator_v = HasAssignmentOperator<Dest, Source>;
+
+    template <typename Dest, typename Source = Dest>
+    struct has_assignment_operator : std::bool_constant<has_assignment_operator_v<Dest, Source>> {};
+
+    template <typename Dest, typename Source = Dest> struct assignment_operator_result;
+    
+    template <typename Source, HasAssignmentOperator<Source> Dest>
+    struct assignment_operator_result<Dest, Source>
+    {
+        using type = decltype(std::declval<Dest&>() = std::declval<Source>());
+    };
+
+    template <typename Dest, typename Source = Dest>
+    using assignment_operator_result_t = typename assignment_operator_result<Dest, Source>::type;
+
+
+
+    template <typename Source, typename... Dest> struct assignment_operator_from_tooneof;
+
+    template <typename Source, typename... Dest>
+    constexpr bool has_assignment_operator_from_tooneof_v = assignment_operator_from_tooneof<Source, Dest...>::has;
+
+    template <typename Source, typename... Dest>
+    using assignment_operator_from_tooneof_select = typename assignment_operator_from_tooneof<Source, Dest...>::select;
+
+    template <typename Source, typename... Dest>
+    using assignment_operator_from_tooneof_result = typename assignment_operator_from_tooneof<Source, Dest...>::result;
+
+        template <typename Source, typename... Dest>
+        struct assignment_operator_from_tooneof<Source, Dest...>
+        {
+            static constexpr bool has = false;
+        };
+
+        template <typename Source, typename Dest>
+            requires (has_assignment_operator_v<Dest, Source>)
+        struct assignment_operator_from_tooneof<Source, Dest>
+        {
+            static constexpr bool has = true;
+            using select = Dest;
+            using result = assignment_operator_result_t<Dest, Source>;
+        };
+
+        template <typename Source, typename Dest, typename... Dest_other>
+        struct assignment_operator_from_tooneof<Source, Dest, Dest_other...>
+        {
+            static constexpr bool has = false;
+        };
+
+        template <typename Source, typename Dest, typename... Dest_other>
+                requires (     (    has_assignment_operator_v             <Dest  , Source       >)
+                           and (not has_assignment_operator_from_tooneof_v<Source, Dest_other...>) )
+        struct assignment_operator_from_tooneof<Source, Dest, Dest_other...>
+        {
+            static constexpr bool has = true;
+            using select = Dest;
+            using result = assignment_operator_result_t<Dest, Source>;
+        };
+
+        template <typename Source, typename Dest, typename... Dest_other>
+                requires (     (not has_assignment_operator_v             <Dest  , Source       >)
+                           and (    has_assignment_operator_from_tooneof_v<Source, Dest_other...>) )
+        struct assignment_operator_from_tooneof<Source, Dest, Dest_other...>
+        {
+            static constexpr bool has = true;
+            using select = typename assignment_operator_from_tooneof<Source, Dest_other...>::select;
+            using result = typename assignment_operator_from_tooneof<Source, Dest_other...>::result;
+        };
+
+    template <typename Source, typename... Dest>
+    concept HasAssignmentOperatorFromToOneOf = has_assignment_operator_from_tooneof_v<Source, Dest...>;
+
+
+
     // construct From To...
 
     template <typename From, typename To>

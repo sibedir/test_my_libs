@@ -5,9 +5,18 @@
 
 namespace sib {
 
+    //template <typename Dest, class Source>
+    //struct appointer {
+    //    assignment_operator_result_t<Dest, Source> operator=(Source && val) {
+    //        return *static_cast<Dest*>(this) = std::forward<Source>(val);
+    //    }
+    //};
+
     template <typename... Ts>
         requires(sib::is_unique_v<Ts...> and sib::is_sorted_v<Ts...>)
-    class TUniqueTuple : public TWrapper<Ts> ...
+    class TUniqueTuple :
+        //public appointer<TUniqueTuple<Ts...>, Ts> ...,
+        public TWrapper<Ts> ...
     {
     private:
         template <ConvertibleFromToSome<Ts...> AnyT>
@@ -35,9 +44,15 @@ namespace sib {
         static constexpr bool noexcept_constr_ts = (noexcept_constr<AnyTs> and ...);
 
     public:
-        template <template <typename...> typename TsTempl>
+        template <template <typename...> typename TsTempl = type_pack>
             requires(std::is_base_of_v<container_of_types, TsTempl<>>)
         using types = TsTempl<Ts...>;
+
+        template <template <typename...> typename TsTempl = type_pack>
+            requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        using veritable_types = TsTempl< TWrapper<Ts>...>;
+
+        //using appointer<TUniqueTuple<Ts...>, Ts>::operator= ...;
 
         template <ConstructibleFromToOneOf<Ts...>... AnyTs>
             requires( sizeof...(Ts) >= sib::types_info<sib::type_pack<construction_type_from<AnyTs>...>>::count)
@@ -46,23 +61,23 @@ namespace sib {
             : construction_type_from<AnyTs>(std::forward<AnyTs>(other)) ...
         {}
 
-        TUniqueTuple() /*requires(std::is_default_constructible_v<TWrapper<Ts>> and ...)*/ = default;
+        //TUniqueTuple() /*requires(std::is_default_constructible_v<TWrapper<Ts>> and ...)*/ = default;
         //TUniqueTuple(TUniqueTuple const & other) = default;
         //TUniqueTuple(TUniqueTuple      && other) = default;
         //TUniqueTuple(TWrapper<Ts> const & ... other) : TWrapper<Ts>(other) ... {}
 
-        constexpr TUniqueTuple& operator= (TUniqueTuple const & other) = default;
-        constexpr TUniqueTuple& operator= (TUniqueTuple      && other) = default;
+        //constexpr TUniqueTuple& operator= (TUniqueTuple const & other) = default;
+        //constexpr TUniqueTuple& operator= (TUniqueTuple      && other) = default;
 
-        ~TUniqueTuple() = default;
+        //~TUniqueTuple() = default;
 
-        template <ConvertibleFromToOneOf<Ts...> AnyT>
-        constexpr auto operator= (AnyT&& other)
-            noexcept(noexcept( conversion_type_from<AnyT>::operator=(std::declval<AnyT>()) ))
-        { return conversion_type_from<AnyT>::operator=(std::forward<AnyT>(other)); }
+        template <HasAssignmentOperatorFromToOneOf<Ts...> AnyT>
+        constexpr assignment_operator_from_tooneof_result<AnyT, Ts...> operator= (AnyT&& other)
+            noexcept(noexcept(TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::declval<AnyT>())))
+        { return static_cast<assignment_operator_from_tooneof_select<AnyT, Ts...>&>(*this) = std::forward<AnyT>(other); }
 
-        template <AnyOf<Ts...> T> constexpr T const & as() const noexcept { return *this; }
-        template <AnyOf<Ts...> T> constexpr T       & as()       noexcept { return *this; }
+        template <AnyOf<Ts...> T> constexpr T const & get() const noexcept { return *this; }
+        template <AnyOf<Ts...> T> constexpr T       & get()       noexcept { return *this; }
     };
 
     template <typename... Ts> requires(sib::is_unique_v<Ts...>) struct MakeUniqueTupleSpec;
@@ -85,9 +100,9 @@ namespace sib {
 
     template <typename... Args>
     constexpr auto make_unique_tuple(Args&&... args)
-        noexcept(noexcept(MakeUniqueTuple<Args...>(std::forward<Args>(args)...)))
+        noexcept(noexcept(MakeUniqueTuple<std::remove_reference_t<Args>...>(std::forward<Args>(args)...)))
     {
-        return MakeUniqueTuple<Args...>(std::forward<Args>(args)...);
+        return MakeUniqueTuple<std::remove_reference_t<Args>...>(std::forward<Args>(args)...);
     }
 
 } // namespace sib

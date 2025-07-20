@@ -42,7 +42,9 @@ namespace sib {
     
     template <typename T, size_t N> struct TWrapperSpec<T       [N]> { using type = TArray<remove_all_wrapers_t<T>, N>      ; };
     template <typename T, size_t N> struct TWrapperSpec<T const [N]> { using type = TArray<remove_all_wrapers_t<T>, N> const; };
-    
+
+    //template <typename T> struct TWrapperSpec<T&> { using type = std::reference_wrapper<remove_all_wrapers_t<T>>; };
+
     template <class Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class      > { using type = Class      ; };
     template <class Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class const> { using type = Class const; };
 
@@ -146,6 +148,25 @@ namespace sib {
         template <typename AnyT> requires(is_pointer_v<AnyT>)
         constexpr explicit operator AnyT       ()       noexcept { return static_cast<AnyT      >(data); }
     };
+
+    template <typename T>
+    class TValue<T&>
+    {
+    public:
+        using data_type = T&;
+    private:
+        using base_ptr_type = std::remove_pointer_t<T>;
+        T& data;
+    public:
+        constexpr TValue(T& ref) noexcept : data(ref) {}
+
+        constexpr operator T const & () const noexcept { return data; }
+        constexpr operator T       & ()       noexcept { return data; }
+
+        constexpr T& operator= (T const & ref) noexcept { return data = ref; }
+        constexpr T& operator= (T      && ref) noexcept { return data = std::move(ref); }
+    };
+
 
     template <typename Ret, typename... Args>
     class TValue<Ret(*)(Args...)>

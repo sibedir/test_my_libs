@@ -1727,6 +1727,49 @@ int main()
         END;
     } {
         BEG;
+        DEF(int, i, = 42);
+        DEF(std::string, s, = "qwerty");
+        DEF(auto, ut, = sib::make_unique_tuple(i _ s));
+        PRN(i);
+        PRN(s);
+        PRN(ut);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        END;
+        EXE(i = 0);
+        EXE(s = "0");
+        EXE(ut.get<int>() = 1);
+        EXE(ut = "1");
+        PRN(i);
+        PRN(s);
+        PRN(ut);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        END;
+    } {
+        BEG;
+        DEF(int, i, = 42);
+        DEF(std::string, s, = "qwerty");
+        DEF(auto, ut, = sib::MakeUniqueTuple<int& _ std::string&>(i _ s));
+        PRN(i);
+        PRN(s);
+        PRN(ut);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        END;
+        EXE(i = 0);
+        EXE(s = "0");
+        //EXE(ut = 111);
+        EXE(ut.get<int&>() = 111);
+        EXE(ut = "111");
+        PRN(i);
+        PRN(s);
+        PRN(ut);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        END;
+    } {
+        BEG;
         EXE(
             static_assert(std::is_same_v<
                 sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
@@ -1786,18 +1829,18 @@ int main()
     } {
         BEG;
         DEF(sib::MakeUniqueTuple<int _ std::string _ std::vector<int>>, tmp, );
-        EXE(tmp.as<std::vector<int>>() = std::vector<int>{1 _ 2 _ 3});
-        EXE(tmp = 2.2);
+        EXE(tmp.get<std::vector<int>>() = std::vector<int>{1 _ 2 _ 3});
+        EXE(tmp.get<int>() = 2.2);
         EXE(tmp = "xxxxxxxxx");
         PRN(sib::is_container_v<decltype(tmp)>);
-        PRN(tmp.as<std::vector<int>>());
-        PRN(tmp.as<int>());
-        PRN(tmp.as<std::string>());
+        PRN(tmp.get<std::vector<int>>());
+        PRN(tmp.get<int>());
+        PRN(tmp.get<std::string>());
         PRN(tmp);
         END;
 
-        EXE(tmp.as<int>() = 3.3);
-        PRN(tmp.as<int>());
+        EXE(tmp.get<int>() = 3.3);
+        PRN(tmp.get<int>());
         END;
 
         DEF(float, f, = tmp);
@@ -1855,7 +1898,7 @@ int main()
         END;
     } {
         BEG;
-        DEF(auto, ut, = sib::MakeUniqueTuple<int _ std::string _ B>(1));
+        DEF(auto, ut, = sib::MakeUniqueTuple<int _ std::string _ B>(1, "sfsdfsd"));
         EXE(ut = "qwerty");
         PRN(ut);
         PRNAS(ut, float);
@@ -1864,6 +1907,18 @@ int main()
         END;
     } {
         BEG;
+        DEF(sib::TArray<int _ 4>, arr, { 1 _ 2 _ 3 _ 4 });
+        DEF(auto, ref, = sib::TWrapper<int(&)[4]>(arr));
+        DEF(auto, ut, = sib::MakeUniqueTuple<int(&)[4] _ C _ B>(arr));
+        PRN(arr);
+        EXE(std::cout << arr << "\n";);
+        PRN(ref);
+        EXE(std::cout << ref << "\n";);
+        PRN(decltype(ut)::veritable_types<>());
+        PRN(ut);
+        PRNAS(ut, B);
+        PRNAS(ut, C);
+        PRNAS(ut, int(&)[4]);
         END;
     } {
         BEG;
