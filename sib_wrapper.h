@@ -11,10 +11,11 @@
 namespace sib {
 
     struct TNullPtr;
-    template <typename T> class TConst;
-    template <typename T> class TValue;
+    template <typename> class TConst;
+    template <typename> class TValue;
+    template <typename> class TReference;
     template <typename T> using TPointer = TValue<T*>;
-    template <typename T, size_t N> class TArray;
+    template <typename, size_t> class TArray;
 
     template <typename T> struct TWrapperSpec;
 
@@ -37,13 +38,13 @@ namespace sib {
     template <> struct TWrapperSpec<std::nullptr_t      > { using type = TNullPtr      ; };
     template <> struct TWrapperSpec<std::nullptr_t const> { using type = TNullPtr const; };
 
+    template <typename T> struct TWrapperSpec<T&> { using type = TReference<remove_all_wrapers_t<T>>; };
+
     template <typename T> struct TWrapperSpec<T*      > { using type = TPointer<remove_all_wrapers_t<T>>      ; };
     template <typename T> struct TWrapperSpec<T* const> { using type = TPointer<remove_all_wrapers_t<T>> const; };
     
     template <typename T, size_t N> struct TWrapperSpec<T       [N]> { using type = TArray<remove_all_wrapers_t<T>, N>      ; };
     template <typename T, size_t N> struct TWrapperSpec<T const [N]> { using type = TArray<remove_all_wrapers_t<T>, N> const; };
-
-    //template <typename T> struct TWrapperSpec<T&> { using type = std::reference_wrapper<remove_all_wrapers_t<T>>; };
 
     template <class Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class      > { using type = Class      ; };
     template <class Class> requires (std::is_class_v  <Class>) struct TWrapperSpec<Class const> { using type = Class const; };
@@ -149,25 +150,6 @@ namespace sib {
         constexpr explicit operator AnyT       ()       noexcept { return static_cast<AnyT      >(data); }
     };
 
-    template <typename T>
-    class TValue<T&>
-    {
-    public:
-        using data_type = T&;
-    private:
-        using base_ptr_type = std::remove_pointer_t<T>;
-        T& data;
-    public:
-        constexpr TValue(T& ref) noexcept : data(ref) {}
-
-        constexpr operator T const & () const noexcept { return data; }
-        constexpr operator T       & ()       noexcept { return data; }
-
-        constexpr T& operator= (T const & ref) noexcept { return data = ref; }
-        constexpr T& operator= (T      && ref) noexcept { return data = std::move(ref); }
-    };
-
-
     template <typename Ret, typename... Args>
     class TValue<Ret(*)(Args...)>
     {
@@ -237,6 +219,30 @@ namespace sib {
     template <typename T>
     TValue(T) -> TValue<remove_all_wrapers_t<std::remove_cvref_t<T>>>;
     
+
+
+    // Reference --------------------------------------------------------------------------
+
+    template <typename T>
+    class TReference
+    {
+    public:
+        using data_type = T&;
+    private:
+        T& data;
+    public:
+        constexpr TReference(T& ref) noexcept : data(ref) {}
+
+        constexpr operator T const & () const noexcept { return data; }
+        constexpr operator T       & ()       noexcept { return data; }
+
+        //template <typename AnyT>
+        constexpr T& operator= (T const & val) noexcept { return data = val; }
+
+        //constexpr std::strong_ordering operator<=>(TReference const &) const = default;
+        //constexpr std::strong_ordering operator<=>(T const& other) const noexcept { return data <=> other; }
+    };
+
 
     
     // Pointer ----------------------------------------------------------------------------

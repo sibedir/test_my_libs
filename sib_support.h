@@ -547,11 +547,13 @@ namespace sib {
 
     // any of ...
 
-    template <typename T, typename... Ts> constexpr bool is_any_of_v = (std::is_same_v<T, Ts> or ...);
+    template <typename T, typename... Ts> constexpr bool  is_any_of_v = (std::is_same_v<T, Ts> or ...);
+    template <typename T, typename... Ts> constexpr bool not_any_of_v = not is_any_of_v<T, Ts...>;
 
     template <typename T, typename... Ts> struct is_any_of : std::bool_constant<is_any_of_v<T, Ts...>> {};
 
-    template <typename T, typename... Ts> concept AnyOf = is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept    AnyOf =  is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept NotAnyOf = not_any_of_v<T, Ts...>;
 
 
 
@@ -697,7 +699,7 @@ namespace sib {
     };
 
     template <typename Dest, typename Source = Dest>
-    concept has_assignment_operator_v = HasAssignmentOperator<Dest, Source>;
+    constexpr bool has_assignment_operator_v = HasAssignmentOperator<Dest, Source>;
 
     template <typename Dest, typename Source = Dest>
     struct has_assignment_operator : std::bool_constant<has_assignment_operator_v<Dest, Source>> {};

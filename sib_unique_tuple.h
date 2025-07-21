@@ -50,7 +50,7 @@ namespace sib {
 
         template <template <typename...> typename TsTempl = type_pack>
             requires(std::is_base_of_v<container_of_types, TsTempl<>>)
-        using veritable_types = TsTempl< TWrapper<Ts>...>;
+        using veritable_types = TsTempl<TWrapper<Ts>...>;
 
         //using appointer<TUniqueTuple<Ts...>, Ts>::operator= ...;
 
@@ -71,13 +71,45 @@ namespace sib {
 
         //~TUniqueTuple() = default;
 
-        template <HasAssignmentOperatorFromToOneOf<Ts...> AnyT>
-        constexpr assignment_operator_from_tooneof_result<AnyT, Ts...> operator= (AnyT&& other)
-            noexcept(noexcept(TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::declval<AnyT>())))
-        { return static_cast<TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>>(*this) = std::forward<AnyT>(other); }
+        //template <HasAssignmentOperatorFromToOneOf<Ts...> AnyT>
+        //constexpr assignment_operator_from_tooneof_result<AnyT, Ts...> operator= (AnyT&& other)
+        //    noexcept(noexcept(TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::declval<AnyT>())))
+        //{ return TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::forward<AnyT>(other)); }
 
-        template <AnyOf<Ts...> T> constexpr T const & get() const noexcept { return *this; }
-        template <AnyOf<Ts...> T> constexpr T       & get()       noexcept { return *this; }
+        using TWrapper<Ts>::operator=...;
+        //using TWrapper<Ts>::operator Ts const &...;
+        //using TWrapper<Ts>::operator==...;
+
+        template <AnyOf<Ts...> AnyT>
+        constexpr operator TWrapper<AnyT>() noexcept { return *this; }
+
+        template <AnyOf<Ts...> AnyT> constexpr operator AnyT const & () const noexcept { return *this; }
+        template <AnyOf<Ts...> AnyT> constexpr operator AnyT       & ()       noexcept { return *this; }
+
+        template <AnyOf<Ts...> AnyT>
+        constexpr std::remove_reference_t<AnyT> const & get() const noexcept
+        {
+            return static_cast<std::remove_reference_t<AnyT> const &>(*this);
+        }
+
+        template <AnyOf<Ts...> AnyT>
+        constexpr std::remove_reference_t<AnyT>       & get()       noexcept
+        {
+            return static_cast<std::remove_reference_t<AnyT>       &>(*this);
+        }
+
+        template <typename AnyT>
+        constexpr AnyT         as() const { return static_cast<AnyT        >(*this); }
+
+        template <typename AnyT>
+            requires(is_any_of_v<AnyT, Ts...>
+                  or is_any_of_v<std::remove_reference_t<AnyT>, std::remove_reference_t<Ts>...>)
+        constexpr AnyT const & as() const { return static_cast<AnyT const &>(*this); }
+
+        template <typename AnyT>
+            requires(is_any_of_v<AnyT, Ts...>
+                  or is_any_of_v<std::remove_reference_t<AnyT>, std::remove_reference_t<Ts>...>)
+        constexpr AnyT       & as()       { return static_cast<AnyT       &>(*this); }
     };
 
     template <typename... Ts> requires(sib::is_unique_v<Ts...>) struct MakeUniqueTupleSpec;

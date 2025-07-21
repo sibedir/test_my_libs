@@ -207,7 +207,7 @@
     
                 } else {
     
-                    if constexpr (requires (T const& v) { TBufer{} << v; })
+                    if constexpr (requires (T const & v) { TBufer{} << v; })
                         { return (TBufer() << val).str(); }
                     else
                         { return "???";                   }
@@ -246,7 +246,7 @@
             }
         ();
         
-        inline void SetBreakPoint(TBreakPointLevel bp_level = BP_ALL)
+        inline void SetBreakPoint(TBreakPointLevel bp_level = BP_CUSTOM, string msg = "")
         {
             static std::set<sib::TKeyCode> const debugging_keys = []()
                 {
@@ -264,7 +264,8 @@
         
             if (bp_level == BP_CUSTOM)
             {
-                under_lock_print("       - break point -       [Enter] - continue   [Esc] - abort\n");
+                if (msg != "") { under_lock_print(msg + "\n"); }
+                else { under_lock_print("       - break point -       [Enter] - continue   [Esc] - abort\n"); }
             }
         
             sib::WaitReactToKeyCodes(debugging_keys, debugging_reactions_to_keys);
@@ -344,7 +345,7 @@
     #define MSG(...)                                                \
         do {                                                        \
             sib::debug::TBufer buf;                                 \
-            buf << "m   " << sib::debug::msg(__VA_ARGS__) << "\n"; \
+            buf << "m   " << sib::debug::msg(__VA_ARGS__) << "\n";  \
             sib::debug::under_lock_print(buf.str());                \
         } while(0);                                                 \
         sib::debug::SetBreakPoint(sib::debug::BP_ALL)               \
@@ -355,6 +356,30 @@
     #define END                                                     \
         sib::debug::under_lock_print('\n');                         \
         sib::debug::SetBreakPoint(sib::debug::BP_END)               \
+
+    #define ASSERT(...)                                             \
+        do {                                                        \
+            sib::debug::TBufer buf;                                 \
+            buf << "a       |(" << #__VA_ARGS__ << ") = ";          \
+            auto statement = (__VA_ARGS__);                         \
+            if constexpr (!std::is_same_v<decltype(statement), bool>) {\
+                buf << "NOT BOOL!\n";                               \
+                sib::debug::under_lock_print(buf.str());            \
+                sib::debug::SetBreakPoint(                          \
+                    sib::debug::BP_CUSTOM,                          \
+                    "     - assertion error -     [Enter] - continue   [Esc] - abort"); \
+            } else if (statement) {                                 \
+                buf << "true\n";                                    \
+                sib::debug::under_lock_print(buf.str());            \
+                sib::debug::SetBreakPoint(sib::debug::BP_ALL);      \
+            } else {                                                \
+                buf << "FALSE!!!\n";                                \
+                sib::debug::under_lock_print(buf.str());            \
+                sib::debug::SetBreakPoint(                          \
+                    sib::debug::BP_CUSTOM,                          \
+                    "     - assertion fail -      [Enter] - continue   [Esc] - abort"); \
+            }                                                       \
+        } while(0);                                                 \
 
 #else
 
@@ -375,5 +400,7 @@
     #define BP
 
     #define END
+
+    #define ASSERT(...)
 
 #endif // SIB_DEBUG                                          
