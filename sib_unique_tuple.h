@@ -72,11 +72,12 @@ namespace sib {
         //~TUniqueTuple() = default;
 
         //template <HasAssignmentOperatorFromToOneOf<Ts...> AnyT>
-        //constexpr assignment_operator_from_tooneof_result<AnyT, Ts...> operator= (AnyT&& other)
-        //    noexcept(noexcept(TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::declval<AnyT>())))
-        //{ return TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::forward<AnyT>(other)); }
+        template <typename AnyT>
+        constexpr assignment_operator_from_tooneof_result<AnyT, Ts...> operator= (AnyT&& other)
+            noexcept(noexcept(TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::declval<AnyT>())))
+        { return TWrapper<assignment_operator_from_tooneof_select<AnyT, Ts...>>::operator=(std::forward<AnyT>(other)); }
 
-        using TWrapper<Ts>::operator=...;
+        //using TWrapper<Ts>::operator=...;
         //using TWrapper<Ts>::operator Ts const &...;
         //using TWrapper<Ts>::operator==...;
 

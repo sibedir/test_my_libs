@@ -237,7 +237,9 @@ namespace sib {
         constexpr operator T       & ()       noexcept { return data; }
 
         //template <typename AnyT>
-        constexpr T& operator= (T const & val) noexcept { return data = val; }
+        //constexpr T& operator= (AnyT const & val) noexcept { return data = val; }
+
+        constexpr T& operator= (T const& val) noexcept { return data = val; }
 
         //constexpr std::strong_ordering operator<=>(TReference const &) const = default;
         //constexpr std::strong_ordering operator<=>(T const& other) const noexcept { return data <=> other; }

@@ -1740,11 +1740,13 @@ int main()
         EXE(s = "0");
         EXE(ut.get<int>() = 1);
         EXE(ut = "1");
-        PRN(i);
-        PRN(s);
         PRN(ut);
         PRNAS(ut, int);
         PRNAS(ut, std::string);
+        ASSERT(i == 0);
+        ASSERT(s == "0");
+        ASSERT(ut == 1);
+        ASSERT(ut == "1");
         END;
     } {
         BEG;
@@ -1757,16 +1759,15 @@ int main()
         PRNAS(ut, int);
         PRNAS(ut, std::string);
         END;
-        EXE(i = 0);
-        EXE(s = "0");
-        EXE(ut = 111);
-        //EXE(ut.get<int&>() = 111);
+        EXE(ut.as<int>() = 111);
         EXE(ut = "111");
-        PRN(i);
-        PRN(s);
         PRN(ut);
         PRNAS(ut, int);
         PRNAS(ut, std::string);
+        ASSERT(i == 111);
+        ASSERT(s == "111");
+        ASSERT(ut == 111);
+        //ASSERT(ut == "111");
         END;
     } {
         BEG;
