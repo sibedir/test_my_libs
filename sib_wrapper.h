@@ -227,22 +227,27 @@ namespace sib {
     class TReference
     {
     public:
-        using data_type = T&;
+        using value_type = std::remove_reference_t<T>;
+        using data_type = value_type&;
     private:
-        T& data;
+        data_type data;
     public:
         constexpr TReference(T& ref) noexcept : data(ref) {}
 
-        constexpr operator T const & () const noexcept { return data; }
-        constexpr operator T       & ()       noexcept { return data; }
+        constexpr operator value_type const & () const noexcept { return data; }
+        constexpr operator value_type       & ()       noexcept { return data; }
 
-        //template <typename AnyT>
-        //constexpr T& operator= (AnyT const & val) noexcept { return data = val; }
+        template <sib::NotAnyOf<value_type, value_type const, value_type &, value_type const &> AnyT>
+        explicit constexpr operator AnyT () noexcept { return static_cast<AnyT>(data); }
 
         constexpr T& operator= (T const& val) noexcept { return data = val; }
 
-        //constexpr std::strong_ordering operator<=>(TReference const &) const = default;
-        //constexpr std::strong_ordering operator<=>(T const& other) const noexcept { return data <=> other; }
+        constexpr auto operator == (T const& other) const noexcept { return data == other; }
+        constexpr auto operator != (T const& other) const noexcept { return data != other; }
+        constexpr auto operator <  (T const& other) const noexcept { return data <  other; }
+        constexpr auto operator >  (T const& other) const noexcept { return data >  other; }
+        constexpr auto operator <= (T const& other) const noexcept { return data <= other; }
+        constexpr auto operator >= (T const& other) const noexcept { return data >= other; }
     };
 
 

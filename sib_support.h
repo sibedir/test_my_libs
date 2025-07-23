@@ -21,30 +21,45 @@ namespace sib {
 
 
 
-    // specialization of template
+    // ----------------------------------------------------------------------------------- type traits
+
+    // instantiation of template
+
+    template <typename T, template <typename...> typename Templ>
+    constexpr bool is_instantiation_of_v = false;
 
     template <template <typename...> typename Templ, typename... Ts>
-    struct specialization_templ
+    constexpr bool is_instantiation_of_v<Templ<Ts...>, Templ> = true;
+
+    template <typename T, template <typename...> typename Templ>
+    constexpr bool not_instantiation_of_v = not is_instantiation_of_v<T, Templ>;
+
+    template <typename T, template <typename...> typename Templ> concept InstantiationOf = is_instantiation_of_v<T, Templ>;
+
+
+
+    template <template <typename...> typename Templ, typename... Ts>
+    struct instantiate_templ
     {
         using type = Templ<Ts...>;
     };
 
     template <template <typename...> typename Templ, typename... Ts>
-    using specialization_templ_t = typename specialization_templ<Templ, Ts...>::type;
+    using instantiate_templ_t = typename instantiate_templ<Templ, Ts...>::type;
 
 
 
     template <template <typename...> typename Templ, typename Like>
-    struct specialization_like;
+    struct instantiate_like;
 
     template <template <typename...> typename Templ, template <typename...> typename Like, typename... Ts>
-    struct specialization_like<Templ, Like<Ts...>>
+    struct instantiate_like<Templ, Like<Ts...>>
     {
         using type = Templ<Ts...>;
     };
 
     template <template <typename...> typename Templ, typename Like>
-    using specialization_like_t = typename specialization_like<Templ, Like>::type;
+    using instantiate_like_t = typename instantiate_like<Templ, Like>::type;
 
 
 
@@ -57,15 +72,15 @@ namespace sib {
         template <typename T>
         constexpr std::string_view __STN__() noexcept
         {
-            #ifdef __clang__
-                return __PRETTY_FUNCTION__;
-            #elif defined(__GNUC__)
-                return __PRETTY_FUNCTION__;
-            #elif defined(_MSC_VER)
-                return __FUNCSIG__;
-            #else
-                #error "Unsupported compiler!"
-            #endif
+#ifdef __clang__
+            return __PRETTY_FUNCTION__;
+#elif defined(__GNUC__)
+            return __PRETTY_FUNCTION__;
+#elif defined(_MSC_VER)
+            return __FUNCSIG__;
+#else
+#error "Unsupported compiler!"
+#endif
         }
 
     }
@@ -120,44 +135,46 @@ namespace sib {
 
     // INTERFACE
 
-                template<int      N> struct int_tag;
-                template<typename T> struct type_tag;
+    template<int      N> struct int_tag;
+    template<typename T> struct type_tag;
 
-                struct container_of_types;
+    struct container_of_types {}; // base type for containers of types
 
-                template <typename...> struct type_pack;
-                template <typename...> struct type_list;
+    template <typename...> struct type_pack;
+    template <typename...> struct type_list;
 
-                template <typename...> struct types_info_helper;
-                template <typename...> struct types_info_spec;
+    template <typename...> struct types_info_helper;
+    template <typename...> struct types_info_spec;
 
-                template <typename...> struct types_first;
-                template <typename...> struct types_last;
+    template <typename...> struct types_first;
+    template <typename...> struct types_last;
 
-                template <typename, typename> struct types_summ;
-                template <size_t  , typename> struct types_separat;
+    template <typename, typename> struct types_summ;
 
-                template <typename...> struct types_sorted;
-                template <typename...> struct types_sequence;
+    template <size_t, typename> struct types_head;
+    template <size_t, typename> struct types_tail;
+
+    template <typename...> struct types_sorted;
+    template <typename...> struct types_sequence;
 
     // USING & CONST
 
-                template <typename L, typename R> constexpr bool type_less_v = (sib::static_type_name<L>() < sib::static_type_name<R>());
-                template <typename L, typename R> constexpr bool type_more_v = (sib::static_type_name<L>() > sib::static_type_name<R>());
-                template <typename L, typename R> constexpr bool type_equal_v = std::is_same_v<L, R>;
+    template <typename L, typename R> constexpr bool type_less_v = (sib::static_type_name<L>() < sib::static_type_name<R>());
+    template <typename L, typename R> constexpr bool type_more_v = (sib::static_type_name<L>() > sib::static_type_name<R>());
+    template <typename L, typename R> constexpr bool type_equal_v = std::is_same_v<L, R>;
 
-                template <typename... Ts> using types_info = typename types_info_spec<Ts...>::type;
+    template <typename... Ts> using types_info = typename types_info_spec<Ts...>::type;
 
-                template <typename... Ts> using types_first_t = typename types_first<Ts...>::type;
-                template <typename... Ts> using types_last_t  = typename types_last <Ts...>::type;
+    template <typename... Ts> using types_first_t = typename types_first<Ts...>::type;
+    template <typename... Ts> using types_last_t = typename types_last <Ts...>::type;
 
-                template <typename Ts1, typename Ts2> using types_summ_t = typename types_summ<Ts1, Ts2>::type;
+    template <typename Ts1, typename Ts2> using types_summ_t = typename types_summ<Ts1, Ts2>::type;
 
-                template <size_t N, typename Ts> using types_head = typename types_separat<N, Ts>::head;
-                template <size_t N, typename Ts> using types_tail = typename types_separat<N, Ts>::tail;
+    template <size_t N, typename Ts> using types_head_t = typename types_head<N, Ts>::type;
+    template <size_t N, typename Ts> using types_tail_t = typename types_tail<N, Ts>::type;
 
-                template <typename... Ts> using types_sorted_t   = typename types_sorted   <Ts...>::types;
-                template <typename... Ts> using types_sequence_t = typename types_sequence <Ts...>::types;
+    template <typename... Ts> using types_sorted_t = typename types_sorted   <Ts...>::types;
+    template <typename... Ts> using types_sequence_t = typename types_sequence <Ts...>::types;
 
     // IMPLEMENTATION
 
@@ -167,30 +184,18 @@ namespace sib {
 
 
 
-    // compare
-    template <typename L, typename R> struct type_less  : std::bool_constant<type_less_v<L, R>> {};
-    template <typename L, typename R> struct type_more  : std::bool_constant<type_more_v<L, R>> {};
-    template <typename L, typename R> using  type_equal = std::is_same  <L, R>;
-    
-
-
-    // specialization
+    // instantiation
     template <
         template <typename...> typename Templ,
         template <typename...> typename TsTempl,
         typename... Ts
     >
         requires(std::is_base_of_v<container_of_types, TsTempl<>>)
-    struct specialization_templ<Templ, TsTempl<Ts...>>
+    struct instantiate_templ<Templ, TsTempl<Ts...>>
     {
         using type = Templ<Ts...>;
     };
 
-
-
-    // container
-
-    struct container_of_types {};
 
 
     // type_pack
@@ -198,7 +203,7 @@ namespace sib {
     template <typename... Ts> struct type_pack : container_of_types {};
 
     template <typename T>
-    using get_types_pack = specialization_like_t<type_pack, T>;
+    using get_types_pack = instantiate_like_t<type_pack, T>;
 
 
     // type_list
@@ -207,7 +212,7 @@ namespace sib {
     struct type_list<> : container_of_types
     {
         template <size_t N> requires(N == 0)
-        static consteval auto get_tail()
+            static consteval auto get_tail()
         {
             return type_list<>{};
         }
@@ -219,24 +224,20 @@ namespace sib {
         template <size_t N, typename... Ps>
         consteval auto get_head()
         {
-            if constexpr (N == 0) { return type_list<Ps...   >{}; } else
-            if constexpr (N == 1) { return type_list<Ps..., F>{}; } else
-                                  { return type_list<   Ts...>{}.get_head<N-1, Ps..., F>(); }
+            if constexpr (N == 0) { return type_list<Ps...>{}; }
+            else { return type_list<Ts...>{}.get_head<N - 1, Ps..., F>(); }
         }
 
         template <size_t N>
         consteval auto get_tail()
         {
-            if constexpr (N == 0) { return type_list<F, Ts...>{}; } else
-            if constexpr (N == 1) { return type_list<   Ts...>{}; } else
-                                  { return type_list<   Ts...>{}.get_tail<N-1>(); }
+            if constexpr (N == 0) { return type_list<F, Ts...>{}; }
+            else { return type_list<   Ts...>{}.get_tail<N - 1>(); }
         }
     };
 
-
-
     template <typename T>
-    using get_types_list = specialization_like_t<type_list, T>;
+    using get_types_list = instantiate_like_t<type_list, T>;
 
 
 
@@ -248,7 +249,6 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename... Ts>
-        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_info_spec<TsTempl<Ts...>>
     {
         using type = types_info_helper<Ts...>;
@@ -262,7 +262,7 @@ namespace sib {
     struct types_info_helper
     {
         template <template <typename...> typename TsTempl = type_pack>
-            requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
         using types = TsTempl<Ts...>;
 
         static constexpr size_t count = sizeof...(Ts);
@@ -279,7 +279,6 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename T, typename... Ts>
-        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_first<TsTempl<T, Ts...>>
     {
         using type = T;
@@ -296,7 +295,6 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename... Ts>
-        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
     struct types_last<TsTempl<Ts...>>
     {
         using type = typename decltype((type_tag<Ts>{}, ...))::type;
@@ -306,71 +304,105 @@ namespace sib {
 
     // summ
 
-    template <template <typename...> typename TsTempl, typename T, typename... Ts>
-        requires(
-                not std::is_base_of_v<container_of_types, T>
-            and     std::is_base_of_v<container_of_types, TsTempl<>>
-        )
-    struct types_summ<T, TsTempl<Ts...>>
+    template <template <typename...> typename Templ, typename... Ts1, typename... Ts2>
+        requires(std::is_base_of_v<container_of_types, Templ<>>)
+    struct types_summ<Templ<Ts1...>, Templ<Ts2...>>
     {
-        using type = TsTempl<T, Ts...>;
+        using type = Templ<Ts1..., Ts2...>;
     };
 
-    template <template <typename...> typename TsTempl, typename T, typename... Ts>
-        requires(
-                not std::is_base_of_v<container_of_types, T>
-            and     std::is_base_of_v<container_of_types, TsTempl<>>
-        )
-    struct types_summ<TsTempl<Ts...>, T>
+    template <typename T, template <typename...> typename Templ, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, Templ<>>
+    and not_instantiation_of_v<T, Templ>)
+        struct types_summ<T, Templ<Ts...>>
     {
-        using type = TsTempl<Ts..., T>;
+        using type = Templ<T, Ts...>;
     };
 
-    template <template <typename...> typename TsTempl, typename... Ts1, typename... Ts2>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
-    struct types_summ<TsTempl<Ts1...>, TsTempl<Ts2...>>
+    template <typename T, template <typename...> typename Templ, typename... Ts>
+        requires(std::is_base_of_v<container_of_types, Templ<>>
+    and not_instantiation_of_v<T, Templ>)
+        struct types_summ<Templ<Ts...>, T>
     {
-        using type = TsTempl<Ts1..., Ts2...>;
+        using type = Templ<Ts..., T>;
     };
 
 
 
-    // separat
-  
-    template <template <typename...> typename TsTempl, typename... Ts>
-        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
-    struct types_separat<0, TsTempl<Ts...>>
-    {
-        using head = TsTempl<>;
-        using tail = TsTempl<Ts...>;
+    // head
+
+//#define GPTHEAD
+#ifdef GPTHEAD
+
+#include <tuple>
+#include <type_traits>
+
+// Вспомогательная структура для получения N первых типов из tuple
+    template <std::size_t N, typename Tuple>
+    struct tuple_head_impl;
+
+    template <std::size_t N, typename... Ts>
+    struct tuple_head_impl<N, std::tuple<Ts...>> {
+        static_assert(N <= sizeof...(Ts), "N is larger than number of types");
+
+        // Индексный срез
+        template <std::size_t... Is>
+        static auto head(std::index_sequence<Is...>) -> std::tuple<std::tuple_element_t<Is, std::tuple<Ts...>>...>;
+
+        using type = decltype(head(std::make_index_sequence<N>{}));
     };
 
-    template <template <typename...> typename TsTempl, typename F, typename... Ts>
-        //requires(std::is_base_of_v<container_of_types, TsTempl<>>)
-    struct types_separat<1, TsTempl<F, Ts...>>
-    {
-        using head = TsTempl<F>;
-        using tail = TsTempl<Ts...>;
+    // Преобразование tuple в шаблон произвольного типа
+    template <typename Tuple, template <typename...> typename Templ>
+    struct tuple_to_template;
+
+    template <template <typename...> typename Templ, typename... Ts>
+    struct tuple_to_template<std::tuple<Ts...>, Templ> {
+        using type = Templ<Ts...>;
     };
 
-    template <size_t N, template <typename...> typename TsTempl, typename... Ts>
-        //requires((N > 1) and (std::is_base_of_v<container_of_types, TsTempl<>>))
-        requires(N > 1)
-    struct types_separat<N, TsTempl<Ts...>>
-    {
-        using head = types_summ_t<
-            types_head<    N/2, type_pack<Ts...>>,
-            types_head<N - N/2, types_tail<N/2, type_pack<Ts...>>>
-        >;
-        using tail = types_tail<N - N/2, types_tail<N/2, type_pack<Ts...>>>;
+    // Основное решение
+    template <std::size_t N, template <typename...> typename Templ, typename... Ts>
+    struct types_head<N, Templ<Ts...>> {
+        using tuple_type = std::tuple<Ts...>;
+        using head_tuple = typename tuple_head_impl<N, tuple_type>::type;
+        using type = typename tuple_to_template<head_tuple, Templ>::type;
     };
 
-    template <size_t N, typename... Ts>
-        requires(N > 1)
-    struct types_separat<N, type_list<Ts...>>
+#else
+
+    template <size_t N, template <typename...> typename Templ, typename... Ts>
+    struct types_head<N, Templ<Ts...>>
     {
-        using head = decltype(type_list<Ts...>{}.get_head<N>());
-        using tail = decltype(type_list<Ts...>{}.get_tail<N>());
+    private:
+        template <size_t I, typename... L, typename M, typename... R>
+        static consteval auto impl(Templ<L...>, Templ<M, R...>)
+        {
+            if constexpr (I == 0) return std::declval<Templ<L...>>(); else
+                if constexpr (I == 1) return std::declval<Templ<L..., M>>(); else
+                    return impl<I - 1>(std::declval<Templ<L..., M>>(), std::declval<Templ<R...>>());
+        }
+    public:
+        using type = decltype(impl<N>(std::declval<Templ<>>(), std::declval<Templ<Ts...>>()));
+    };
+
+#endif // !MYHEAD
+
+
+    // tail
+
+    template <size_t N, template <typename...> typename Templ, typename... Ts>
+        requires (N == sizeof...(Ts))
+    struct types_tail<N, Templ<Ts...>>
+    {
+        using type = Templ<Ts...>;
+    };
+
+    template <size_t N, template <typename...> typename Templ, typename First, typename... Rest>
+        requires (N < (sizeof...(Rest) + 1))
+    struct types_tail<N, Templ<First, Rest...>>
+    {
+        using type = typename types_tail<N, Templ<Rest...>>::type;
     };
 
 
@@ -387,7 +419,7 @@ namespace sib {
     {
     private:
 
-        template <typename    , typename    > struct merge;
+        template <typename, typename    > struct merge;
         template <typename TL1, typename TL2> using  merge_t = typename merge<TL1, TL2>::type;
 
         template <typename... Ts>
@@ -440,8 +472,8 @@ namespace sib {
         {
             static constexpr size_t middle = sizeof...(Ts) / 2;
             using pack = merge_t<
-                sort_t<typename types_separat<middle, TsTempl<Ts...>>::head>,
-                sort_t<typename types_separat<middle, TsTempl<Ts...>>::tail>
+                sort_t<types_head_t<                middle, TsTempl<Ts...>>>,
+                sort_t<types_tail_t<sizeof...(Ts) - middle, TsTempl<Ts...>>>
             >;
         };
 
@@ -479,7 +511,7 @@ namespace sib {
         };
 
         template <typename Cond, typename... Ts>
-        using left  = collapse_t< std::conditional_t<type_less_v<Ts, Cond>, Ts, PASS> ... >;
+        using left = collapse_t< std::conditional_t<type_less_v<Ts, Cond>, Ts, PASS> ... >;
 
         template <typename Cond, typename... Ts>
         using right = collapse_t< std::conditional_t<type_more_v<Ts, Cond>, Ts, PASS> ... >;
@@ -531,29 +563,33 @@ namespace sib {
 
     // ----------------------------------------------------------------------------------- type traits
 
-    // specialization
-
-    template <template <typename...> typename, typename...>
-    struct  is_specialization : std::false_type {};
-
-    template <template <typename...> typename Templ, typename... Ts>
-    struct  is_specialization<Templ, Templ<Ts...>> : std::true_type {};
-
-    template <template <typename...> typename Templ, typename... Ts> constexpr bool is_specialization_v = is_specialization<Templ, Templ<Ts...>>::value;
-
-    template <typename T, template <typename...> typename Templ> concept Specialization =  is_specialization_v<Templ, T>;
-
-
-
     // any of ...
 
     template <typename T, typename... Ts> constexpr bool  is_any_of_v = (std::is_same_v<T, Ts> or ...);
     template <typename T, typename... Ts> constexpr bool not_any_of_v = not is_any_of_v<T, Ts...>;
 
-    template <typename T, typename... Ts> struct is_any_of : std::bool_constant<is_any_of_v<T, Ts...>> {};
-
-    template <typename T, typename... Ts> concept    AnyOf =  is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept    AnyOf = is_any_of_v<T, Ts...>;
     template <typename T, typename... Ts> concept NotAnyOf = not_any_of_v<T, Ts...>;
+
+
+
+    // one of ...
+
+    //template <typename, typename...> struct is_one_of;
+
+    template <typename...> struct is_one_of : std::false_type {};
+
+    template <typename T, typename First, typename... Rest>
+    struct is_one_of<T, First, Rest...> : std::bool_constant<
+            (    std::is_same_v<T, First> and not_any_of_v<T, Rest...>)
+         or (not std::is_same_v<T, First> and  is_one_of  <T, Rest...>::value)
+    >{};
+
+    template <typename T, typename... Ts> constexpr bool  is_one_of_v =     is_one_of<T, Ts...>::value;
+    template <typename T, typename... Ts> constexpr bool not_one_of_v = not is_one_of<T, Ts...>::value;
+
+    template <typename T, typename... Ts> concept    OneOf =  is_one_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept NotOneOf = not_one_of_v<T, Ts...>;
 
 
 
@@ -566,10 +602,10 @@ namespace sib {
     concept ConvertibleFromTo = is_convertible_from_to_v<From, To>;
 
     template <typename From, typename... To>
-    constexpr bool is_convertible_from_tosome_v = (is_convertible_from_to_v<From, To> or ...);
+    constexpr bool is_convertible_from_toanyof_v = (is_convertible_from_to_v<From, To> or ...);
 
     template <typename From, typename... To>
-    concept ConvertibleFromToSome = is_convertible_from_tosome_v<From, To...>;
+    concept ConvertibleFromToAnyOf = is_convertible_from_toanyof_v<From, To...>;
 
 
 
@@ -602,8 +638,8 @@ namespace sib {
             };
           
             template <typename From, typename To, typename... To_other>
-                requires (     (    is_convertible_from_to_v    <From, To>         )
-                           and (not is_convertible_from_tosome_v<From, To_other...>) )
+                requires (     (    is_convertible_from_to_v     <From, To>         )
+                           and (not is_convertible_from_toanyof_v<From, To_other...>) )
             struct convert_from_tooneof<From, To, To_other...>
             {
                 static constexpr bool exist = true;
@@ -627,29 +663,38 @@ namespace sib {
     // convert To From...
 
     template <typename To, typename From>
-    constexpr bool  is_convertible_to_from_v = std::is_convertible_v<From, To>;
+    constexpr bool  is_convertible_to_from_v =     std::is_convertible_v<From, To>;
+
+    template <typename To, typename From>
+    constexpr bool not_convertible_to_from_v = not std::is_convertible_v<From, To>;
 
     template <typename To, typename From>
     concept ConvertibleToFrom = is_convertible_to_from_v<To, From>;
 
     template <typename To, typename... From>
-    constexpr bool  is_convertible_to_fromsome_v = (is_convertible_to_from_v<To, From> or ...);
+    constexpr bool  is_convertible_to_fromanyof_v = ( is_convertible_to_from_v<To, From> or  ...);
 
     template <typename To, typename... From>
-    concept ConvertibleToFromSome = is_convertible_to_fromsome_v<To, From...>;
+    constexpr bool not_convertible_to_fromanyof_v = (not_convertible_to_from_v<To, From> and ...);
+
+    template <typename To, typename... From>
+    concept ConvertibleToFromAnyOf = is_convertible_to_fromanyof_v<To, From...>;
 
 
 
     template <typename To, typename From, typename... From_other> struct convert_to_fromoneof;
 
     template <typename To, typename From, typename... From_other>
-    constexpr bool is_convertible_to_fromoneof_v = convert_to_fromoneof<To, From, From_other...>::exist;
+    constexpr bool  is_convertible_to_fromoneof_v =     convert_to_fromoneof<To, From, From_other...>::exist;
+
+    template <typename To, typename From, typename... From_other>
+    constexpr bool not_convertible_to_fromoneof_v = not convert_to_fromoneof<To, From, From_other...>::exist;
 
     template <typename To, typename... From>
     using convert_to_fromoneof_t = typename convert_to_fromoneof<To, From...>::type;
 
-            template <typename To, typename From>
-            struct convert_to_fromoneof<To, From>
+            template <typename To, typename... From>
+            struct convert_to_fromoneof<To, From...>
             {
                 static constexpr bool exist = false;
             };
@@ -663,14 +708,8 @@ namespace sib {
             };
           
             template <typename To, typename From, typename... From_other>
-            struct convert_to_fromoneof<To, From, From_other...>
-            {
-                static constexpr bool exist = false;
-            };
-          
-            template <typename To, typename From, typename... From_other>
-                requires (     (    is_convertible_to_from_v    <To, From>         )
-                           and (not is_convertible_to_fromsome_v<To, From_other...>) )
+                requires (     (    is_convertible_to_from_v     <To, From>         )
+                           and (not is_convertible_to_fromanyof_v<To, From_other...>) )
             struct convert_to_fromoneof<To, From, From_other...>
             {
                 static constexpr bool exist = true;
@@ -783,10 +822,10 @@ namespace sib {
     concept ConstructibleFromTo = is_constructible_from_to_v<From, To>;
 
     template <typename From, typename... To>
-    constexpr bool is_constructible_from_tosome_v = (is_constructible_from_to_v<From, To> or ...);
+    constexpr bool is_constructible_from_toanyof_v = (is_constructible_from_to_v<From, To> or ...);
 
     template <typename From, typename... To>
-    concept ConstructibleFromToSome = is_constructible_from_tosome_v<From, To...>;
+    concept ConstructibleFromToAnyOf = is_constructible_from_toanyof_v<From, To...>;
 
 
 
@@ -819,8 +858,8 @@ namespace sib {
             };
           
             template <typename From, typename To, typename... To_other>
-                requires (     (    is_constructible_from_to_v    <From, To>         )
-                           and (not is_constructible_from_tosome_v<From, To_other...>) )
+                requires (     (    is_constructible_from_to_v     <From, To>         )
+                           and (not is_constructible_from_toanyof_v<From, To_other...>) )
             struct construct_from_tooneof<From, To, To_other...>
             {
                 static constexpr bool exist = true;
@@ -850,10 +889,10 @@ namespace sib {
     concept ConstructibleToFrom = is_constructible_to_from_v<To, From>;
 
     template <typename To, typename... From>
-    constexpr bool  is_constructible_to_fromsome_v = (is_constructible_to_from_v<To, From> or ...);
+    constexpr bool  is_constructible_to_fromanyof_v = (is_constructible_to_from_v<To, From> or ...);
 
     template <typename To, typename... From>
-    concept ConstructibleToFromSome = is_constructible_to_fromsome_v<To, From...>;
+    concept ConstructibleToFromAnyOf = is_constructible_to_fromanyof_v<To, From...>;
 
 
 
@@ -886,8 +925,8 @@ namespace sib {
             };
           
             template <typename To, typename From, typename... From_other>
-                requires (     (    is_constructible_to_from_v    <To, From>         )
-                           and (not is_constructible_to_fromsome_v<To, From_other...>) )
+                requires (     (    is_constructible_to_from_v     <To, From>         )
+                           and (not is_constructible_to_fromanyof_v<To, From_other...>) )
             struct construct_to_fromoneof<To, From, From_other...>
             {
                 static constexpr bool exist = true;
@@ -1181,8 +1220,8 @@ namespace sib {
 
     template <typename T, typename... Ts>
     constexpr bool is_unique_v =
-            (not is_convertible_to_fromsome_v<T, Ts...>)
-        and (not is_convertible_from_tosome_v<T, Ts...>)
+            (not is_convertible_to_fromanyof_v<T, Ts...>)
+        and (not is_convertible_from_toanyof_v<T, Ts...>)
         and (    is_unique_v<Ts...>)
     ;
 

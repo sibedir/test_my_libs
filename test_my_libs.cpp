@@ -1,13 +1,14 @@
-﻿#include <iostream>
+﻿#include "sib_wrapper.h"
+#include "sib_unique_tuple.h"
+#include "sib_support.h"
 
+#include <iostream>
+
+#include <utility>
 #include <string>
 #include <vector>
 #include <tuple>
 #include <variant>
-
-#include "sib_wrapper.h"
-#include "sib_unique_tuple.h"
-#include "sib_support.h"
 
 #define SIB_DEBUG
 #include "sib_unit_test.h"
@@ -1477,14 +1478,14 @@ int main()
         PRN(Types_to_Str(Ts{}));
         END;
 
-        EXE(using H = sib::types_head<_I _ Ts>);
+        EXE(using H = sib::types_head_t<_I _ Ts>);
         PRN(sib::static_type_name<H>());
         MSG("    length     = ", sib::static_type_name<H>().size());
         MSG("    type count = ", sib::types_info<H>::count);
         PRN(Types_to_Str(H{}));
         END;
 
-        EXE(using T = sib::types_tail<_I _ Ts>);
+        EXE(using T = sib::types_tail_t<_I _ Ts>);
         PRN(sib::static_type_name<T>());
         MSG("    length     = ", sib::static_type_name<T>().size());
         MSG("    type count = ", sib::types_info<T>::count);
@@ -1492,7 +1493,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = sib::types_tail<10, gen_TP<30>>);
+        EXE(using Ts = sib::types_tail_t<10, gen_TP<30>>);
         PRN(sib::static_type_name<Ts>());
         MSG("    length     = ", sib::static_type_name<Ts>().size());
         MSG("    type count = ", sib::types_info<Ts>::count);
@@ -1623,14 +1624,14 @@ int main()
         PRN(Types_to_Str(Ts{}));
         END;
 
-        EXE(using H = sib::types_head<_I _ Ts>);
+        EXE(using H = sib::types_head_t<_I _ Ts>);
         PRN(sib::static_type_name<H>());
         MSG("    length     = ", sib::static_type_name<H>().size());
         MSG("    type count = ", sib::types_info<H>::count);
         PRN(Types_to_Str(H{}));
         END;
 
-        EXE(using T = sib::types_tail<_I _ Ts>);
+        EXE(using T = sib::types_tail_t<_I _ Ts>);
         PRN(sib::static_type_name<T>());
         MSG("    length     = ", sib::static_type_name<T>().size());
         MSG("    type count = ", sib::types_info<T>::count);
@@ -1638,7 +1639,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = sib::types_tail<10, gen_TL<30>>);
+        EXE(using Ts = sib::types_tail_t<10, gen_TL<30>>);
         MSG("    length     = ", sib::static_type_name<Ts>().size());
         MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Types_to_Str(Ts{}));
@@ -1701,6 +1702,28 @@ int main()
         MSG();
     } {
         BEG;
+        DEF(sib::MakeUniqueTuple <TEnumClass _ std::set<int>>, ut1, (TEnumClass::e_5));
+        PRN(static_cast<int>(ut1));
+        PRN(ut1.as<int>());
+        PRN(ut1 == TEnumClass::e_5);
+
+        DEF(TEnumClass, e, = TEnumClass::e_2);
+        DEF(sib::MakeUniqueTuple <TEnumClass& _ std::set<int>>, ut2, (e));
+        PRN(static_cast<int>(ut2));
+        PRN(ut2.as<int>());
+        PRN(ut2 == TEnumClass::e_2);
+
+        DEF(sib::MakeUniqueTuple <int _ std::string>, ut3, ("000"));
+        PRN(ut3 == "000");
+
+        DEF(std::string, s, = "111");
+        DEF(sib::TReference<std::string>, sr, = s);
+        DEF(sib::MakeUniqueTuple <int _ std::string&>, ut4, (s));
+        PRN(ut4 == "111");
+        PRN(sr == "111");
+        END;
+    } {
+        BEG;
         using Ts = sib::types_sequence_t<sib::type_pack<int, std::set<int>, std::string>>;
         using TsF = sib::types_first_t<Ts>;
         using UT = sib::MakeUniqueTuple<int, std::set<int>, std::string>;
@@ -1759,7 +1782,8 @@ int main()
         PRNAS(ut, int);
         PRNAS(ut, std::string);
         END;
-        EXE(ut.as<int>() = 111);
+        EXE(ut.get<int>() = 111);
+        //EXE(ut.as<int>() = 111);
         EXE(ut = "111");
         PRN(ut);
         PRNAS(ut, int);
@@ -1854,8 +1878,8 @@ int main()
         END;
     } {
         BEG;
-        //DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
-        DEF(sib::MakeUniqueTuple<int _ std::string>, ut,);
+        DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
+        //DEF(sib::MakeUniqueTuple<int _ std::string>, ut,);
         DEF(float, f, = ut);
         DEF(std::string, s, = ut);
         PRN(f);
@@ -1867,8 +1891,8 @@ int main()
         END;
     } {
         BEG;
-        DEF(auto, ut, = sib::MakeUniqueTuple<std::wstring _ int>());
-        //DEF(auto, ut, = sib::make_unique_tuple(L"qwerty"s _ 111));
+        //DEF(auto, ut, = sib::MakeUniqueTuple<std::wstring _ int>());
+        DEF(auto, ut, = sib::make_unique_tuple(L"qwerty"s _ 111));
         DEF(float, f, = ut);
         DEF(std::wstring, s, = ut);
         PRN(f);
@@ -1922,62 +1946,143 @@ int main()
         BEG;
         DEF(int, i, = 0);
         DEF(std::string, s, = "");
-        DEF(sib::MakeUniqueTuple<int _ std::string>, aaa, { i _ s });
-        EXE(aaa = 42);
-        EXE(aaa = "qwerty");
-        ASSERT(aaa == 42);
-        ASSERT(aaa == "qwerty");
-        PRNAS(aaa, int);
-        PRNAS(aaa, std::string);
+        DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { i _ s });
+        EXE(ut = 42);
+        EXE(ut = "qwerty");
+        ASSERT(ut == 42);
+        ASSERT(ut == "qwerty");
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
         PRN(i);
         PRN(s);
-        PRN(aaa.get<int>());
-        PRN(aaa.as<int>());
-        PRN(aaa.as<int&>());
-        PRN(aaa.as<int32_t&>());
-        PRN(aaa.as<float>());
-        EXE(aaa.as<int32_t&>() = 777);
-        PRNAS(aaa, int);
+        PRN(ut.get<int>());
+        PRN(ut.as<int>());
+        PRN(ut.as<int&>());
+        PRN(ut.as<int32_t&>());
+        PRN(ut.as<float>());
+        EXE(ut.as<int32_t&>() = 777);
+        PRNAS(ut, int);
         END;
     } {
         BEG;
         DEF(int, i, = 42);
         DEF(std::string, s, = "qwerty");
-        DEF(sib::MakeUniqueTuple<int _ std::string> const, aaa, { i _ s });
-        ASSERT(aaa == 42);
-        ASSERT(aaa == "qwerty");
-        PRNAS(aaa, int);
-        PRNAS(aaa, std::string);
-        PRN(aaa.get<int>());
-        PRN(aaa.as<int>());
-        PRN(aaa.as<int const &>());
-        PRN(aaa.as<int32_t const &>());
-        PRN(aaa.as<float>());
+        DEF(sib::MakeUniqueTuple<int _ std::string> const, ut, { i _ s });
+        ASSERT(ut == 42);
+        ASSERT(ut == "qwerty");
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        PRN(ut.get<int>());
+        PRN(ut.as<int>());
+        PRN(ut.as<int const &>());
+        PRN(ut.as<int32_t const &>());
+        PRN(ut.as<float>());
         END;
     } {
         BEG;
         DEF(int, i, = 0);
         DEF(std::string, s, = "");
-        DEF(sib::MakeUniqueTuple<int& _ std::string&>, aaa, { i _ s });
-        PRN(decltype(aaa)::types<>());
-        PRN(decltype(aaa)::veritable_types<>());
-        EXE(aaa.as<int>() = 42);
-        EXE(aaa = "qwerty");
+        DEF(sib::MakeUniqueTuple<int& _ std::string&>, ut, { i _ s });
+        PRN(decltype(ut)::types<>());
+        PRN(decltype(ut)::veritable_types<>());
+        EXE(ut.as<int>() = 42);
+        EXE(ut = "qwerty");
         ASSERT(i == 42);
         ASSERT(s == "qwerty");
-        ASSERT(aaa == 42);
-        ASSERT(aaa.as<std::string>() == "qwerty");
+        ASSERT(ut == 42);
+        ASSERT(ut.as<std::string>() == "qwerty");
         PRN(i);
         PRN(s);
-        PRNAS(aaa, int);
-        PRNAS(aaa, std::string);
-        PRN(aaa.get<int&>());
-        PRN(aaa.as<int>());
-        PRN(aaa.as<int&>());
-        PRN(aaa.as<int32_t&>());
-        PRN(aaa.as<float>());
-        EXE(aaa.as<int32_t&>() = 777);
-        PRNAS(aaa, int);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        PRN(ut.get<int&>());
+        PRN(ut.as<int>());
+        PRN(ut.as<int&>());
+        PRN(ut.as<int32_t&>());
+        PRN(ut.as<float>());
+        EXE(ut.as<int32_t&>() = 777);
+        PRNAS(ut, int);
+        END;
+    } {
+        BEG;
+        DEF(int, i, = 123);
+        DEF(std::string, s, = "123");
+        DEF(sib::MakeUniqueTuple<int const & _ std::string const &>, ut, { i _ s });
+        PRN(decltype(ut)::types<>());
+        PRN(decltype(ut)::veritable_types<>());
+        EXE(i = 42);
+        EXE(s = "qwerty");
+        ASSERT(ut == 42);
+        ASSERT(ut.as<std::string>() == "qwerty");
+        PRN(i);
+        PRN(s);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        PRN(ut.get<int const &>());
+        PRN(ut.as<int>());
+        PRN(ut.as<int const &>());
+        PRN(ut.as<int32_t const &>());
+        PRN(ut.as<float>());
+        PRNAS(ut, int);
+        END;
+    } {
+        BEG;
+        TEnum e = e_1;
+        DEF(sib::MakeUniqueTuple<std::string _ TEnum&>, ut, (e, ""));
+        PRN(ut);
+        PRNAS(ut, int);
+        PRNAS(ut, std::string);
+        PRN(e);
+        PRN(ut.as<int>());
+        PRN(ut.as<TEnum>() = e_4);
+        ASSERT(e == e_4);
+        PRN(ut.as<TEnum>());
+        PRN(ut.get<TEnum&>() = e_2);
+        ASSERT(e == e_2);
+        PRN(ut.as<TEnum>());
+        END;
+    } {
+        BEG;
+        TEnumClass e = TEnumClass::e_1;
+        TEnumClass& er = e;
+        PRNAS(er, int);
+        DEF(sib::MakeUniqueTuple<std::string _ TEnumClass&>, ut, (e, ""));
+        PRN(ut);
+        PRNAS(ut, TEnumClass);
+        PRNAS(ut, std::string);
+        PRNAS(e, int);
+        PRN(decltype(ut)::veritable_types<>());
+        PRNAS(ut, int);
+        PRN(ut.as<TEnumClass>());
+        PRN(ut.as<TEnumClass>() = TEnumClass::e_4);
+        ASSERT(e == TEnumClass::e_4);
+        PRN(ut.as<int>());
+        PRN(ut.get<TEnumClass&>() = TEnumClass::e_2);
+        ASSERT(e == TEnumClass::e_2);
+        PRNAS(ut, int);
+        END;
+    } {
+        BEG;
+        //enum class TEnumClass123 : unsigned char { _1 = 1, _2, _3 };
+        DEF(TEnumClass123, e, = TEnumClass123::_1);
+        DEF(TEnumClass123 &, er, = e);
+        PRN(er);
+        PRNAS(er, int);
+        DEF(sib::MakeUniqueTuple<std::string _ TEnumClass123>, ut, (e, ""));
+        PRN(static_cast<int>(ut));
+        PRN(ut);
+        PRNAS(ut, TEnumClass123);
+        PRNAS(ut, std::string);
+        PRN(ut.as<TEnumClass123>());
+        PRN(ut.as<TEnumClass123>() = TEnumClass123::_3);
+        ASSERT(e == TEnumClass123::_1);
+        PRN(ut.as<TEnumClass123>());
+        PRN(ut.get<TEnumClass123>() = TEnumClass123::_2);
+        ASSERT(e == TEnumClass123::_1);
+        PRN(ut.as<TEnumClass123>());
+        END;
+    } {
+        BEG;
         END;
     } {
         BEG;
