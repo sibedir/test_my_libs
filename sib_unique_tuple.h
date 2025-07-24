@@ -110,7 +110,8 @@ namespace sib {
     };
 
     template <template <typename...> typename TsTempl, typename... Ts>
-        requires(std::is_base_of_v<container_of_types, TsTempl<>>)
+        requires (std::is_base_of_v<container_of_types, TsTempl<>>
+              and sib::is_unique_v<Ts...>)
     struct MakeUniqueTupleSpec<TsTempl<Ts...>>
     {
         using type = instantiate_templ_t<TUniqueTuple, types_sequence_t<TsTempl<Ts...>>>;
