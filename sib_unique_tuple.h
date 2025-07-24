@@ -11,22 +11,10 @@ namespace sib {
         public TWrapper<Ts> ...
     {
     private:
-        template <ConvertibleFromToAnyOf<Ts...> AnyT>
-        using conversion_base_type_from = convert_from_tooneof_t<AnyT, Ts...>;
-
-        template <ConvertibleFromToAnyOf<Ts...> AnyT>
-        using conversion_type_from = TWrapper<conversion_base_type_from<AnyT>>;
-
-        template <ConvertibleToFromAnyOf<Ts...> AnyT>
-        using conversion_base_type_to = convert_to_fromoneof_t<AnyT, Ts...>;
-
-        template <ConvertibleToFromAnyOf<Ts...> AnyT>
-        using conversion_type_to = TWrapper<conversion_base_type_to<AnyT>>;
-
-        template <ConstructibleFromToAnyOf<Ts...> AnyT>
+        template <typename AnyT>
         using construction_base_type_from = construct_from_tooneof_t<AnyT, Ts...>;
 
-        template <ConstructibleFromToAnyOf<Ts...> AnyT>
+        template <typename AnyT>
         using construction_type_from = TWrapper<construction_base_type_from<AnyT>>;
 
         template <typename AnyT>

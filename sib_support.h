@@ -70,17 +70,17 @@ namespace sib {
     namespace detail {
 
         template <typename T>
-        constexpr std::string_view __STN__() noexcept
+        constexpr std::string_view SIB_STN() noexcept
         {
-#ifdef __clang__
-            return __PRETTY_FUNCTION__;
-#elif defined(__GNUC__)
-            return __PRETTY_FUNCTION__;
-#elif defined(_MSC_VER)
-            return __FUNCSIG__;
-#else
-#error "Unsupported compiler!"
-#endif
+            #ifdef __clang__
+                return __PRETTY_FUNCTION__;
+            #elif defined(__GNUC__)
+                return __PRETTY_FUNCTION__;
+            #elif defined(_MSC_VER)
+                return __FUNCSIG__;
+            #else
+                #error "Unsupported compiler!"
+            #endif
         }
 
     }
@@ -88,10 +88,11 @@ namespace sib {
     template <typename T>
     constexpr std::string_view static_type_name() noexcept
     {
-        constexpr auto prefix = detail::__STN__<void>().find("void");
-        constexpr auto suffix = detail::__STN__<void>().size() - prefix - 4;
+        std::string_view().find("qwer");
+        constexpr auto prefix = detail::SIB_STN<void>().find("void");
+        constexpr auto suffix = detail::SIB_STN<void>().size() - prefix - 4;
 
-        auto name = detail::__STN__<T>();
+        auto name = detail::SIB_STN<T>();
 
         name.remove_prefix(prefix);
         name.remove_suffix(suffix);
