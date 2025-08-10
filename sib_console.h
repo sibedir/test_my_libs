@@ -47,30 +47,27 @@ namespace sib {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             while (_kbhit()) res << static_cast<char>(_getch());
         #else
-            // Сохраняем текущие настройки терминала
+            char ch;
             struct termios oldt, newt;
+
+            // Сохраняем текущие настройки терминала
             tcgetattr(STDIN_FILENO, &oldt);
             newt = oldt;
 
             // Включаем raw-режим (без канонического ввода и эха)
             newt.c_lflag &= ~(ICANON | ECHO);
 
-            // Ждём хотя бы 1 байт (блокирующий режим)
-            newt.c_cc[VMIN]  = 1; // минимум 1 байт
+            // Читаем первый байт (блокирующе)
+            newt.c_cc[VMIN]  = 1;
             newt.c_cc[VTIME] = 0;
             tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            char ch;
-
-            // Читаем первый байт (блокирующе)
             if (read(STDIN_FILENO, &ch, 1) == 1) res << ch;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
             // Читаем оставшиеся байты из буфера (без ожидания)
             newt.c_cc[VMIN] = 0;
             newt.c_cc[VTIME] = 0;
             tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
             while (read(STDIN_FILENO, &ch, 1) == 1) res << ch;
 
             // Возвращаем терминал в исходное состояние
