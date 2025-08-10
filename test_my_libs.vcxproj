@@ -135,12 +135,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="sib_console.cpp" />
     <ClCompile Include="sib_support.cpp" />
     <ClCompile Include="test_my_libs.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="sib_console.h" />
     <ClInclude Include="sib_support.h" />
     <ClInclude Include="sib_type_info.h" />
+    <ClInclude Include="sib_type_traits.h" />
     <ClInclude Include="sib_unique_tuple.h" />
     <ClInclude Include="sib_unit_test.h" />
     <ClInclude Include="sib_wrapper.h" />

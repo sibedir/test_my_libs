@@ -2,6 +2,7 @@
 
 #include <type_traits>
 
+#include <string_view>
 #include <string>
 #include <vector>
 #include <set>
@@ -9,40 +10,56 @@
 
 namespace sib {
 
+    // ----------------------------------------------------------------------------------- run-time type name
+
     template <typename...> struct TTypeInfo;
 
     template <typename T>
-    auto type_name() noexcept
+    constexpr auto type_name() noexcept
     {
         return TTypeInfo<T>::full_name();
     }
 
     template <typename T>
-    auto type_name(T&&) noexcept
+    constexpr auto type_name(T&&) noexcept
     {
         return type_name<T>();
     }
 
-    template <typename First, typename... Rest>
-    struct TTypeInfo<First, Rest...> {
-        static std::string full_name() noexcept
-        {
-            return type_name<First>() + ", " + TTypeInfo<Rest...>::full_name();
-        }
-    };
+    constexpr std::vector<std::string> _pars_tmpl_param(std::string_view str)
+    {
+        return {};
+    }
 
     template <typename T>
     struct TTypeInfo<T> {
     private:
+        using type = T;
         using rr_type = std::remove_reference_t<T>;
-
-        TTypeInfo() noexcept {};
-        TTypeInfo(T&) noexcept {};
-
+    public:
         static constexpr auto is_const = std::is_const_v     <rr_type>;
         static constexpr auto is_volat = std::is_volatile_v  <rr_type>;
-        static constexpr auto is_ref   = std::is_reference_v <T      >;
+        static constexpr auto is_ref   = std::is_reference_v <   type>;
         static constexpr auto is_arr   = std::is_array_v     <rr_type>;
+        static constexpr bool is_inst = (static_type_name<T>().find("<") != std::string_view::npos);
+        static inline std::vector<std::string> tmpl_param = (not is_inst) ? (std::vector<std::string>{}) : (_pars_tmpl_param(""));
+
+        static std::string full_name() noexcept
+        {
+            return std::string(
+                _low_name() +
+                _const_symbol() +
+                _volat_symbol() +
+                _ref_symbol() +
+                _array_size_symbol<rr_type>::get()
+            );
+        }
+    private:
+        TTypeInfo(T const &) : TTypeInfo() {};
+
+        TTypeInfo()
+        {
+        };
 
         static std::string _low_name() noexcept
         {
@@ -111,18 +128,6 @@ namespace sib {
 
         template <typename _T, size_t _N>
         struct _array_size_symbol<_T[_N]> { static std::string get() noexcept { return " [" + std::to_string(_N) + "]"; } };
-
-    public:
-        static std::string full_name() noexcept
-        {
-            return std::string(
-                _low_name() +
-                _const_symbol() +
-                _volat_symbol() +
-                _ref_symbol() +
-                _array_size_symbol<rr_type>::get()
-            );
-        }
     };
 
 } // namespace sib

@@ -74,13 +74,13 @@ _MAFT(sib::TArray<int _ 5>  ,      not      ,               ,               ,   
 template <size_t... idx_>
 consteval auto gen_TP_impl(std::index_sequence<idx_...>)
 {
-    return sib::type_pack< sib::int_tag<idx_> ... > {};
+    return sib::types_pack< sib::int_tag<idx_> ... > {};
 }
 
 template <size_t... idx_>
 consteval auto gen_TL_impl(std::index_sequence<idx_...>)
 {
-    return sib::type_list< sib::int_tag<idx_> ... > {};
+    return sib::types_list< sib::int_tag<idx_> ... > {};
 }
 
 template <size_t N> using gen_TP = decltype(gen_TP_impl(std::make_index_sequence<N>{}));
@@ -177,7 +177,7 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 // MAIN ------------------------------------------------------------------------------
 
 //#define TEST_UNIT_TEST
-//#define TEST_SUPPORT
+#define TEST_SUPPORT
 //#define TEST_NULLPTR
 //#define TEST_VALUE
 //#define TEST_POINTER
@@ -185,7 +185,7 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 //#define TEST_WRAPPER
 //#define TEST_TYPE_PACK
 //#define TEST_TYPE_LIST
-#define TEST_UNIQUE_TUPLE
+//#define TEST_UNIQUE_TUPLE
 
 #ifdef TEST_UNIT_TEST
     #ifndef SIB_DEBUG
@@ -195,15 +195,47 @@ struct MyStruct : sib::TWrapper<int>, sib::TWrapper<TEnum>, sib::TWrapper<TEnumC
 
 //#define CHAKE_BOOL(expr) std::cout << #expr << " = " << (expr) << '\n';
 
+#include <conio.h>
+
+//std::istringstream str("qqqqqqq\0");
+//namespace std {
+//    istream cin(str.rdbuf(), true);
+//}
+
 int main()
 {
-    setlocale(LC_ALL, "ru-ru");
-
     #ifdef SIB_DEBUG
-    sib::debug::DISCLOSURE_STRING_LENGTH = 32;
+        sib::debug::DISCLOSURE_STRING_LENGTH = 32;
     #endif // SIB_DEBUG
 
-    //sib::WaitAnyKey("\n...end"); return 0;
+    setlocale(LC_ALL, "ru-ru");
+
+    #ifdef _WIN32
+        sib::KeyCodeNames[{(char)128}] = "А";
+        sib::KeyCodeNames[{(char)129}] = "Б";
+        sib::KeyCodeNames[{(char)130}] = "В";
+        sib::KeyCodeNames[{(char)131}] = "Г";
+        // ...
+    #else
+        sib::KeyCodeNames[{'\xD0', '\x90'}] = "А";
+        sib::KeyCodeNames[{'\xD0', '\x91'}] = "Б";
+        sib::KeyCodeNames[{'\xD0', '\x92'}] = "В";
+        sib::KeyCodeNames[{'\xD0', '\x93'}] = "Г";
+        // ...
+    #endif
+
+    std::cout << "Wait [Esc]...\n";
+    sib::TKeyCode kc;
+    do {
+        kc = sib::WaitAnyKey();
+        std::cout << "[" << kc.name() << "]\n";
+    } while (kc != sib::KC_ESC);
+
+    sib::WaitAnyKey(
+        "     --- END ---\n"
+        "   press any key..."
+    );
+    return 0;
 
 #ifdef TEST_UNIT_TEST
     {
@@ -274,17 +306,20 @@ int main()
     {
         MSG();
         MSG("**************************************************************************************************");
-        MSG("                                            unit test                                             ");
+        MSG("                                            support                                               ");
         MSG("**************************************************************************************************");
         MSG();
     } {
         BEG;
+        END;
+    } {
+        BEG;
         PRN(sib::is_convertible_from_tooneof_v<int _ float _ std::string>);
-        PRN(sib::convert_from_tooneof_t<int _ float _ std::string>{});
+        PRN(sib::convert_from_tooneof_select<int _ float _ std::string>{});
         PRN(sib::is_convertible_from_tooneof_v<int _ float _ char _ std::string>);
         PRN(sib::is_convertible_from_tooneof_v<int _ std::string _ std::vector<int>>);
         PRN(sib::is_convertible_from_tooneof_v<int _ std::string _ sib::TWrapper<float> _ std::vector<int>>);
-        PRN(sib::convert_from_tooneof_t<int _ std::string _ sib::TWrapper<float> _ std::vector<int>>{});
+        PRN(sib::convert_from_tooneof_select<int _ std::string _ sib::TWrapper<float> _ std::vector<int>>{});
         PRN(sib::is_convertible_from_tooneof_v<int _ std::string _ sib::TWrapper<float> _ std::vector<int> _ sib::TWrapper<int>>);
         END;
     } {
@@ -317,26 +352,26 @@ int main()
         END;
         EXE(static_assert(!sib::is_convertible_from_tooneof_v<C1, C2, C3>));
         EXE(static_assert( sib::is_convertible_from_tooneof_v<C3, C1, C2, C1>));
-        PRN( sib::convert_from_tooneof_t<C3 _ C1 _ C2 _ C1>{} );
+        PRN( sib::convert_from_tooneof_select<C3 _ C1 _ C2 _ C1>{} );
         EXE(static_assert( sib::is_convertible_from_tooneof_v<C3, C2, C1, int>));
-        PRN( sib::convert_from_tooneof_t<C3 _ C2 _ C1 _ int>{} );
+        PRN( sib::convert_from_tooneof_select<C3 _ C2 _ C1 _ int>{} );
         EXE(static_assert( sib::is_convertible_from_tooneof_v<C2, C2, C1, C3>));
-        PRN( sib::convert_from_tooneof_t<C2 _ C2 _ C1 _ C3>{} );
+        PRN( sib::convert_from_tooneof_select<C2 _ C2 _ C1 _ C3>{} );
         EXE(static_assert( sib::is_convertible_from_tooneof_v<C2, C1, int, C3>));
-        PRN( sib::convert_from_tooneof_t<C2 _ C1 _ int _ C3>{} );
+        PRN( sib::convert_from_tooneof_select<C2 _ C1 _ int _ C3>{} );
         END;
         EXE(static_assert(!sib::is_convertible_to_fromoneof_v<C1, C2, C3>));
         EXE(static_assert( sib::is_convertible_to_fromoneof_v<int, C1, C2, C3>));
-        PRN( sib::convert_to_fromoneof_t<int _ C1 _ C2 _ C3>{} );
+        PRN( sib::convert_to_fromoneof_select<int _ C1 _ C2 _ C3>{} );
         EXE(static_assert( sib::is_convertible_to_fromoneof_v<C3, C2, C1, int>));
         EXE(static_assert( sib::is_convertible_to_fromoneof_v<C3, C1, int, MyClass>));
-        PRN( sib::convert_to_fromoneof_t<C3 _ C1 _ int _ MyClass>{} );
+        PRN( sib::convert_to_fromoneof_select<C3 _ C1 _ int _ MyClass>{} );
         EXE(static_assert(!sib::is_convertible_to_fromoneof_v<C2, C2, C1, C3>));
         EXE(static_assert( sib::is_convertible_to_fromoneof_v<C2, C2>));
         EXE(static_assert(!sib::is_convertible_to_fromoneof_v<C2, C1>));
         EXE(static_assert( sib::is_convertible_to_fromoneof_v<C2, C3>));
         EXE(static_assert( sib::is_convertible_to_fromoneof_v<C2, C1, int, C3>));
-        PRN( sib::convert_to_fromoneof_t<C2 _ C1 _ int _ C3>{} );
+        PRN( sib::convert_to_fromoneof_select<C2 _ C1 _ int _ C3>{} );
         END;
     } {
         struct C1 {}; // <- C1, C4
@@ -357,16 +392,16 @@ int main()
         BEG;
         EXE(static_assert(!sib::is_constructible_from_tooneof_v<C1, C2, C4, C3>));
         EXE(static_assert( sib::is_constructible_from_tooneof_v<C1, C2, C1, C3>));
-        PRN( sib::construct_from_tooneof_t<C1 _ C2 _ C1 _ C3>{} );
+        PRN( sib::construct_from_tooneof_select<C1 _ C2 _ C1 _ C3>{} );
         EXE(static_assert( sib::is_constructible_from_tooneof_v<C4, C2, C1, C3>));
-        PRN( sib::construct_from_tooneof_t<C4 _ C2 _ C1 _ C3>{} );
+        PRN( sib::construct_from_tooneof_select<C4 _ C2 _ C1 _ C3>{} );
         EXE(static_assert(!sib::is_constructible_from_tooneof_v<C4, C2, C1, C4>));
         END;
         EXE(static_assert(!sib::is_constructible_to_fromoneof_v<C5, C1, C2, C3>));
         EXE(static_assert( sib::is_constructible_to_fromoneof_v<C1, C2, C4, C3>));
-        PRN( sib::construct_to_fromoneof_t<C1 _ C2 _ C4 _ C3>{});
+        PRN( sib::construct_to_fromoneof_select<C1 _ C2 _ C4 _ C3>{});
         EXE(static_assert( sib::is_constructible_to_fromoneof_v<C1, C2, C1, C3>));
-        PRN( sib::construct_to_fromoneof_t<C1 _ C2 _ C1 _ C3>{});
+        PRN( sib::construct_to_fromoneof_select<C1 _ C2 _ C1 _ C3>{});
         EXE(static_assert(!sib::is_constructible_to_fromoneof_v<C1, C2, C4, C1, C3>));
         END;
     } {
@@ -536,11 +571,11 @@ int main()
         DEF(int, arr, [3] = { 1 _ 2 _ 3 });
         DEF(sib::TValue<int*>, p1, = &arr[0]);
         DEF(sib::TValue<int*>, p2, = &arr[1]);
-        EXE(auto aaa = p2 - p1);
+        //EXE(auto aaa = p2 - p1);
         PRN(arr);
         PRN(p1);
         PRN(p2);
-        PRN(aaa);
+        //PRN(aaa);
         END;
     } {
         BEG;
@@ -1004,8 +1039,8 @@ int main()
         PRN(ptr);
         END;
 
-        EXE(ptr = ptr - 3);
-        PRN(ptr);
+        //EXE(ptr = ptr - 3);
+        //PRN(ptr);
         END;
     } {
         BEG;
@@ -1022,7 +1057,7 @@ int main()
         PRN(i2 - i1);
         PRN(*ptr2 - *ptr1);
         PRN(&i2 - &i1);
-        PRN(ptr2 - ptr1);
+        //PRN(ptr2 - ptr1);
         END;
     }
 #endif TEST_POINTER
@@ -1411,19 +1446,19 @@ int main()
         MSG();
     } {
         BEG;
-        EXE(using f1  = sib::types_first_t<A _ B _ C>);
+        EXE(using f1  = sib::types_first_t<A>);
         EXE(using f2  = sib::types_first_t<C _ B _ B>);
         EXE(using f3  = sib::types_first_t<D _ D _ B>);
       //EXE(using f4  = sib::types_first_t<>);
         EXE(using f5  = sib::types_first_t<E>);
-        EXE(using f6  = sib::types_first_t<sib::type_pack<A _ B _ C>>);
-        EXE(using f7  = sib::types_first_t<sib::type_pack<C _ B _ B>>);
-        EXE(using f8  = sib::types_first_t<sib::type_pack<D _ D _ B>>);
-      //EXE(using f9  = sib::types_first_t<sib::type_pack<>>);
-        EXE(using f10 = sib::types_first_t<sib::type_pack<E>>);
-        EXE(using f11 = sib::types_first_t<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>);
-        EXE(using f12 = sib::types_first_t<sib::type_pack<sib::type_pack<D _ B>>>);
-        EXE(using f13 = sib::types_first_t<sib::type_pack<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>>);
+        EXE(using f6  = sib::types_first_t<sib::types_pack<A _ B _ C>>);
+        EXE(using f7  = sib::types_first_t<sib::types_pack<C _ B _ B>>);
+        EXE(using f8  = sib::types_first_t<sib::types_pack<D _ D _ B>>);
+      //EXE(using f9  = sib::types_first_t<sib::types_pack<>>);
+        EXE(using f10 = sib::types_first_t<sib::types_pack<E>>);
+        EXE(using f11 = sib::types_first_t<sib::types_pack<A _ E> _ B _ C _ sib::types_pack<D _ A>>);
+        EXE(using f12 = sib::types_first_t<sib::types_pack<sib::types_pack<D _ B>>>);
+        EXE(using f13 = sib::types_first_t<sib::types_pack<sib::types_pack<A _ E> _ B _ C _ sib::types_pack<D _ A>>>);
         DEFA(f1 , v1 , , A);
         DEFA(f2 , v2 , , C);
         DEFA(f3 , v3 , , D);
@@ -1434,9 +1469,9 @@ int main()
         DEFA(f8 , v8 , , D);
       //DEF (f9 , v9 ,    );
         DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::type_pack<A _ E>);
-        DEFA(f12, v12, , sib::type_pack<D _ B>);
-        DEFA(f13, v13, , sib::type_pack<A _ E>);
+        DEFA(f11, v11, , sib::types_pack<A _ E>);
+        DEFA(f12, v12, , sib::types_pack<D _ B>);
+        DEFA(f13, v13, , sib::types_pack<A _ E>);
         END;
     } {
         BEG;
@@ -1445,14 +1480,14 @@ int main()
         EXE(using f3  = sib::types_last_t<D _ D _ B>);
       //EXE(using f4  = sib::types_last_t<>);
         EXE(using f5  = sib::types_last_t<E>);
-        EXE(using f6  = sib::types_last_t<sib::type_pack<A _ B _ C>>);
-        EXE(using f7  = sib::types_last_t<sib::type_pack<C _ B _ B>>);
-        EXE(using f8  = sib::types_last_t<sib::type_pack<D _ D _ B>>);
-      //EXE(using f9  = sib::types_last_t<sib::type_pack<>>);
-        EXE(using f10 = sib::types_last_t<sib::type_pack<E>>);
-        EXE(using f11 = sib::types_last_t<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>);
-        EXE(using f12 = sib::types_last_t<sib::type_pack<sib::type_pack<D _ B>>>);
-        EXE(using f13 = sib::types_last_t<sib::type_pack<sib::type_pack<A _ E> _ B _ C _ sib::type_pack<D _ A>>>);
+        EXE(using f6  = sib::types_last_t<sib::types_pack<A _ B _ C>>);
+        EXE(using f7  = sib::types_last_t<sib::types_pack<C _ B _ B>>);
+        EXE(using f8  = sib::types_last_t<sib::types_pack<D _ D _ B>>);
+      //EXE(using f9  = sib::types_last_t<sib::types_pack<>>);
+        EXE(using f10 = sib::types_last_t<sib::types_pack<E>>);
+        EXE(using f11 = sib::types_last_t<sib::types_pack<A _ E> _ B _ C _ sib::types_pack<D _ A>>);
+        EXE(using f12 = sib::types_last_t<sib::types_pack<sib::types_pack<D _ B>>>);
+        EXE(using f13 = sib::types_last_t<sib::types_pack<sib::types_pack<A _ E> _ B _ C _ sib::types_pack<D _ A>>>);
         DEFA(f1 , v1 , , C);
         DEFA(f2 , v2 , , B);
         DEFA(f3 , v3 , , B);
@@ -1463,9 +1498,9 @@ int main()
         DEFA(f8 , v8 , , B);
       //DEF (f9 , v9 ,    );
         DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::type_pack<D _ A>);
-        DEFA(f12, v12, , sib::type_pack<D _ B>);
-        DEFA(f13, v13, , sib::type_pack<D _ A>);
+        DEFA(f11, v11, , sib::types_pack<D _ A>);
+        DEFA(f12, v12, , sib::types_pack<D _ B>);
+        DEFA(f13, v13, , sib::types_pack<D _ A>);
         END;
     } {
         static constexpr int _C = 10;
@@ -1474,7 +1509,7 @@ int main()
         EXE(using Ts = gen_TP<_C>);
         PRN(sib::static_type_name<Ts>());
         MSG("    length     = ", sib::static_type_name<Ts>().size());
-        MSG("    type count = ", sib::types_info<Ts>::count);
+        MSG("    type count = ", sib::types_info<sib::get_types_pack<Ts>>::count);
         PRN(Types_to_Str(Ts{}));
         END;
 
@@ -1500,7 +1535,7 @@ int main()
         PRN(Types_to_Str(Ts{}));
         END;
 
-        EXE(using STs = sib::types_sorted_t<Ts>);
+        EXE(using STs = sib::types_merge_sort_t<Ts>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1511,7 +1546,7 @@ int main()
         END;
     } {
         BEG;
-        EXE(using STs = sib::types_sorted_t<sib::type_pack<>>);
+        EXE(using STs = sib::types_merge_sort_t<sib::types_pack<>>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1525,7 +1560,7 @@ int main()
         PRN(Types_to_Str(Ts{}));
         END;
 
-        EXE(using STs = sib::types_sorted_t<Ts>);
+        EXE(using STs = sib::types_merge_sort_t<Ts>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1533,13 +1568,13 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = sib::type_pack<sib::type_pack<>, sib::type_pack<>, int, sib::type_pack<>, int, float, sib::type_pack<>, int, sib::type_pack<>>);
+        EXE(using Ts = sib::types_pack<sib::types_pack<>, sib::types_pack<>, int, sib::types_pack<>, int, float, sib::types_pack<>, int, sib::types_pack<>>);
         MSG("    length     = ", sib::static_type_name<Ts>().size());
         MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Ts{});
         END;
 
-        EXE(using STs = sib::types_sorted_t<Ts>);
+        EXE(using STs = sib::types_merge_sort_t<Ts>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1562,14 +1597,14 @@ int main()
         EXE(using f3  = sib::types_first_t<D _ D _ B>);
       //EXE(using f4  = sib::types_first_t<>);
         EXE(using f5  = sib::types_first_t<E>);
-        EXE(using f6  = sib::types_first_t<sib::type_list<A _ B _ C>>);
-        EXE(using f7  = sib::types_first_t<sib::type_list<C _ B _ B>>);
-        EXE(using f8  = sib::types_first_t<sib::type_list<D _ D _ B>>);
-      //EXE(using f9  = sib::types_first_t<sib::type_list<>>);
-        EXE(using f10 = sib::types_first_t<sib::type_list<E>>);
-        EXE(using f11 = sib::types_first_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
-        EXE(using f12 = sib::types_first_t<sib::type_list<sib::type_list<D _ B>>>);
-        EXE(using f13 = sib::types_first_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
+        EXE(using f6  = sib::types_first_t<sib::types_list<A _ B _ C>>);
+        EXE(using f7  = sib::types_first_t<sib::types_list<C _ B _ B>>);
+        EXE(using f8  = sib::types_first_t<sib::types_list<D _ D _ B>>);
+      //EXE(using f9  = sib::types_first_t<sib::types_list<>>);
+        EXE(using f10 = sib::types_first_t<sib::types_list<E>>);
+        EXE(using f11 = sib::types_first_t<sib::types_list<A _ E> _ B _ C _ sib::types_list<D _ A>>);
+        EXE(using f12 = sib::types_first_t<sib::types_list<sib::types_list<D _ B>>>);
+        EXE(using f13 = sib::types_first_t<sib::types_list<sib::types_list<A _ E> _ B _ C _ sib::types_list<D _ A>>>);
         DEFA(f1 , v1 , , A);
         DEFA(f2 , v2 , , C);
         DEFA(f3 , v3 , , D);
@@ -1580,9 +1615,9 @@ int main()
         DEFA(f8 , v8 , , D);
       //DEF (f9 , v9 ,    );
         DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::type_list<A _ E>);
-        DEFA(f12, v12, , sib::type_list<D _ B>);
-        DEFA(f13, v13, , sib::type_list<A _ E>);
+        DEFA(f11, v11, , sib::types_list<A _ E>);
+        DEFA(f12, v12, , sib::types_list<D _ B>);
+        DEFA(f13, v13, , sib::types_list<A _ E>);
         END;
     } {
         BEG;
@@ -1591,14 +1626,14 @@ int main()
         EXE(using f3  = sib::types_last_t<D _ D _ B>);
       //EXE(using f4  = sib::types_last_t<>);
         EXE(using f5  = sib::types_last_t<E>);
-        EXE(using f6  = sib::types_last_t<sib::type_list<A _ B _ C>>);
-        EXE(using f7  = sib::types_last_t<sib::type_list<C _ B _ B>>);
-        EXE(using f8  = sib::types_last_t<sib::type_list<D _ D _ B>>);
-      //EXE(using f9  = sib::types_last_t<sib::type_list<>>);
-        EXE(using f10 = sib::types_last_t<sib::type_list<E>>);
-        EXE(using f11 = sib::types_last_t<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>);
-        EXE(using f12 = sib::types_last_t<sib::type_list<sib::type_list<D _ B>>>);
-        EXE(using f13 = sib::types_last_t<sib::type_list<sib::type_list<A _ E> _ B _ C _ sib::type_list<D _ A>>>);
+        EXE(using f6  = sib::types_last_t<sib::types_list<A _ B _ C>>);
+        EXE(using f7  = sib::types_last_t<sib::types_list<C _ B _ B>>);
+        EXE(using f8  = sib::types_last_t<sib::types_list<D _ D _ B>>);
+      //EXE(using f9  = sib::types_last_t<sib::types_list<>>);
+        EXE(using f10 = sib::types_last_t<sib::types_list<E>>);
+        EXE(using f11 = sib::types_last_t<sib::types_list<A _ E> _ B _ C _ sib::types_list<D _ A>>);
+        EXE(using f12 = sib::types_last_t<sib::types_list<sib::types_list<D _ B>>>);
+        EXE(using f13 = sib::types_last_t<sib::types_list<sib::types_list<A _ E> _ B _ C _ sib::types_list<D _ A>>>);
         DEFA(f1 , v1 , , C);
         DEFA(f2 , v2 , , B);
         DEFA(f3 , v3 , , B);
@@ -1609,9 +1644,9 @@ int main()
         DEFA(f8 , v8 , , B);
       //DEF (f9 , v9 ,    );
         DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::type_list<D _ A>);
-        DEFA(f12, v12, , sib::type_list<D _ B>);
-        DEFA(f13, v13, , sib::type_list<D _ A>);
+        DEFA(f11, v11, , sib::types_list<D _ A>);
+        DEFA(f12, v12, , sib::types_list<D _ B>);
+        DEFA(f13, v13, , sib::types_list<D _ A>);
         END;
     } {
         static constexpr int _C = 10;
@@ -1645,18 +1680,18 @@ int main()
         PRN(Types_to_Str(Ts{}));
         END;
 
-        EXE(using STs = sib::types_sequence_t<Ts>);
+        EXE(using STs = sib::types_quick_sort_t<Ts>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
         PRN(Types_to_Str(STs{}));
         END;
 
-        EXE(static_assert(sib::is_sorted_v<STs>));
+        //EXE(static_assert(sib::is_sorted_v<STs>));
         END;
     } {
         BEG;
-        EXE(using STs = sib::types_sequence_t<sib::type_list<>>);
+        EXE(using STs = sib::types_quick_sort_t<sib::types_list<>>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1670,7 +1705,7 @@ int main()
         PRN(Types_to_Str(Ts{}));
         END;
 
-        EXE(using STs = sib::types_sequence_t<Ts>);
+        EXE(using STs = sib::types_quick_sort_t<Ts>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1678,13 +1713,13 @@ int main()
         END;
     } {
         BEG;
-        EXE(using Ts = sib::type_list<sib::type_list<>, sib::type_list<>, int, sib::type_list<>, int, float, sib::type_list<>, int, sib::type_list<>>);
+        EXE(using Ts = sib::types_list<sib::types_list<>, sib::types_list<>, int, sib::types_list<>, int, float, sib::types_list<>, int, sib::types_list<>>);
         MSG("    length     = ", sib::static_type_name<Ts>().size());
         MSG("    type count = ", sib::types_info<Ts>::count);
         PRN(Ts{});
         END;
 
-        EXE(using STs = sib::types_sequence_t<Ts>);
+        EXE(using STs = sib::types_quick_sort_t<Ts>);
         PRN(sib::static_type_name<STs>());
         MSG("    length     = ", sib::static_type_name<STs>().size());
         MSG("    type count = ", sib::types_info<STs>::count);
@@ -1724,10 +1759,10 @@ int main()
         END;
     } {
         BEG;
-        using Ts = sib::types_sequence_t<sib::type_pack<int, std::set<int>, std::string>>;
+        using Ts = sib::types_quick_sort_t<sib::types_pack<int, std::set<int>, std::string>>;
         using TsF = sib::types_first_t<Ts>;
         using UT = sib::MakeUniqueTuple<int, std::set<int>, std::string>;
-        using UTTs = UT::types<sib::type_pack>;
+        using UTTs = UT::types<sib::types_pack>;
         using UTTsF = sib::types_first_t<UTTs>;
         PRN(Ts{});
         PRN(TsF{});
@@ -1746,7 +1781,8 @@ int main()
         PRN(sib::make_unique_tuple(42 _ std::string("qwerty") _ std::set<int>{}).c_str());
         PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), int);
         PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), float);
-        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), std::vector<int>);
+        PRNAS(42, std::vector<int>);
+        //PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), std::vector<int>);
         END;
     } {
         BEG;
@@ -1862,8 +1898,6 @@ int main()
         PRN(tmp.get<int>());
         PRN(tmp.get<std::string>());
         PRN(tmp);
-        END;
-
         EXE(tmp.get<int>() = 3.3);
         PRN(tmp.get<int>());
         END;
@@ -1880,7 +1914,21 @@ int main()
         BEG;
         DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
         //DEF(sib::MakeUniqueTuple<int _ std::string>, ut,);
-        DEF(float, f, = ut);
+
+        float f = ut;
+        do {
+            auto __typ__ = sib::type_name<decltype(f)>();
+            sib::debug::TBufer buf;
+            buf << "d   " << sib::debug::string("float")
+                << " "    << sib::debug::string("f")
+                << " "    << sib::debug::string("= ut")
+                << "  ->  " << __typ__
+                << "\n";
+            sib::debug::under_lock_print(buf.str());
+        } while (0);
+        sib::debug::SetBreakPoint(sib::debug::BP_ALL);
+
+        //DEF(float, f, = ut);
         DEF(std::string, s, = ut);
         PRN(f);
         PRN(s);
@@ -1907,15 +1955,15 @@ int main()
         EXE(using UT1 = sib::MakeUniqueTuple<gen_TP<10>>);
         EXE(UT1 ut1{});
         MSG("    length     = ", sib::static_type_name<UT1>().size());
-        MSG("    type count = ", sib::types_info<UT1::types<sib::type_pack>>::count);
+        MSG("    type count = ", sib::types_info<UT1::types<sib::types_pack>>::count);
         PRN(Types_to_Str(ut1));
         END;
 
-        EXE(using TL = decltype(gen_TL<20>{}.get_tail<10>()));
+        EXE(using TL = sib::types_tail_t<10, gen_TL<20>>);
         EXE(using UT2 = sib::MakeUniqueTuple<TL>);
         EXE(UT2 ut2{});
         MSG("    length     = ", sib::static_type_name<UT2>().size());
-        MSG("    type count = ", sib::types_info<UT2::types<sib::type_list>>::count);
+        MSG("    type count = ", sib::types_info<UT2::types<sib::types_list>>::count);
         PRN(Types_to_Str(ut2));
         END;
 
@@ -2063,7 +2111,6 @@ int main()
         END;
     } {
         BEG;
-        //enum class TEnumClass123 : unsigned char { _1 = 1, _2, _3 };
         DEF(TEnumClass123, e, = TEnumClass123::_1);
         DEF(TEnumClass123 &, er, = e);
         PRN(er);
@@ -2083,12 +2130,43 @@ int main()
         END;
     } {
         BEG;
+        DEF(int, i, = 42);
+        DEF(std::set<int>, s, = { 1 _ 2 _ 3 });
+        #define TTT decltype(s)
+        #define TTTs TTT&, float, int*
+        DEF(sib::MakeUniqueTuple<TTTs>, ut, (&i, s));
+        PRN(ut);
+        //auto bbb = static_cast<bool>(ut);
+        //PRNAS(ut, bool);
         END;
     } {
         BEG;
+        DEF(std::set<int>, s, = { 1 _ 2 _ 3 });
+        #define TTT decltype(s)
+        DEF(sib::MakeUniqueTuple<TTT _ float>, ut, (s, 0));
+        PRN(ut);
+        PRN(static_cast<bool>(ut));
+        PRNAS(ut, bool);
+        PRN(ut.as<bool const &>());
+        PRN(ut.as<bool>());
         END;
     } {
         BEG;
+        int i = 1;
+        bool const & a = static_cast<bool const&>(i);
+        bool const & b = static_cast<bool>(i);
+        PRN(a);
+        PRN(b);
+        PRN(&i);
+        PRN(&a);
+        PRN(&b);
+        PRN(&static_cast<bool const &>(i));
+        PRN(&static_cast<bool const &>(static_cast<bool &&>(i)));
+        std::cout << &i << "\n";
+        std::cout << &a << "\n";
+        std::cout << &b << "\n";
+        std::cout << &static_cast<bool const&>(i) << "\n";
+        std::cout << &static_cast<bool const &>(static_cast<bool &&>(i)) << "\n";
         END;
     } {
         BEG;

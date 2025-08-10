@@ -1,12 +1,11 @@
 ﻿#pragma once
 
 #include <array>
-#include <initializer_list>
-#include <type_traits>
 #include <utility>
 #include <functional>
 
 #include "sib_support.h"
+#include "sib_type_traits.h"
 
 namespace sib {
 
@@ -143,11 +142,13 @@ namespace sib {
         constexpr T operator ++ (int) noexcept requires (std::is_pointer_v<T>) { return data++; }
         constexpr T operator -- (int) noexcept requires (std::is_pointer_v<T>) { return data--; }
 
-        template <typename AnyT> requires(is_pointer_v<AnyT>)
-        constexpr explicit operator AnyT const () const noexcept { return static_cast<AnyT const>(data); }
+        template <typename AnyT> requires(is_pointer_v<T>)
+        constexpr explicit operator AnyT * const () const noexcept { return static_cast<AnyT * const>(data); }
 
         template <typename AnyT> requires(is_pointer_v<AnyT>)
-        constexpr explicit operator AnyT       ()       noexcept { return static_cast<AnyT      >(data); }
+        constexpr explicit operator AnyT *       ()       noexcept { return static_cast<AnyT *      >(data); }
+
+        constexpr operator bool () const noexcept requires(is_pointer_v<T>) { return data; }
     };
 
     template <typename Ret, typename... Args>

@@ -11,7 +11,7 @@
     using namespace std::string_literals;
     
     #include "sib_type_info.h"
-    #include "sib_support.h"
+    #include "sib_console.h"
    
     namespace sib {
     namespace debug {
@@ -95,7 +95,6 @@
         template <typename T>
         string disclosure(T const & val)
         {
-            TBufer data1;
             {
                 if constexpr                                                    ( std::is_same_v<T, bool>           ) {
     
@@ -122,9 +121,10 @@
                             data << "\"";
                             auto begin = std::begin(val);
                             auto end   = std::end  (val);
-                            for (auto it = begin; it != end; ++it)
+                            int counter = 1;
+                            for (auto it = begin; it != end; ++it, ++counter)
                             {
-                                if (it - begin > DISCLOSURE_STRING_LENGTH)
+                                if (counter > DISCLOSURE_STRING_LENGTH)
                                 {
                                     data << "...";
                                     return data.str();
@@ -148,10 +148,11 @@
                             auto begin = std::begin(val);
                             auto end   = std::end(val);
                             auto it    = begin;
+                            int counter = 1;
                             data << disclosure(*it);
-                            for (++it; it != end; ++it)
+                            for (++it; it != end; ++it, ++counter)
                             {
-                                if (it - begin > DISCLOSURE_STRING_LENGTH)
+                                if (counter > DISCLOSURE_STRING_LENGTH)
                                 {
                                     data << "...";
                                     return data.str();
@@ -164,7 +165,7 @@
     
                     }
     
-                } else if constexpr                                             ( sib::is_as_basic_string_v<T>      ) {
+                } else if constexpr                                             ( sib::is_basic_string_v<T>         ) {
 
                     sib::as_basic_string_t<T> const & bs = val;
                     return disclosure(bs);
@@ -176,10 +177,11 @@
                 } else if constexpr                                             ( sib::is_like_pointer_v<T>         ) {
     
                     TBufer data;
-                    data << '[' << static_cast<void const * const>(val) << ']';
+                    auto ptr = static_cast<void const* const>(val);
+                    data << '[' << ptr << ']';
                     if constexpr (sib::may_be_indirect_v<T>)
                     {
-                        if (static_cast<bool>(val))
+                        if (ptr)
                         {
                             using Content = sib::base_indirection_type<T>;
     
@@ -188,7 +190,7 @@
                                 data << " \"";
                                 for (Content* it = val; *it != '\0'; ++it)
                                 {
-                                    if (it - val > DISCLOSURE_STRING_LENGTH)
+                                    if (it - ptr > DISCLOSURE_STRING_LENGTH)
                                     {
                                         data << "...";
                                         return data.str();
@@ -232,7 +234,7 @@
         
         inline TBreakPointLevel current_break_level = BP_CUSTOM;
         
-        inline sib::Tconsole_reactions_to_keys debugging_reactions_to_keys{};
+        inline sib::TKeyCodeReactions debugging_reactions_to_keys{};
         
         bool const is_initialized_unit_test_module = []()
             {
