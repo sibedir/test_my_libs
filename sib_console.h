@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include <iostream>
 #include <cstdint>
@@ -47,33 +47,33 @@ namespace sib {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             while (_kbhit()) res << static_cast<char>(_getch());
         #else
-            // Сохраняем текущие настройки терминала
+            // РЎРѕС…СЂР°РЅСЏРµРј С‚РµРєСѓС‰РёРµ РЅР°СЃС‚СЂРѕР№РєРё С‚РµСЂРјРёРЅР°Р»Р°
             struct termios oldt, newt;
             tcgetattr(STDIN_FILENO, &oldt);
             newt = oldt;
 
-            // Включаем raw-режим (без канонического ввода и эха)
+            // Р’РєР»СЋС‡Р°РµРј raw-СЂРµР¶РёРј (Р±РµР· РєР°РЅРѕРЅРёС‡РµСЃРєРѕРіРѕ РІРІРѕРґР° Рё СЌС…Р°)
             newt.c_lflag &= ~(ICANON | ECHO);
 
-            // Ждём хотя бы 1 байт (блокирующий режим)
-            newt.c_cc[VMIN]  = 1; // минимум 1 байт
+            // Р–РґС‘Рј С…РѕС‚СЏ Р±С‹ 1 Р±Р°Р№С‚ (Р±Р»РѕРєРёСЂСѓСЋС‰РёР№ СЂРµР¶РёРј)
+            newt.c_cc[VMIN]  = 1; // РјРёРЅРёРјСѓРј 1 Р±Р°Р№С‚
             newt.c_cc[VTIME] = 0;
             tcsetattr(STDIN_FILENO, TCSANOW, &newt);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
             char ch;
 
-            // Читаем первый байт (блокирующе)
+            // Р§РёС‚Р°РµРј РїРµСЂРІС‹Р№ Р±Р°Р№С‚ (Р±Р»РѕРєРёСЂСѓСЋС‰Рµ)
             if (read(STDIN_FILENO, &ch, 1) == 1) res << ch;
 
-            // Читаем оставшиеся байты из буфера (без ожидания)
+            // Р§РёС‚Р°РµРј РѕСЃС‚Р°РІС€РёРµСЃСЏ Р±Р°Р№С‚С‹ РёР· Р±СѓС„РµСЂР° (Р±РµР· РѕР¶РёРґР°РЅРёСЏ)
             newt.c_cc[VMIN] = 0;
             newt.c_cc[VTIME] = 0;
             tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
             while (read(STDIN_FILENO, &ch, 1) == 1) res << ch;
 
-            // Возвращаем терминал в исходное состояние
+            // Р’РѕР·РІСЂР°С‰Р°РµРј С‚РµСЂРјРёРЅР°Р» РІ РёСЃС…РѕРґРЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ
             tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
         #endif
         return res;
