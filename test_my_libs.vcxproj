@@ -74,9 +74,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION</PreprocessorDefinitions>
+      <PreprocessorDefinitions>//DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION;SIB_DEBUG_OUT_STREAM=std::wcout</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -89,9 +90,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION</PreprocessorDefinitions>
+      <PreprocessorDefinitions>//DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION;SIB_DEBUG_OUT_STREAM=std::wcout</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -102,9 +104,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION</PreprocessorDefinitions>
+      <PreprocessorDefinitions>//DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION;SIB_DEBUG_OUT_STREAM=std::wcout</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -117,9 +120,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION</PreprocessorDefinitions>
+      <PreprocessorDefinitions>//DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION;SIB_DEBUG_OUT_STREAM=std::wcout</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
