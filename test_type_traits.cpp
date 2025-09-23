@@ -1,5 +1,3 @@
-#define DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION
-
 #include "test_type_traits.h"
 
 #include <memory>

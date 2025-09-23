@@ -1,6 +1,4 @@
-﻿#define DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION
-
-#include "sib_console.h"
+﻿#include "sib_console.h"
 
 namespace sib {
 

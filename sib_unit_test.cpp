@@ -1,5 +1,3 @@
-#define DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION
-
 #include "sib_unit_test.h"
 
 #include <mutex>
