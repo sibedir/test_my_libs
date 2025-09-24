@@ -1,11 +1,13 @@
 ﻿#pragma once
 
 #include <iostream>
+#include <sstream>
 #include <set>
 #include <map>
 #include <string>
 //#include <cctype>
 #include <functional>
+#include "sib_type_traits.h"
 
 #if defined(_WIN32)
     #include <windows.h>
@@ -19,16 +21,132 @@
 #endif
 
 namespace sib {
+namespace console {
 
     extern bool const & is_initialized_console_unit;
 
-    bool InitConsoleUnit();
+    bool Init();
 
-    class TKeyCode : private std::string
+    #ifdef SIB_OUT_STREAM
+        inline auto& outstream = SIB_OUT_STREAM;
+    #else
+        inline auto& outstream = ::std::cout;
+    #endif // SIB_DEBUG_STREAM_CUSTOM
+
+    using TOutStream = ::std::remove_reference_t<decltype(outstream)>;
+    using OutStrmCh = typename TOutStream::char_type;
+    using OutStrmTr = typename TOutStream::traits_type;
+
+    class string;
+
+    class TBufer : ::std::basic_stringstream<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>
     {
     private:
-        using base = std::string;
-        using byte = std::byte;
+
+        using base_type = ::std::basic_stringstream<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>;
+
+    public:
+
+        using base_type::str;
+
+        template <typename T>
+            requires(requires(T&& t, base_type bs) { bs << ::std::forward<T>(t); })
+        TBufer& operator<< (T&& arg)
+        {
+            static_cast<base_type&>(*this) << ::std::forward<T>(arg);
+            return *this;
+        }
+
+        template <typename _Ch, typename _Tr, typename _Al>
+            requires(not ::std::is_same_v<::std::basic_string<_Ch, _Tr, _Al>, string>)
+        inline TBufer& operator<< (std::basic_string<_Ch, _Tr, _Al> const & str)
+        {
+            for (_Ch ch : str) static_cast<base_type&>(*this) << static_cast<OutStrmCh>(ch);
+            return *this;
+        }
+
+        template <typename _Ch, typename _Tr>
+            requires(not (     ::std::is_same_v<_Ch, OutStrmCh>
+                         and ::std::is_same_v<_Tr, OutStrmTr> ))
+        inline TBufer& operator<< (std::basic_string_view<_Ch, _Tr> const & str)
+        {
+            for (_Ch ch : str) static_cast<base_type&>(*this) << static_cast<OutStrmCh>(ch);
+            return *this;
+        }
+
+    };
+
+    class string : public ::std::basic_string<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>
+    {
+    private:
+        template <typename... Args>
+        string init(Args&&... args)
+        {
+            TBufer buf;
+            (buf << ... << ::std::forward<Args>(args));
+            return buf.str();
+        }
+    public:
+        using basic_string = ::std::basic_string<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>;
+
+        string() = default;
+
+        string(basic_string const & str) : basic_string(          str ) {}
+        string(basic_string      && str) : basic_string(std::move(str)) {}
+
+        template <typename _Ch, typename _Tr, typename _Al>
+        string(std::basic_string<_Ch, _Tr, _Al> const & str) : basic_string(str) {}
+
+        template <::sib::LikeString Str>
+        string(Str const & str) : basic_string(str.begin(), str.end()) {}
+
+        template <::sib::Char Ch>
+        string(Ch const * ptr) : string(std::basic_string<Ch, ::std::char_traits<Ch>, ::std::allocator<Ch>>(ptr)) {}
+
+        string(value_type ch) : basic_string{ ch } {}
+
+        template <typename... Args>
+        string (Args&&... args) : basic_string(init(std::forward<Args>(args) ...)) {}
+    };
+
+    // Преобразование символов в строку, для вывода в outstream
+    //   - управляющие символы выводятся как \<ESC> (<ESC> — символ, обозначающий Escape sequences)
+    //   - символы в диапазоне OutStrmCh выводятся как есть
+    //   - остальные выводятся как \i<NUM> (<NUM> — числовое значение по основанию 10)
+    template <Char Ch>
+    inline string bufer_char(Ch ch)
+    {
+        switch (ch)
+        {
+        case '\0': return "\\0" ; // Null character
+        case '\a': return "\\a" ; // Alert (bell)
+        case '\b': return "\\b" ; // Backspace
+        case '\t': return "\\t" ; // Horizontal tab
+        case '\n': return "\\n" ; // New line
+        case '\v': return "\\v" ; // Vertical tab
+        case '\f': return "\\f" ; // Form feed
+        case '\r': return "\\r" ; // Carriage return
+        case  27 : return "\\e" ; // Escape
+        case '\\': return "\\\\"; // Backslash
+        case '\"': return "\\\""; // Double quote
+        }
+
+        auto sch = static_cast<OutStrmCh>(ch);
+        if ((static_cast<Ch>(sch) == ch) and (isprint(ch)))
+        {
+            return sch;
+        }
+
+        return "\\i" + ::std::to_string(static_cast<unsigned>(ch));
+    }
+
+
+
+    class TKeyCode : private ::std::string
+    {
+    private:
+        using base = ::std::string;
+        using byte = ::std::byte;
     public:
         using base::value_type;
 
@@ -48,7 +166,7 @@ namespace sib {
         TKeyCode& operator<<(char ch);
         bool operator==(TKeyCode const& other) const noexcept;
         bool operator< (TKeyCode const& other) const noexcept;
-        std::string name() const;
+        ::std::string name() const;
     };
     
     /*
@@ -183,17 +301,18 @@ namespace sib {
     inline TKeyCode KC_UP   ;
     inline TKeyCode KC_DOWN ;
 
-    using TKeyCodeNames     = std::map<TKeyCode, std::string>;
-    using TKeyCodeReactions = std::map<TKeyCode, std::function<void()>>;
+    using TKeyCodeNames     = ::std::map<TKeyCode, ::std::string>;
+    using TKeyCodeReactions = ::std::map<TKeyCode, ::std::function<void()>>;
 
     inline TKeyCodeNames     KeyCodeNames            {};
     inline TKeyCodeReactions DefaultKeyCodeReactions {};
 
     inline TKeyCode WaitKeyCodes(
-        std::set<TKeyCode> const& codes,
-        std::string        const& msg = "")
+        ::std::set<TKeyCode> const& codes,
+        string             const& msg = {})
     {
-        std::cout << msg;
+        outstream << msg;
+        outstream.flush();
         while (true) {
             auto kc = codes.find(GetKey());
             if (kc != codes.end()) return *kc;
@@ -201,16 +320,17 @@ namespace sib {
     }
 
     inline TKeyCode WaitAnyKey(
-        std::string const& msg = "")
+        string const& msg = {})
     {
-        std::cout << msg;
+        outstream << msg;
+        outstream.flush();
         return GetKey();
     }
 
     inline TKeyCode WaitReactToKeyCodes(
-        std::set<TKeyCode> const& codes,
+        ::std::set<TKeyCode> const& codes,
         TKeyCodeReactions  const& reactions = DefaultKeyCodeReactions,
-        std::string        const& msg = "")
+        string             const& msg = {})
     {
         auto kc = WaitKeyCodes(codes, msg);
         auto react = reactions.find(kc);
@@ -220,7 +340,7 @@ namespace sib {
 
     inline TKeyCode WaitReactToAnyKey(
         TKeyCodeReactions const& reactions = DefaultKeyCodeReactions,
-        std::string                const& msg = "")
+        string            const& msg = {})
     {
         auto kc = WaitAnyKey(msg);
         auto react = reactions.find(kc);
@@ -229,4 +349,5 @@ namespace sib {
     }
 
 
+} // namespace console
 } // namespace sib

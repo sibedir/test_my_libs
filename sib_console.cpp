@@ -1,8 +1,9 @@
 ﻿#include "sib_console.h"
 
 namespace sib {
+namespace console {
 
-    // ---------------------------------------------------------------------- TKeyCode
+    // ----------------------------------------------------------------------------------- TKeyCode
 
     TKeyCode& TKeyCode::operator<<(char ch)
     {
@@ -19,30 +20,30 @@ namespace sib {
         return static_cast<base const &>(*this) < static_cast<base const &>(other);
     }
 
-    std::string TKeyCode::name() const
+    ::std::string TKeyCode::name() const
     {
         if (size() == 0) return "";
 
         auto it = KeyCodeNames.find(*this);
         if (it != KeyCodeNames.end()) return it->second;
 
-        std::string res;
-        res = std::to_string(static_cast<unsigned char>((*this)[0]));
+        ::std::string res;
+        res = ::std::to_string(static_cast<unsigned char>((*this)[0]));
         for (size_t i = 1; i < size(); ++i)
-            res += ", " + std::to_string(static_cast<unsigned char>((*this)[i]));
+            res += ", " + ::std::to_string(static_cast<unsigned char>((*this)[i]));
         return res;
     }
 
    
 
 
-    // ---------------------------------------------------------------------- console lib initialization
+    // ----------------------------------------------------------------------------------- console lib initialization
 
     static bool is_initialized_val = false;
 
     bool const & is_initialized_console_unit = is_initialized_val;
 
-    bool InitConsoleUnit()
+    bool Init()
     {
         if (is_initialized_val) return true;
 
@@ -91,45 +92,45 @@ namespace sib {
     
         #elif defined(_POSIX_VERSION)
     
-            TKeyCode KC_ENTER << '\n';
-            TKeyCode KC_ESC   << '\e';
+            KC_ENTER << '\n';
+            KC_ESC   << '\e';
     
-            TKeyCode KC_F1  << '\e' << char(79) << char(80);
-            TKeyCode KC_F2  << '\e' << char(79) << char(81);
-            TKeyCode KC_F3  << '\e' << char(79) << char(82);
-            TKeyCode KC_F4  << '\e' << char(79) << char(83);
-            TKeyCode KC_F5  << '\e' << char(91) << char(49) << char(53) << char(126);
-            TKeyCode KC_F6  << '\e' << char(91) << char(49) << char(55) << char(126);
-            TKeyCode KC_F7  << '\e' << char(91) << char(49) << char(56) << char(126);
-            TKeyCode KC_F8  << '\e' << char(91) << char(49) << char(57) << char(126);
-            TKeyCode KC_F9  << '\e' << char(91) << char(50) << char(48) << char(126);
-            TKeyCode KC_F10 << '\e' << char(91) << char(50) << char(49) << char(126);
-            TKeyCode KC_F11 << '\e' << char(91) << char(50) << char(51) << char(126);
-            TKeyCode KC_F12 << '\e' << char(91) << char(50) << char(52) << char(126);
+            KC_F1  << '\e' << char(79) << char(80);
+            KC_F2  << '\e' << char(79) << char(81);
+            KC_F3  << '\e' << char(79) << char(82);
+            KC_F4  << '\e' << char(79) << char(83);
+            KC_F5  << '\e' << char(91) << char(49) << char(53) << char(126);
+            KC_F6  << '\e' << char(91) << char(49) << char(55) << char(126);
+            KC_F7  << '\e' << char(91) << char(49) << char(56) << char(126);
+            KC_F8  << '\e' << char(91) << char(49) << char(57) << char(126);
+            KC_F9  << '\e' << char(91) << char(50) << char(48) << char(126);
+            KC_F10 << '\e' << char(91) << char(50) << char(49) << char(126);
+            KC_F11 << '\e' << char(91) << char(50) << char(51) << char(126);
+            KC_F12 << '\e' << char(91) << char(50) << char(52) << char(126);
     
-            TKeyCode KC_INSERT    << '\e' << char(91) << char(50) << char(126);
-            TKeyCode KC_DELETE    << '\e' << char(91) << char(51) << char(126);
-            TKeyCode KC_HOME      << '\e' << char(91) << char(72)             ;
-            TKeyCode KC_END       << '\e' << char(91) << char(70)             ;
-            TKeyCode KC_PAGE_UP   << '\e' << char(91) << char(53) << char(126);
-            TKeyCode KC_PAGE_DOWN << '\e' << char(91) << char(54) << char(126);
+            KC_INSERT    << '\e' << char(91) << char(50) << char(126);
+            KC_DELETE    << '\e' << char(91) << char(51) << char(126);
+            KC_HOME      << '\e' << char(91) << char(72)             ;
+            KC_END       << '\e' << char(91) << char(70)             ;
+            KC_PAGE_UP   << '\e' << char(91) << char(53) << char(126);
+            KC_PAGE_DOWN << '\e' << char(91) << char(54) << char(126);
     
-            TKeyCode KC_NUM_INSERT    << '\e' << char(91) << char(50) << char(126);
-            TKeyCode KC_NUM_DELETE    << '\e' << char(91) << char(51) << char(126);
-            TKeyCode KC_NUM_HOME      << '\e' << char(91) << char(72)             ;
-            TKeyCode KC_NUM_END       << '\e' << char(91) << char(76)             ;
-            TKeyCode KC_NUM_PAGE_UP   << '\e' << char(91) << char(53) << char(126);
-            TKeyCode KC_NUM_PAGE_DOWN << '\e' << char(91) << char(54) << char(126);
+            KC_NUM_INSERT    << '\e' << char(91) << char(50) << char(126);
+            KC_NUM_DELETE    << '\e' << char(91) << char(51) << char(126);
+            KC_NUM_HOME      << '\e' << char(91) << char(72)             ;
+            KC_NUM_END       << '\e' << char(91) << char(76)             ;
+            KC_NUM_PAGE_UP   << '\e' << char(91) << char(53) << char(126);
+            KC_NUM_PAGE_DOWN << '\e' << char(91) << char(54) << char(126);
 
-            TKeyCode KC_UP    << '\e' << char(91) << char(65);
-            TKeyCode KC_DOWN  << '\e' << char(91) << char(66);
-            TKeyCode KC_RIGHT << '\e' << char(91) << char(67);
-            TKeyCode KC_LEFT  << '\e' << char(91) << char(68);
+            KC_UP    << '\e' << char(91) << char(65);
+            KC_DOWN  << '\e' << char(91) << char(66);
+            KC_RIGHT << '\e' << char(91) << char(67);
+            KC_LEFT  << '\e' << char(91) << char(68);
 
-            TKeyCode KC_NUM_LEFT  << '\e' << char(91) << char(65);
-            TKeyCode KC_NUM_RIGHT << '\e' << char(91) << char(66);
-            TKeyCode KC_NUM_UP    << '\e' << char(91) << char(67);
-            TKeyCode KC_NUM_DOWN  << '\e' << char(91) << char(68);
+            KC_NUM_LEFT  << '\e' << char(91) << char(65);
+            KC_NUM_RIGHT << '\e' << char(91) << char(66);
+            KC_NUM_UP    << '\e' << char(91) << char(67);
+            KC_NUM_DOWN  << '\e' << char(91) << char(68);
 
         #else
 
@@ -147,7 +148,8 @@ namespace sib {
         #endif
 
 
-        // default KeyCodeNames registration
+        // ----------------------------------------------------------------------------------- default KeyCodeNames registration
+
         KeyCodeNames[KC_ENTER        ] = "ENTER"        ;
         KeyCodeNames[KC_ESC          ] = "ESC"          ;
 
@@ -191,4 +193,5 @@ namespace sib {
         return is_initialized_val = true;
     }
 
+} // namespace console
 } // namespace sib

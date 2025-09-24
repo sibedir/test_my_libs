@@ -31,16 +31,16 @@ namespace sib {
     struct TTypeInfo<T> {
     private:
         using type = T;
-        using rr_type = std::remove_reference_t<T>;
+        using rr_type = ::std::remove_reference_t<T>;
     public:
-        static constexpr auto is_const = std::is_const_v     <rr_type>;
-        static constexpr auto is_volat = std::is_volatile_v  <rr_type>;
-        static constexpr auto is_ref   = std::is_reference_v <   type>;
-        static constexpr auto is_arr   = std::is_array_v     <rr_type>;
+        static constexpr auto is_const = ::std::is_const_v     <rr_type>;
+        static constexpr auto is_volat = ::std::is_volatile_v  <rr_type>;
+        static constexpr auto is_ref   = ::std::is_reference_v <   type>;
+        static constexpr auto is_arr   = ::std::is_array_v     <rr_type>;
 
-        static std::string full_name() noexcept
+        static ::std::string full_name() noexcept
         {
-            return std::string(
+            return ::std::string(
                 _low_name() +
                 _const_symbol() +
                 _volat_symbol() +
@@ -49,15 +49,15 @@ namespace sib {
             );
         }
     private:
-        template <typename _T> requires(not std::is_void_v<_T>)
+        template <typename _T> requires(not ::std::is_void_v<_T>)
         TTypeInfo(_T const &) : TTypeInfo() {};
 
         TTypeInfo() {};
 
-        static std::string _low_name() noexcept
+        static ::std::string _low_name() noexcept
         {
             #define _SIB_IF_ELSE_(type)                                     \
-                if constexpr (std::is_same_v<std::remove_cvref_t<T>, type>) \
+                if constexpr (std::is_same_v<::std::remove_cvref_t<T>, type>) \
                 { return #type; }                                           \
                 else                                                        \
 
@@ -76,25 +76,25 @@ namespace sib {
             _SIB_IF_ELSE_(std::vector<double>)
             _SIB_IF_ELSE_(std::string)
             _SIB_IF_ELSE_(std::wstring) {
-                return typeid(std::remove_extent_t<std::remove_cvref_t<T>>).name();
+                return typeid(std::remove_extent_t<::std::remove_cvref_t<T>>).name();
             }
 
             #undef _SIB_IF_ELSE_
         }
 
-        static std::string _const_symbol() noexcept
+        static ::std::string _const_symbol() noexcept
         {
             if constexpr (is_const) { return " const"; }
             else { return ""; }
         }
 
-        static std::string _volat_symbol() noexcept
+        static ::std::string _volat_symbol() noexcept
         {
             if constexpr (is_volat) { return " volatile"; }
             else { return ""; }
         }
 
-        static std::string _ref_symbol() noexcept
+        static ::std::string _ref_symbol() noexcept
         {
             if constexpr (not is_ref) { return ""; }
             else
@@ -113,13 +113,13 @@ namespace sib {
         };
 
         template <typename _T>
-        struct _array_size_symbol { static std::string get() noexcept { return ""; } };
+        struct _array_size_symbol { static ::std::string get() noexcept { return ""; } };
 
         template <typename _T>
-        struct _array_size_symbol<_T[]> { static std::string get() noexcept { return " []"; } };
+        struct _array_size_symbol<_T[]> { static ::std::string get() noexcept { return " []"; } };
 
         template <typename _T, size_t _N>
-        struct _array_size_symbol<_T[_N]> { static std::string get() noexcept { return " [" + std::to_string(_N) + "]"; } };
+        struct _array_size_symbol<_T[_N]> { static ::std::string get() noexcept { return " [" + ::std::to_string(_N) + "]"; } };
     };
 
 } // namespace sib

@@ -37,7 +37,7 @@
 #endif
 
 #include "sib_wrapper.h"
-using namespace std::string_literals;
+using namespace ::std::string_literals;
 
 // MAIN ------------------------------------------------------------------------------
 
@@ -50,18 +50,18 @@ int main()
         SetConsoleOutputCP(CP_UTF8);
     #endif
 
-    sib::debug::DISCLOSURE_STRING_LENGTH = 32;
+    ::sib::debug::DISCLOSURE_STRING_LENGTH = 32;
     
-    sib::debug::Init();
+    ::sib::debug::Init();
     
-    using namespace sib::debug;
+    using namespace ::sib::debug;
    
     SIB_SCOPE_GUARD(
-        sib::WaitAnyKey(
+        ::sib::console::WaitAnyKey(
             "     --- END ---\n"
             "   press any key..."
         );
-        outstream << std::endl;
+        outstream << ::std::endl;
     );
     
 

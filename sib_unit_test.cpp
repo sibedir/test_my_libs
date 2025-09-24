@@ -11,45 +11,38 @@ namespace debug {
 
     bool Init()
     {
-        ::sib::InitConsoleUnit();
+        ::sib::console::Init();
 
         if (is_initialized_val) return true;
         
-        debugging_reactions_to_keys[::sib::KC_ESC  ] = []() { throw EDebugAbort("");           };
-        debugging_reactions_to_keys[::sib::KC_ENTER] = []() {                                  };
-        debugging_reactions_to_keys[::sib::KC_F5   ] = []() { current_break_level = BP_CUSTOM; };
-        debugging_reactions_to_keys[::sib::KC_F10  ] = []() { current_break_level = BP_BEGIN;  };
-        debugging_reactions_to_keys[::sib::KC_F11  ] = []() { current_break_level = BP_END;    };
-        debugging_reactions_to_keys[::sib::KC_F12  ] = []() { current_break_level = BP_ALL;    };
+        debugging_reactions_to_keys[::sib::console::KC_ESC  ] = []() { throw EDebugAbort("");           };
+        debugging_reactions_to_keys[::sib::console::KC_ENTER] = []() {                                  };
+        debugging_reactions_to_keys[::sib::console::KC_F5   ] = []() { current_break_level = BP_CUSTOM; };
+        debugging_reactions_to_keys[::sib::console::KC_F10  ] = []() { current_break_level = BP_BEGIN;  };
+        debugging_reactions_to_keys[::sib::console::KC_F11  ] = []() { current_break_level = BP_END;    };
+        debugging_reactions_to_keys[::sib::console::KC_F12  ] = []() { current_break_level = BP_ALL;    };
         
         return is_initialized_val = true;
     }
 
-    std::mutex mtx{};
+    ::std::mutex mtx{};
 
     void under_lock_print(string const& str)
     {
-        std::lock_guard lock(mtx);
+        ::std::lock_guard lock(mtx);
         outstream << str;
         outstream.flush();
     }
-    
-// ----------------------------------------------------------------------------------- TBufer
 
-    TBufer &operator<<(TBufer &buf, const string &str)
-    {
-        for (OutStrmCh ch : str) buf.operator<<(ch);
-        return buf;
-    }
-    
-    
-// ----------------------------------------------------------------------------------- debug tests
+
+
+    // ----------------------------------------------------------------------------------- debug tests
 
     void RunAllTest() { for (auto& it: Tests) it.second.run(); }
 
 
     
-    // TTestLogRec
+    // ----------------------------------------------------------------------------------- TTestLogRec
 
     string TTestLogRec::united_message() const
     {
@@ -61,15 +54,15 @@ namespace debug {
 
 
     
-    // TTest
+    // ----------------------------------------------------------------------------------- TTest
     
     const TTestState & TTest::state() const { return _state; }
     const TTestLog   & TTest::log  () const { return _log  ; }
     const TTestFunc  & TTest::test () const { return _test ; }
     
-    void TTest::message(string && str) { write_to_log(TTestLogType::message , std::move(str)); }
-    void TTest::warning(string && str) { write_to_log(TTestLogType::warning , std::move(str)); }
-    void TTest::error  (string && str) { write_to_log(TTestLogType::error   , std::move(str)); }
+    void TTest::message(string && str) { write_to_log(TTestLogType::message , ::std::move(str)); }
+    void TTest::warning(string && str) { write_to_log(TTestLogType::warning , ::std::move(str)); }
+    void TTest::error  (string && str) { write_to_log(TTestLogType::error   , ::std::move(str)); }
     
     void TTest::write_to_log(TTestLogType st, string && str) { _log.emplace_back(st, str); }
     
@@ -84,7 +77,7 @@ namespace debug {
             BEG_COUNTR = 0;
             int res = _test(_log);
             
-            auto str = "Return: " + std::to_string(res);
+            auto str = "Return: " + ::std::to_string(res);
             if (res != 0) error  (str);
             else          message(str);
             _state = TTestState::Completed;
@@ -104,9 +97,9 @@ namespace debug {
 
     // ----------------------------------------------------------------------------------- debugging step by step
     
-    void SetBreakPoint(TBreakPointLevel bp_level /*= BP_CUSTOM*/, string msg /*= string{}*/)
+    void SetBreakPoint(TBreakPointLevel bp_level /*= BP_CUSTOM*/, string msg /*= {}*/)
     {
-        std::set<TKeyCode> debugging_keys;
+        ::std::set<::sib::console::TKeyCode> debugging_keys;
         for (auto it = debugging_reactions_to_keys.begin(); it != debugging_reactions_to_keys.end(); ++it)
         {
             debugging_keys.insert(it->first);

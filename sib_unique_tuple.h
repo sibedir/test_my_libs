@@ -53,8 +53,8 @@ namespace sib {
         // get ---------------------------------------------------------------------------------------------------------
 
         template <typename _T>
-            requires( not std::is_rvalue_reference_v<_T>
-                      and AnyOf<_T const &, std::remove_reference_t<Ts> const &...> )
+            requires( not ::std::is_rvalue_reference_v<_T>
+                      and AnyOf<_T const &, ::std::remove_reference_t<Ts> const &...> )
         constexpr decltype(auto) get() const
             noexcept(noexcept(static_cast<_T const &>(*this)))
         {
@@ -62,8 +62,8 @@ namespace sib {
         }
 
         template <typename _T>
-            requires( not std::is_rvalue_reference_v<_T>
-                      and AnyOf<_T&, std::remove_reference_t<Ts>&...> )
+            requires( not ::std::is_rvalue_reference_v<_T>
+                      and AnyOf<_T&, ::std::remove_reference_t<Ts>&...> )
         constexpr decltype(auto) get()
             noexcept(noexcept(static_cast<_T&>(*this)))
         {
@@ -84,7 +84,7 @@ namespace sib {
                       and requires(TUniqueTuple ut) { static_cast<_T>(ut); } )
         constexpr decltype(auto) as() const
         {
-            return static_cast<std::remove_reference_t<_T>>(*this);
+            return static_cast<::std::remove_reference_t<_T>>(*this);
         }
 
         template <typename _T>
@@ -99,7 +99,7 @@ namespace sib {
                       and requires(TUniqueTuple ut) { static_cast<_T>(ut); } )
         constexpr decltype(auto) as()
         {
-            return static_cast<std::remove_reference_t<_T>>(*this);
+            return static_cast<::std::remove_reference_t<_T>>(*this);
         }
 
         // operators ---------------------------------------------------------------------------------------------------
@@ -115,7 +115,7 @@ namespace sib {
         template <typename _T>
             requires(is_one_of_v<_T, Ts...>)
         constexpr _T& operator=(_T const & other)
-            noexcept(noexcept(std::declval<_T&>() = std::declval<_T>()))
+            noexcept(noexcept(std::declval<_T&>() = ::std::declval<_T>()))
         {
             return get<_T>() = other;
         }
@@ -124,7 +124,7 @@ namespace sib {
             requires(not is_one_of_v<_T, Ts...>
                      and is_assignable_from_tooneof_v<_T, Ts&...>)
         constexpr assign_from_tooneof_result<_T, Ts&...> operator=(_T const & other)
-            noexcept(noexcept(std::declval<assign_from_tooneof_select<_T, Ts&...>>() = std::declval<_T>()))
+            noexcept(noexcept(std::declval<assign_from_tooneof_select<_T, Ts&...>>() = ::std::declval<_T>()))
         {
             return get<assign_from_tooneof_select<_T, Ts&...>>() = other;
         }
@@ -157,10 +157,10 @@ namespace sib {
         {}
         
         template <typename _T>
-            requires( is_convertible_from_tooneof_v<_T, std::remove_reference_t<Ts>...> )
+            requires( is_convertible_from_tooneof_v<_T, ::std::remove_reference_t<Ts>...> )
         auto operator == (_T const & other) const
         {
-            return get<convert_from_tooneof_select<_T, std::remove_reference_t<Ts>...>>() == other;
+            return get<convert_from_tooneof_select<_T, ::std::remove_reference_t<Ts>...>>() == other;
         }
     };
 
@@ -182,9 +182,9 @@ namespace sib {
 
     template <typename... Args>
     constexpr auto make_unique_tuple(Args&&... args)
-        noexcept(noexcept(MakeUniqueTuple<std::remove_reference_t<Args>...>(std::forward<Args>(args)...)))
+        noexcept(noexcept(MakeUniqueTuple<::std::remove_reference_t<Args>...>(std::forward<Args>(args)...)))
     {
-        return MakeUniqueTuple<std::remove_reference_t<Args>...>(std::forward<Args>(args)...);
+        return MakeUniqueTuple<::std::remove_reference_t<Args>...>(std::forward<Args>(args)...);
     }
 
 } // namespace sib

@@ -12,7 +12,7 @@ namespace sib {
     template <typename T> struct unwrap;
     template <typename T> using  unwrap_t = typename unwrap<T>::type;
 
-    #define SIB_NOT_CV(T) not (std::is_const_v<T> or std::is_volatile_v<T>)
+    #define SIB_NOT_CV(T) not (std::is_const_v<T> or ::std::is_volatile_v<T>)
 
     template <typename T> struct TWrapperSpec;
     
@@ -26,7 +26,7 @@ namespace sib {
     
     struct TNullPtr
     {
-        using base_type = std::nullptr_t;
+        using base_type = ::std::nullptr_t;
     
         constexpr TNullPtr() = default;
         constexpr TNullPtr(TNullPtr const &) = default;
@@ -36,18 +36,18 @@ namespace sib {
         constexpr ~TNullPtr() = default;
 
         constexpr TNullPtr(std::nullptr_t) noexcept {}
-        constexpr operator std::nullptr_t() const noexcept { return nullptr; }
-//        constexpr operator std::nullptr_t const & () const noexcept { return data; }
-//        constexpr operator std::nullptr_t       & ()       noexcept { return data; }
+        constexpr operator ::std::nullptr_t() const noexcept { return nullptr; }
+//        constexpr operator ::std::nullptr_t const & () const noexcept { return data; }
+//        constexpr operator ::std::nullptr_t       & ()       noexcept { return data; }
         explicit constexpr operator void const * () const noexcept { return nullptr; }
-        constexpr std::nullptr_t operator= (std::nullptr_t) noexcept { return nullptr; }
+        constexpr ::std::nullptr_t operator= (std::nullptr_t) noexcept { return nullptr; }
     };
     
     
     
     // TValue -----------------------------------------------------------------------------
     
-    // sib::TValue accepts only non-const and non-volatile arithmetic types or enum.
+    // ::sib::TValue accepts only non-const and non-volatile arithmetic types or enum.
 
     template <typename> class TValue;
 
@@ -91,8 +91,8 @@ namespace sib {
         constexpr T& operator = (AnyT const & other) noexcept { return data = other; }
 
         // template <typename _T>
-        // constexpr decltype(std::declval<T>() == std::declval<_T>()) operator == (_T const & other) const
-        //     noexcept(noexcept(std::declval<T>() == std::declval<_T>()))
+        // constexpr decltype(std::declval<T>() == ::std::declval<_T>()) operator == (_T const & other) const
+        //     noexcept(noexcept(std::declval<T>() == ::std::declval<_T>()))
         // { return data == other; }
     };
 
@@ -103,7 +103,7 @@ namespace sib {
     {
     public:
         using data_type = E;
-        using underlying_type = std::underlying_type_t<E>;
+        using underlying_type = ::std::underlying_type_t<E>;
     private:
         E data;
     public:
@@ -121,43 +121,43 @@ namespace sib {
         constexpr operator E const & () const noexcept { return data; }
         constexpr operator E       & ()       noexcept { return data; }
     
-        template <std::integral Int>
+        template <::std::integral Int>
         constexpr explicit operator Int () const noexcept { return static_cast<Int>(data); }
     
         constexpr E& operator= (E const &     other) noexcept { return data = other;               }
         constexpr E& operator= (underlying_type val) noexcept { return data = static_cast<E>(val); }
 
         template <typename _E>
-        constexpr decltype(std::declval<E>() == std::declval<_E>()) operator == (_E const & other) const noexcept { return data == other; }
+        constexpr decltype(std::declval<E>() == ::std::declval<_E>()) operator == (_E const & other) const noexcept { return data == other; }
     };
 
 
     
     //template <typename T>
-    //constexpr bool is_like_enum_v = std::is_enum_v<T>;
+    //constexpr bool is_like_enum_v = ::std::is_enum_v<T>;
     //
     //template <Enum E>
     //constexpr bool is_like_enum_v<TValue<E>> = true;
     //
     //template <typename T>
-    //using is_like_enum = std::bool_constant<is_like_enum_v<T>>;
+    //using is_like_enum = ::std::bool_constant<is_like_enum_v<T>>;
     //
     //template <typename T>
     //concept like_enum = is_like_enum_v<T>;
     //
     //template <typename T>
-    //struct underlying_type : std::underlying_type<T> {};
+    //struct underlying_type : ::std::underlying_type<T> {};
 
     //template <Enum E>
     //struct underlying_type<TValue<E>> {
-    //    using type = std::underlying_type_t<E>;
+    //    using type = ::std::underlying_type_t<E>;
     //};
 
     //template <like_enum E>
     //using underlying_type_t = typename underlying_type<E>::type;
 
     template <typename T>
-    TValue(T) -> TValue<unwrap_t<std::remove_cvref_t<T>>>;
+    TValue(T) -> TValue<unwrap_t<::std::remove_cvref_t<T>>>;
 
 
 
@@ -166,7 +166,7 @@ namespace sib {
     template <typename T> class TPointer;
 
     template <typename T>
-        requires (not std::is_reference_v<T> and not std::is_void_v<std::remove_cv_t<T>>)
+        requires (not ::std::is_reference_v<T> and not ::std::is_void_v<::std::remove_cv_t<T>>)
     class TPointer<T>
     {
     public:
@@ -204,13 +204,13 @@ namespace sib {
         constexpr T* operator -- (int) noexcept { return data--; }
 
         template <typename _P>
-        constexpr decltype(std::declval<T*>() == std::declval<_P>()) operator == (_P const & other) const
-            noexcept(noexcept(std::declval<T*>() == std::declval<_P>()))
+        constexpr decltype(std::declval<T*>() == ::std::declval<_P>()) operator == (_P const & other) const
+            noexcept(noexcept(std::declval<T*>() == ::std::declval<_P>()))
         { return *this == other; }
     };
 
     template <typename T>
-        requires (std::is_void_v<std::remove_cv_t<T>>)
+        requires (std::is_void_v<::std::remove_cv_t<T>>)
     class TPointer<T>
     {
     private:
@@ -247,8 +247,8 @@ namespace sib {
         constexpr T* operator -- (int) noexcept { return data--; }
 
         template <typename _P>
-        constexpr decltype(std::declval<T*>() == std::declval<_P>()) operator == (_P const & other) const
-            noexcept(noexcept(std::declval<T*>() == std::declval<_P>()))
+        constexpr decltype(std::declval<T*>() == ::std::declval<_P>()) operator == (_P const & other) const
+            noexcept(noexcept(std::declval<T*>() == ::std::declval<_P>()))
         { return *this == other; }
     };
 
@@ -291,10 +291,10 @@ namespace sib {
 
 
     template <typename T>
-    class TLeftReference : public std::reference_wrapper<T>
+    class TLeftReference : public ::std::reference_wrapper<T>
     {
     private:
-        using base = std::reference_wrapper<T>;
+        using base = ::std::reference_wrapper<T>;
     public:
         using type = base::type;
 
@@ -323,7 +323,7 @@ namespace sib {
     // class TReference
     // {
     // public:
-    //     using value_type = std::remove_reference_t<T>;
+    //     using value_type = ::std::remove_reference_t<T>;
     //     using data_type = value_type&;
     // private:
     //     data_type data;
@@ -333,19 +333,19 @@ namespace sib {
     //     constexpr operator value_type const & () const noexcept { return data; }
     //     constexpr operator value_type       & ()       noexcept { return data; }
 
-    //     template <sib::NotAnyOf<value_type, value_type const, value_type &, value_type const &> AnyT>
+    //     template <::sib::NotAnyOf<value_type, value_type const, value_type &, value_type const &> AnyT>
     //         requires(requires{ static_cast<AnyT>(data); })
     //     explicit constexpr operator AnyT () noexcept { return static_cast<AnyT>(data); }
 
     //     constexpr T& operator= (T const& val) noexcept { return data = val; }
 
     //     // template <typename _T>
-    //     // constexpr decltype(std::declval<T>() == std::declval<_T>()) operator == (_T const & other) const
-    //     //     noexcept(noexcept(std::declval<T>() == std::declval<_T>()))
+    //     // constexpr decltype(std::declval<T>() == ::std::declval<_T>()) operator == (_T const & other) const
+    //     //     noexcept(noexcept(std::declval<T>() == ::std::declval<_T>()))
     //     // { return data == other; }
 
     //     // template <typename _T>
-    //     // constexpr decltype(std::declval<T>() == std::declval<_T>()) operator == (_T const & other) const noexcept { return data == other; }
+    //     // constexpr decltype(std::declval<T>() == ::std::declval<_T>()) operator == (_T const & other) const noexcept { return data == other; }
 
     //     constexpr auto operator == (T const & other) const noexcept { return data == other; }
     //     constexpr auto operator != (T const & other) const noexcept { return data != other; }
@@ -421,25 +421,25 @@ namespace sib {
     
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T>>
+    struct ::std::remove_pointer<TPointer<T>>
     {
         using type = T;
     };
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T> const>
+    struct ::std::remove_pointer<TPointer<T> const>
     {
         using type = T;
     };
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T> volatile>
+    struct ::std::remove_pointer<TPointer<T> volatile>
     {
         using type = T;
     };
     
     template <typename T>
-    struct std::remove_pointer<TPointer<T> const volatile>
+    struct ::std::remove_pointer<TPointer<T> const volatile>
     {
         using type = T;
     };
@@ -448,44 +448,44 @@ namespace sib {
     // Array ------------------------------------------------------------------------------
     
     template <typename T, size_t N>
-    class TArray : public std::array<T, N>
+    class TArray : public ::std::array<T, N>
     {
     public:
         using TBaseParam = T[N];
-        using TBaseClass = std::array<T, N>;
+        using TBaseClass = ::std::array<T, N>;
         using TData = T[N];
     private:
-        using TNegConst = std::conditional_t<std::is_const_v<T>, std::remove_const_t<T>, T const>;
+        using TNegConst = ::std::conditional_t<::std::is_const_v<T>, ::std::remove_const_t<T>, T const>;
     
         template <size_t... idx_> requires (sizeof...(idx_) == N)
-        TArray(T const* ptr, std::index_sequence<idx_...>) noexcept : TBaseClass{ ptr[idx_]... } {}
+        TArray(T const* ptr, ::std::index_sequence<idx_...>) noexcept : TBaseClass{ ptr[idx_]... } {}
     public:
         TArray() noexcept : TBaseClass{} {}
     
-        TArray(TArray<TNegConst, N> const & other) noexcept : TArray(&other[0], std::make_index_sequence<N>{}) {}
+        TArray(TArray<TNegConst, N> const & other) noexcept : TArray(&other[0], ::std::make_index_sequence<N>{}) {}
     
-        TArray(T const (&arr)[N]) noexcept : TArray(&arr[0], std::make_index_sequence<N>{}) {}
+        TArray(T const (&arr)[N]) noexcept : TArray(&arr[0], ::std::make_index_sequence<N>{}) {}
     
-        TArray(std::array<T, N> const & arr) noexcept : TArray(&arr[0], std::make_index_sequence<N>{}) {}
+        TArray(std::array<T, N> const & arr) noexcept : TArray(&arr[0], ::std::make_index_sequence<N>{}) {}
     
         template <typename... Args> requires (sizeof...(Args) == N)
-        TArray(Args&& ... args) noexcept : TBaseClass{ std::forward<Args>(args)... } {}
+        TArray(Args&& ... args) noexcept : TBaseClass{ ::std::forward<Args>(args)... } {}
     
         operator TData const & () const noexcept { return *reinterpret_cast<TData const *>(this->data()); }
         operator TData       & ()       noexcept { return *reinterpret_cast<TData       *>(this->data()); }
     };
     
     //template <typename... Ts> requires (sizeof...(Ts) > 1)
-    //TArray(Ts& ...) -> TArray<std::common_type_t<Ts...>, sizeof...(Ts)>;
+    //TArray(Ts& ...) -> TArray<::std::common_type_t<Ts...>, sizeof...(Ts)>;
     
     template <typename... Ts> requires (sizeof...(Ts) > 1)
-    TArray(Ts const & ...) -> TArray<std::common_type_t<Ts...>, sizeof...(Ts)>;
+    TArray(Ts const & ...) -> TArray<::std::common_type_t<Ts...>, sizeof...(Ts)>;
     
     template <typename T, size_t N>
     TArray(std::array<T, N> const &) -> TArray<T, N>;
 
     //template <typename... Ts> requires (sizeof...(Ts) > 1)
-    //TArray(Ts&& ...) -> TArray<std::common_type_t<Ts...>, sizeof...(Ts)>;
+    //TArray(Ts&& ...) -> TArray<::std::common_type_t<Ts...>, sizeof...(Ts)>;
     
     //template <typename T, size_t N>
     //TArray(T(&)[N]) -> TArray<T, N>;
@@ -514,71 +514,71 @@ namespace sib {
 
     // TClass -----------------------------------------------------------------------------
 
-    template <Class C>
-    class TClass : public C
-    {
-    public:
-        constexpr TClass() = default;
-        constexpr TClass(TClass const &) = default;
-        constexpr TClass(TClass      &&) = default;
-        constexpr TClass& operator=(TClass const &) = default;
-        constexpr TClass& operator=(TClass      &&) = default;
-        constexpr ~TClass() = default;
+    // template <Class C>
+    // class TClass : public C
+    // {
+    // public:
+    //     constexpr TClass() = default;
+    //     constexpr TClass(TClass const &) = default;
+    //     constexpr TClass(TClass      &&) = default;
+    //     constexpr TClass& operator=(TClass const &) = default;
+    //     constexpr TClass& operator=(TClass      &&) = default;
+    //     constexpr ~TClass() = default;
 
-        constexpr TClass (C const & arg) : C{          arg } {};
-        constexpr TClass (C      && arg) : C{std::move(arg)} {};
+    //     constexpr TClass (C const & arg) : C{          arg } {};
+    //     constexpr TClass (C      && arg) : C{std::move(arg)} {};
     
-        template <typename _T>
-            requires(is_constructible_from_to_v<_T, C>)
-        TClass(_T&& other)
-            noexcept(noexcept(C{std::forward<_T>(other)}))
-            : C{ std::forward<_T>(other) }
-        {}
+    //     template <typename _T>
+    //         requires(is_constructible_from_to_v<_T, C>)
+    //     TClass(_T&& other)
+    //         noexcept(noexcept(C{std::forward<_T>(other)}))
+    //         : C{ ::std::forward<_T>(other) }
+    //     {}
     
-        template <typename _C>
-        constexpr decltype(std::declval<C>() == std::declval<_C>()) operator == (_C const & other) const
-            noexcept(noexcept(std::declval<C>() == std::declval<_C>()))
-        { return static_cast<C const &>(*this) == other; }
-    };
+    //     template <typename _C>
+    //     constexpr decltype(std::declval<C>() == ::std::declval<_C>()) operator == (_C const & other) const
+    //         noexcept(noexcept(std::declval<C>() == ::std::declval<_C>()))
+    //     { return static_cast<C const &>(*this) == other; }
+    // };
 
 
 
     // TWrapper ---------------------------------------------------------------------------
 
-    template <typename T          > struct unwrap                    { using type = T              ; };
-    template <                    > struct unwrap<TNullPtr         > { using type = std::nullptr_t ; };
-    template <typename T          > struct unwrap<TValue        <T>> { using type = unwrap_t<T>    ; };
-    template <typename T          > struct unwrap<TPointer      <T>> { using type = unwrap_t<T>*   ; };
-    template <typename T          > struct unwrap<TLeftReference<T>> { using type = unwrap_t<T>&   ; };
-    template <typename T, size_t N> struct unwrap<TArray     <T, N>> { using type = unwrap_t<T> [N]; };
-    template <typename T          > struct unwrap<TClass        <T>> { using type = unwrap_t<T>    ; };
+    template <typename T          > struct unwrap                    { using type = T               ; };
+    template <                    > struct unwrap<TNullPtr         > { using type = ::std::nullptr_t; };
+    template <typename T          > struct unwrap<TValue        <T>> { using type = unwrap_t<T>     ; };
+    template <typename T          > struct unwrap<TPointer      <T>> { using type = unwrap_t<T>*    ; };
+    template <typename T          > struct unwrap<TLeftReference<T>> { using type = unwrap_t<T>&    ; };
+    template <typename T, size_t N> struct unwrap<TArray     <T, N>> { using type = unwrap_t<T> [N] ; };
+    // template <typename T          > struct unwrap<TClass        <T>> { using type = unwrap_t<T>     ; };
     
 
     
     // исправить логику получения const параметров
-    template <typename T>           struct TWrapperSpec                 { using type = TValue         <unwrap_t<T>>   ; };
-    template <>                     struct TWrapperSpec<std::nullptr_t> { using type = TNullPtr                       ; };
-    template <typename T>           struct TWrapperSpec<T&>             { using type = TLeftReference <unwrap_t<T>>   ; };
-    template <typename T>           struct TWrapperSpec<T*>             { using type = TPointer       <unwrap_t<T>>   ; };
-    template <typename T, size_t N> struct TWrapperSpec<T[N]>           { using type = TArray         <unwrap_t<T>, N>; };
-    template <Class    C>           struct TWrapperSpec<C>              { using type = C                              ; };
-    template <Function F>           struct TWrapperSpec<F>              { using type = std::function           <F>    ; };
+    template <typename T>           struct TWrapperSpec                   { using type = TValue         <unwrap_t<T>>   ; };
+    template <>                     struct TWrapperSpec<::std::nullptr_t> { using type = TNullPtr                       ; };
+    template <typename T>           struct TWrapperSpec<T&>               { using type = TLeftReference <unwrap_t<T>>   ; };
+    template <typename T>           struct TWrapperSpec<T*>               { using type = TPointer       <unwrap_t<T>>   ; };
+    template <typename T, size_t N> struct TWrapperSpec<T[N]>             { using type = TArray         <unwrap_t<T>, N>; };
+    template <Class    C>           struct TWrapperSpec<C>                { using type =                          C     ; };
+    template <Function F>           struct TWrapperSpec<F>                { using type = ::std::function         <F>    ; };
     
-    //template <typename T> struct TWrapperSpec<T&>  { using type = std::remove_reference_t<remove_all_wrapers_t<T>&> ; };
-    //template <typename T> struct TWrapperSpec<T&&> { using type = std::remove_reference_t<remove_all_wrapers_t<T>&&>; };
+    // template <typename T> struct TWrapperSpec<T&>  { using type = ::std::remove_reference_t<unwrap_t<T>&> ; };
+    // template <typename T> struct TWrapperSpec<T&&> { using type = ::std::remove_reference_t<unwrap_t<T>&&>; };
 
 
 
     template <typename T>
-    TWrapper<std::remove_cvref_t<T>> to_wrap(T&& source)
+    TWrapper<::std::remove_cvref_t<T>> to_wrap(T&& source)
     {
-        return std::forward<T>(source);
+        return ::std::forward<T>(source);
     }
     
     template <typename T, typename... Args>
-    TWrapper<std::remove_reference_t<T>> to_wrap(Args&&... args)
+    TWrapper<::std::remove_reference_t<T>> to_wrap(Args&&... args)
     {
-        return TWrapper<std::remove_reference_t<T>>(std::forward<Args>(args)... );
+        return TWrapper<::std::remove_reference_t<T>>(std::forward<Args>(args)... );
     }
 
 } // namespace sib

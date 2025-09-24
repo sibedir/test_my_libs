@@ -17,24 +17,24 @@ namespace sib {
 
     // ----------------------------------------------------------------------------------- convertion
 
-    inline std::wstring string_to_wstring(std::string const& str)
+    inline ::std::wstring string_to_wstring(std::string const& str)
     {
-        return std::wstring(str.begin(), str.end());
+        return ::std::wstring(str.begin(), str.end());
     }
 
-    inline std::wstring string_to_wstring()
+    inline ::std::wstring string_to_wstring()
     {
-        return std::wstring();
+        return ::std::wstring();
     }
 
-    inline std::string wstring_to_string(std::wstring const& str)
+    inline ::std::string wstring_to_string(std::wstring const& str)
     {
-        return std::string(str.begin(), str.end());
+        return ::std::string(str.begin(), str.end());
     }
 
-    inline std::string wstring_to_string()
+    inline ::std::string wstring_to_string()
     {
-        return std::string();
+        return ::std::string();
     }
 
 
