@@ -12,6 +12,7 @@
 #include "sib_type_info.h"
 #include "sib_type_traits.h"
 #include "sib_console.h"
+#include "sib_string.h"
 
 namespace sib {
 namespace debug {
@@ -34,84 +35,17 @@ namespace debug {
 
     #define SIB_DEGUG_LITERAL(txt) SIB_MAKE_LITERAL(sib::debug::OutStrmCh, txt)
 
-    class string;
+    using TBufer  = ::sib::promiscuous_stringstream <OutStrmCh, OutStrmTr>;
+    using TString = ::sib::promiscuous_string       <OutStrmCh, OutStrmTr>;
 
-    class TBufer : ::std::basic_stringstream<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>
-    {
-    private:
-    
-        using base_type = ::std::basic_stringstream<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>;
 
-    public:
-    
-        using base_type::str;
-    
-        template <typename T>
-            requires(requires(T&& t, base_type bs) { bs << ::std::forward<T>(t); })
-        TBufer& operator<< (T&& arg)
-        {
-            static_cast<base_type&>(*this) << ::std::forward<T>(arg);
-            return *this;
-        }
-
-        template <typename _Ch, typename _Tr, typename _Al>
-            requires(not ::std::is_same_v<::std::basic_string<_Ch, _Tr, _Al>, string>)
-        inline TBufer& operator<< (std::basic_string<_Ch, _Tr, _Al> const & str)
-        {
-            for (_Ch ch : str) static_cast<base_type&>(*this) << static_cast<OutStrmCh>(ch);
-            return *this;
-        }
-        
-        template <typename _Ch, typename _Tr>
-            requires(not (     ::std::is_same_v<_Ch, OutStrmCh>
-                           and ::std::is_same_v<_Tr, OutStrmTr> ))
-        inline TBufer& operator<< (std::basic_string_view<_Ch, _Tr> const & str)
-        {
-            for (_Ch ch : str) static_cast<base_type&>(*this) << static_cast<OutStrmCh>(ch);
-            return *this;
-        }
-
-    };
-
-    class string : public ::std::basic_string<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>
-    {
-    private:
-        template <typename... Args>
-        string init(Args&&... args)
-        {
-            TBufer buf;
-            (buf << ... << ::std::forward<Args>(args));
-            return buf.str();
-        }
-    public:
-        using basic_string = ::std::basic_string<OutStrmCh, OutStrmTr, ::std::allocator<OutStrmCh>>;
-
-        string() = default;
-
-        string(basic_string const & str) : basic_string(          str ) {}
-        string(basic_string      && str) : basic_string(std::move(str)) {}
-
-        template <typename _Ch, typename _Tr, typename _Al>
-        string(std::basic_string<_Ch, _Tr, _Al> const & str) : basic_string(str) {}
-
-        template <LikeString Str>
-        string(Str const & str) : basic_string(str.begin(), str.end()) {}
-
-        template <Char Ch>
-        string(Ch const * ptr) : string(std::basic_string<Ch, ::std::char_traits<Ch>, ::std::allocator<Ch>>(ptr)) {}
-
-        string(value_type ch) : basic_string{ ch } {}
-
-        template <typename... Args>
-        string (Args&&... args) : basic_string(init(std::forward<Args>(args) ...)) {}
-    };
     
     // Преобразование символов в строку, для вывода в outstream
     //   - управляющие символы выводятся как \<ESC> (<ESC> — символ, обозначающий Escape sequences)
     //   - символы в диапазоне OutStrmCh выводятся как есть
     //   - остальные выводятся как \i<NUM> (<NUM> — числовое значение по основанию 10)
     template <Char Ch>
-    inline string bufer_char(Ch ch)
+    inline TString bufer_char_to_str(Ch ch)
     {
         switch (ch)
         {
@@ -139,10 +73,10 @@ namespace debug {
 
 
 
-    inline size_t DISCLOSURE_STRING_LENGTH = 16;
+    inline size_t CONTAINER_DISCLOSURE_LENGTH = 16;
 
     template <typename T>
-    inline string disclosure(T const & val)
+    inline TString disclosure(T const & val)
     {
         {
             if constexpr                                                    ( ::std::is_same_v<T, bool>           ) {
@@ -154,7 +88,7 @@ namespace debug {
 
             } else if constexpr                                             (      is_char_v<T>                 ) {
 
-                return (TBufer() << '\'' << bufer_char(val) << '\'').str();
+                return (TBufer() << '\'' << bufer_char_to_str(val) << '\'').str();
 
             } else if constexpr                                             (      is_container_v<T>            ) {
 
@@ -173,12 +107,12 @@ namespace debug {
                         size_t counter = 1;
                         for (auto it = begin; it != end; ++it, ++counter)
                         {
-                            if (counter > DISCLOSURE_STRING_LENGTH)
+                            if (counter > CONTAINER_DISCLOSURE_LENGTH)
                             {
                                 data << "...";
                                 return data.str();
                             }
-                            data << bufer_char(*it);
+                            data << bufer_char_to_str(*it);
                         }
                         data << "\"";
                         return data.str();
@@ -201,7 +135,7 @@ namespace debug {
                         data << disclosure(*it);
                         for (++it; it != end; ++it, ++counter)
                         {
-                            if (counter > DISCLOSURE_STRING_LENGTH)
+                            if (counter > CONTAINER_DISCLOSURE_LENGTH)
                             {
                                 data << "...";
                                 return data.str();
@@ -248,7 +182,7 @@ namespace debug {
                         size_t counter = 0;
                         for (Content* it = val; *it != '\0'; ++it, ++counter)
                         {
-                            if (counter > DISCLOSURE_STRING_LENGTH)
+                            if (counter > CONTAINER_DISCLOSURE_LENGTH)
                             {
                                 data << "...";
                                 return data.str();
@@ -259,7 +193,7 @@ namespace debug {
                     }
                     else
                     {
-                        string str;
+                        TString str;
                         try { str = disclosure(*val); }
                         catch (...) { str = "!!!"; }
                         data << " { " << str << " }";
@@ -279,7 +213,7 @@ namespace debug {
         }
     };
 
-    void under_lock_print(string const& str);
+    void under_lock_print(TString const& str);
     
     
     
@@ -307,9 +241,9 @@ namespace debug {
     struct TTestLogRec
     {
         TTestLogType typ;
-        string       str;
+        TString      str;
         
-        string united_message() const;
+        TString united_message() const;
     };
     
     using TTestLog = ::std::vector<TTestLogRec>;
@@ -338,16 +272,18 @@ namespace debug {
         TTestLog   _log{};
         TTestFunc  _test;
 
-        void write_to_log(TTestLogType st, string&& str);
+        void write_to_log(TTestLogType st, TString&& str);
         
-        void message(string&& str);
-        void warning(string&& str);
-        void error  (string&& str);
+        void message(TString&& str);
+        void warning(TString&& str);
+        void error  (TString&& str);
     };
     
-    inline ::std::map<string, TTest> Tests {};
+    inline ::std::map<TString, TTest> Tests {};
 
     void RunAllTest();
+
+    TString ReportText();
 
 
 
@@ -359,7 +295,7 @@ namespace debug {
     
     inline console::TKeyCodeReactions debugging_reactions_to_keys{};
     
-    void SetBreakPoint(TBreakPointLevel bp_level = BP_CUSTOM, string msg = {});
+    void SetBreakPoint(TBreakPointLevel bp_level = BP_CUSTOM, TString msg = {});
     
     inline int BEG_COUNTR = 0;
 
@@ -383,7 +319,7 @@ namespace debug {
                 __buf__ << " - NOT convertible to bool\n";                      \
                 ::sib::debug::under_lock_print(__buf__.str());                  \
                 auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::string str                                        \
+                ::sib::debug::TString str                                       \
                 (                                                               \
                     "Assertion error (statement is not convertible to bool): ASSERT(", __VA_ARGS_STR__, ")" \
                 );                                                              \
@@ -400,7 +336,7 @@ namespace debug {
                 __buf__ << " == FALSE\n";                                       \
                 ::sib::debug::under_lock_print(__buf__.str());                  \
                 auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::string str                                        \
+                ::sib::debug::TString str                                       \
                 (                                                               \
                     "Assertion fail: ASSERT(", __VA_ARGS_STR__, ")"             \
                 );                                                              \
@@ -427,7 +363,7 @@ namespace debug {
                 __buf__ << " -NOT-> " << #type_assert << "\n";                  \
                 ::sib::debug::under_lock_print(__buf__.str());                  \
                 auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::string str                                        \
+                ::sib::debug::TString str                                       \
                 (                                                               \
                     "Type assertion fail: TYPE_ASSERT(", __expr_str__, ", ", #type_assert, ")" \
                 );                                                              \
@@ -491,7 +427,7 @@ namespace debug {
                 __buf__ << " -NOT-> " << __type_assert_str__ << "\n";           \
                 ::sib::debug::under_lock_print(__buf__.str());                  \
                 auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::string str                                        \
+                ::sib::debug::TString str                                       \
                 (                                                               \
                     "Type assertion fail: DEFA(", __type_str__, __inst_str__, __init_str__, __type_assert_str__, ")" \
                 );                                                              \

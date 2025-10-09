@@ -45,7 +45,10 @@ namespace sib {
             return (const char32_t*) U##txt;            \
     }()                                                 \
 
+
+
     // ----------------------------------------------------------------------------------- scope_guard
+
     template <typename F>
         requires ::std::is_nothrow_invocable_v<F>
     class scope_guard {
@@ -83,7 +86,7 @@ namespace sib {
 
     #define SIB_SCOPE_GUARD(...)                                        \
         auto SIB_CONCAT(sib_scope_guard_guard, __COUNTER__) =           \
-            ::sib::make_scope_guard( [&]() noexcept { __VA_ARGS__ } );    \
+            ::sib::make_scope_guard( [&]() noexcept { __VA_ARGS__ } );  \
 
 
 
@@ -111,27 +114,27 @@ namespace sib {
 
 
 
-// ----------------------------------------------------------------------------------- pointer
+    // ----------------------------------------------------------------------------------- pointer
 
     template <typename T>
-    static constexpr inline auto ptr_to_int(T* pointer) noexcept
+    constexpr auto ptr_to_int(T* ptr) noexcept
     {
-        return reinterpret_cast<::std::uintptr_t const>(pointer);
+        return reinterpret_cast<::std::uintptr_t const>(ptr);
     }
 
 
 
-// ----------------------------------------------------------------------------------- rand
+    // ----------------------------------------------------------------------------------- rand
 
-    /* random in [0, 1) */ extern inline double rand();
-    /* random in [0, X) */ extern inline double rand(double);
+    /* random in [0, 1) */ double rand();
+    /* random in [0, X) */ double rand(double);
 
 
 
-// ----------------------------------------------------------------------------------- extrude
+    // ----------------------------------------------------------------------------------- extrude
 
     template<::std::integral Int>
-    inline Int post_dev(Int& val, Int divisor) noexcept
+    Int post_dev(Int& val, Int divisor) noexcept
     {
         Int res = val;
         val /= divisor;
@@ -139,20 +142,20 @@ namespace sib {
     }
 
     template<::std::integral Int>
-    inline Int dev_ret_mod(Int& val, Int divisor) noexcept
+    Int dev_ret_mod(Int& val, Int divisor) noexcept
     {
         return post_dev(val, divisor) % divisor;
     }
 
     template<::std::integral Int>
-    inline Int extrude(Int& val, char bits) noexcept
+    Int extrude(Int& val, char bits) noexcept
     {
         return dev_ret_mod(val, static_cast<Int>(Int(1) << bits));
     }
 
     /*
     template<::std::integral Int>
-    inline Int extrude(Int& val, char bits) noexcept
+    Int extrude(Int& val, char bits) noexcept
     {
         Int divisor = (Int(1) << bits);
         Int res = val % divisor;
@@ -161,20 +164,12 @@ namespace sib {
     }
 
     template<::std::integral Int>
-    inline Int extrude(Int& val, char bits) noexcept(noexcept(std::div(val, ::std::declval<Int>())))
+    Int extrude(Int& val, char bits) noexcept(noexcept(std::div(val, ::std::declval<Int>())))
     {
         auto res = ::std::div(val, Int(1) << bits);
         val = res.quot;
         return res.rem;
     }
     */
-
-// ----------------------------------------------------------------------------------- convertion
-
-    extern inline ::std::wstring string_to_wstring(std::string const& str);
-
-    extern inline ::std::string wstring_to_string(std::wstring const& str);
-
-
 
 } // namespace sib

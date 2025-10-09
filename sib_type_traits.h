@@ -89,7 +89,7 @@ namespace sib {
     
         #pragma message (__FILE__ "(" SIB_STRINGISE(__LINE__) ") : WARNING: "                   \
             "Warning [SIB]: Possible non-standard conversion of function pointer to void*. "    \
-            "Check the ::sib::NON_STANDARD_FUNC_PTR_CONVERSION_DETECT variable. "                 \
+            "Check the ::sib::NON_STANDARD_FUNC_PTR_CONVERSION_DETECT variable. "               \
             "To suppress this warning, define the "                                             \
                                    "DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION macros."   \
         )                                                                                       \

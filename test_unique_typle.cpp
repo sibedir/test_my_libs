@@ -27,7 +27,7 @@ struct E {};
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-using namespace ::std::string_literals;
+using namespace std::string_literals;
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -40,16 +40,16 @@ auto baz(std::string const &) { return "do baz(std::string&)"s; }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-template <::std::size_t... idx_>
+template <std::size_t... idx_>
 consteval auto gen_TP_impl(std::index_sequence<idx_...>)
 {
-    return ::sib::types_pack< ::sib::int_tag<idx_> ... > {};
+    return sib::types_pack< sib::int_tag<idx_> ... > {};
 }
 
 template <size_t... idx_>
 consteval auto gen_TL_impl(std::index_sequence<idx_...>)
 {
-    return ::sib::types_list< ::sib::int_tag<idx_> ... > {};
+    return sib::types_list< sib::int_tag<idx_> ... > {};
 }
 
 template <size_t N> using gen_TP = decltype(gen_TP_impl(std::make_index_sequence<N>{}));
@@ -62,15 +62,15 @@ template <typename T> struct Types_to_Str_Helper;
 template <template <typename...> typename Tmpl, typename... Ts>
 struct Types_to_Str_Helper<Tmpl<Ts...>>
 {
-    operator ::std::string() const
+    operator std::string() const
     {
         if constexpr (sizeof...(Ts) == 0) {
             return "<>";
         } else if constexpr (sizeof...(Ts) == 1) {
-            return "<" + ::std::to_string(sib::types_first_t<Ts...>::value) + ">";
+            return "<" + std::to_string(sib::types_first_t<Ts...>::value) + ">";
         } else {
-            ::std::string res = "<";
-            ((res += ::std::to_string(Ts::value) + ", "), ...);
+            std::string res = "<";
+            ((res += std::to_string(Ts::value) + ", "), ...);
             res[res.size() - 2] = '>';
             return res;
         }
@@ -97,7 +97,7 @@ enum class TF6 { f0, f1, f2, f3, f4, f5 };
 
 DEF_TEST(test_TUniqueTuple)
 {
-    ::sib::debug::Init();
+    sib::debug::Init();
 
     MSG("");                                              //
     MSG("****************************************************************************************************");
@@ -107,53 +107,53 @@ DEF_TEST(test_TUniqueTuple)
 
     {
         BEG;
-        DEF(sib::MakeUniqueTuple <TEnumClass _ ::std::set<int>>, ut1, (TEnumClass::e_5));
+        DEF(sib::MakeUniqueTuple <TEnumClass _ std::set<int>>, ut1, (TEnumClass::e_5));
         PRN(static_cast<int>(ut1));
         PRN(ut1.as<int>());
         PRN(ut1 == TEnumClass::e_5);
 
         DEF(TEnumClass, e, = TEnumClass::e_2);
-        DEF(sib::MakeUniqueTuple <TEnumClass& _ ::std::set<int>>, ut2, (e));
+        DEF(sib::MakeUniqueTuple <TEnumClass& _ std::set<int>>, ut2, (e));
         PRN(static_cast<int>(ut2));
         PRN(ut2.as<int>());
         PRN(ut2 == TEnumClass::e_2);
 
-        DEF(sib::MakeUniqueTuple <int _ ::std::string>, ut3, ("000"));
+        DEF(sib::MakeUniqueTuple <int _ std::string>, ut3, ("000"));
         PRN(ut3 == "000");
 
         DEF(std::string, s, = "111");
-        DEF(sib::TLeftReference<::std::string>, sr, = s);
-        DEF(sib::MakeUniqueTuple <int _ ::std::string&>, ut4, (s));
+        DEF(sib::TLeftReference<std::string>, sr, = s);
+        DEF(sib::MakeUniqueTuple <int _ std::string&>, ut4, (s));
         PRN(ut4 == "111");
         PRN(sr == "111");
         PRN(s == "111");
         END;
     } {
         BEG;
-        PRN(sib::is_constructible_from_tooneof_v<float _ int _ ::std::set<int> _ ::std::string>);
+        PRN(sib::is_constructible_from_tooneof_v<float _ int _ std::set<int> _ std::string>);
         PRN(sib::is_constructible_from_to_v<float _ int>);
-        PRN(sib::is_constructible_from_to_v<float _ ::std::set<int>>);
-        PRN(sib::is_constructible_from_to_v<float _ ::std::string>);
+        PRN(sib::is_constructible_from_to_v<float _ std::set<int>>);
+        PRN(sib::is_constructible_from_to_v<float _ std::string>);
 
-        PRN(sib::make_unique_tuple(42 _ ::std::string("qwerty") _ ::std::set<int>{}));
-        PRN(sib::make_unique_tuple(std::set<int>{} _ 42 _ ::std::string("qwerty")));
-        PRN(sib::make_unique_tuple(std::string("qwerty") _ 42 _ ::std::set<int>{}));
-        PRN(sib::make_unique_tuple(42 _ ::std::string("qwerty") _ ::std::set<int>{}).c_str());
-        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ ::std::set<int>{}), int);
-        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ ::std::set<int>{}), float);
-        PRNAS(42, ::std::vector<int>);
-        //PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ ::std::set<int>{}), ::std::vector<int>);
+        PRN(sib::make_unique_tuple(42 _ std::string("qwerty") _ std::set<int>{}));
+        PRN(sib::make_unique_tuple(std::set<int>{} _ 42 _ std::string("qwerty")));
+        PRN(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}));
+        PRN(sib::make_unique_tuple(42 _ std::string("qwerty") _ std::set<int>{}).c_str());
+        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), int);
+        PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), float);
+        PRNAS(42, std::vector<int>);
+        //PRNAS(sib::make_unique_tuple(std::string("qwerty") _ 42 _ std::set<int>{}), std::vector<int>);
         END;
     } {
         BEG;
         DEF(int, i, = 42);
         DEF(std::string, s, = "qwerty");
-        DEF(auto, ut, = ::sib::make_unique_tuple(i _ s));
+        DEF(auto, ut, = sib::make_unique_tuple(i _ s));
         PRN(i);
         PRN(s);
         PRN(ut);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         END;
         EXE(i = 0);
         EXE(s = "0");
@@ -161,7 +161,7 @@ DEF_TEST(test_TUniqueTuple)
         EXE(ut = "1");
         PRN(ut);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         ASSERT(i == 0);
         ASSERT(s == "0");
         ASSERT(ut == 1);
@@ -171,23 +171,23 @@ DEF_TEST(test_TUniqueTuple)
         BEG;
         DEF(int, i, = 42);
         DEF(std::string, s, = "qwerty");
-        DEF(auto, ut, = ::sib::MakeUniqueTuple<int& _ ::std::string&>(i _ s));
+        DEF(auto, ut, = sib::MakeUniqueTuple<int& _ std::string&>(i _ s));
         PRN(i);
         PRN(s);
         PRN(ut);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         END;
         EXE(ut.get<int&>() = 111);
         EXE(ut = "111");
         PRN(ut);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         ASSERT(i == 111);
         ASSERT(s == "111");
         
-        //{ ::sib::TLeftReference<::std::string> rrr = s; void(rrr == 111); }
-        { ::sib::TLeftReference<int        > rrr = i; void(rrr == 111); }
+        //{ sib::TLeftReference<std::string> rrr = s; void(rrr == 111); }
+        { sib::TLeftReference<int        > rrr = i; void(rrr == 111); }
         void(ut == 111);
 
         ASSERT(ut == 111);
@@ -196,14 +196,14 @@ DEF_TEST(test_TUniqueTuple)
         BEG;
         EXE(
             static_assert(std::is_same_v<
-                ::sib::MakeUniqueTuple<::std::vector<int>, bool, ::std::string>,
-                ::sib::MakeUniqueTuple<::std::string, ::std::vector<int, ::std::allocator<int>>, bool>
+                sib::MakeUniqueTuple<std::vector<int>, bool, std::string>,
+                sib::MakeUniqueTuple<std::string, std::vector<int, std::allocator<int>>, bool>
             >)
         );
         EXE(
             static_assert(std::is_same_v<
-                ::sib::MakeUniqueTuple<A, B, C>,
-                ::sib::MakeUniqueTuple<B, C, A>
+                sib::MakeUniqueTuple<A, B, C>,
+                sib::MakeUniqueTuple<B, C, A>
             >)
         );
 
@@ -211,8 +211,8 @@ DEF_TEST(test_TUniqueTuple)
         DEF(sib::MakeUniqueTuple<C _ B _ A>, tmp2, );
         DEF(sib::MakeUniqueTuple<B _ A _ C>, tmp3, );
 
-        DEF(sib::MakeUniqueTuple<::std::vector<int> _ bool _ ::std::string>, tmp4, );
-        DEF(sib::MakeUniqueTuple<::std::string _ ::std::vector<int _ ::std::allocator<int>> _ bool>, tmp5, );
+        DEF(sib::MakeUniqueTuple<std::vector<int> _ bool _ std::string>, tmp4, );
+        DEF(sib::MakeUniqueTuple<std::string _ std::vector<int _ std::allocator<int>> _ bool>, tmp5, );
 
         EXE(static_assert(std::is_same_v<decltype(tmp1), decltype(tmp2)>));
         EXE(static_assert(std::is_same_v<decltype(tmp2), decltype(tmp3)>));
@@ -240,14 +240,14 @@ DEF_TEST(test_TUniqueTuple)
         END;
     } {
         BEG;
-        DEF(sib::MakeUniqueTuple<::std::string>, tmp, );
+        DEF(sib::MakeUniqueTuple<std::string>, tmp, );
         EXE(tmp = "xxxxxxxxx");
         PRN(sib::is_container_v<decltype(tmp)>);
         PRN(tmp);
         END;
     } {
         BEG;
-        DEF(sib::MakeUniqueTuple<int _ ::std::string>, tmp, );
+        DEF(sib::MakeUniqueTuple<int _ std::string>, tmp, );
         EXE(tmp = 111);
         EXE(tmp = "xxxxxxxxx");
         PRN(sib::is_container_v<decltype(tmp)>);
@@ -258,14 +258,14 @@ DEF_TEST(test_TUniqueTuple)
         //static_assert(sib::is_any_of_v<Ts...> _T>
 
         BEG;
-        DEF(sib::MakeUniqueTuple<int _ ::std::string _ ::std::vector<int>>, tmp, );
-        EXE(tmp.get<::std::vector<int>>() = ::std::vector<int>{1 _ 2 _ 3});
+        DEF(sib::MakeUniqueTuple<int _ std::string _ std::vector<int>>, tmp, );
+        EXE(tmp.get<std::vector<int>>() = std::vector<int>{1 _ 2 _ 3});
         EXE(tmp.get<int>() = 2.f);
         EXE(tmp = "xxxxxxxxx");
         PRN(sib::is_container_v<decltype(tmp)>);
-        PRN(tmp.get<::std::vector<int>>());
+        PRN(tmp.get<std::vector<int>>());
         PRN(tmp.get<int>());
-        PRN(tmp.get<::std::string>());
+        PRN(tmp.get<std::string>());
         PRN(tmp);
         EXE(tmp.get<int>() = 3.f);
         PRN(tmp.get<int>());
@@ -277,14 +277,14 @@ DEF_TEST(test_TUniqueTuple)
     } {
         BEG;
         
-        static_assert(sib::is_constructible_from_tooneof_v<const char [7], ::std::string>);
-        static_assert(sib::no_duplicates_v<::sib::construct_from_tooneof_select<const char [7], ::std::string>>);
-        DEF(sib::MakeUniqueTuple<::std::string>, ut, ("qwerty"));
+        static_assert(sib::is_constructible_from_tooneof_v<const char [7], std::string>);
+        static_assert(sib::no_duplicates_v<sib::construct_from_tooneof_select<const char [7], std::string>>);
+        DEF(sib::MakeUniqueTuple<std::string>, ut, ("qwerty"));
         PRN(ut);
         END;
     } {
         BEG;
-        DEF(sib::MakeUniqueTuple<int _ ::std::string>, ut, { "qwerty" _ 111 });
+        DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { "qwerty" _ 111 });
         DEF(std::string, s, = ut);
         PRN(ut);
         PRN(foo(ut));
@@ -293,8 +293,8 @@ DEF_TEST(test_TUniqueTuple)
         END;
     } {
         BEG;
-        //DEF(auto, ut, = ::sib::MakeUniqueTuple<::std::wstring _ int>());
-        DEF(auto, ut, = ::sib::make_unique_tuple(L"qwerty"s _ 111));
+        //DEF(auto, ut, = sib::MakeUniqueTuple<std::wstring _ int>());
+        DEF(auto, ut, = sib::make_unique_tuple(L"qwerty"s _ 111));
         DEF(float, f, = ut);
         DEF(std::wstring, s, = ut);
         PRN(f);
@@ -306,18 +306,18 @@ DEF_TEST(test_TUniqueTuple)
         END;
     } {
         BEG;
-        EXE(using UT1 = ::sib::MakeUniqueTuple<gen_TP<10>>);
+        EXE(using UT1 = sib::MakeUniqueTuple<gen_TP<10>>);
         EXE([[maybe_unused]] UT1 ut1{});
-        MSG("    length     = ", ::sib::static_type_name<UT1>().size());
-        MSG("    type count = ", ::sib::types_info<UT1::types<::sib::types_pack>>::count);
+        MSG("    length     = ", sib::static_type_name<UT1>().size());
+        MSG("    type count = ", sib::types_info<UT1::types<sib::types_pack>>::count);
         PRN(Types_to_Str<UT1>());
         END;
 
-        EXE(using TL = ::sib::types_tail_t<10, gen_TL<20>>);
-        EXE(using UT2 = ::sib::MakeUniqueTuple<TL>);
+        EXE(using TL = sib::types_tail_t<10, gen_TL<20>>);
+        EXE(using UT2 = sib::MakeUniqueTuple<TL>);
         EXE([[maybe_unused]] UT2 ut2{});
-        MSG("    length     = ", ::sib::static_type_name<UT2>().size());
-        MSG("    type count = ", ::sib::types_info<UT2::types<::sib::types_list>>::count);
+        MSG("    length     = ", sib::static_type_name<UT2>().size());
+        MSG("    type count = ", sib::types_info<UT2::types<sib::types_list>>::count);
         PRN(Types_to_Str<UT2>());
         END;
 
@@ -325,17 +325,17 @@ DEF_TEST(test_TUniqueTuple)
         END;
     } {
         BEG;
-        DEF(auto, ut, = ::sib::MakeUniqueTuple<int _ ::std::string _ B>(1, "sfsdfsd"));
+        DEF(auto, ut, = sib::MakeUniqueTuple<int _ std::string _ B>(1, "sfsdfsd"));
         EXE(ut = "qwerty");
         PRN(ut);
         PRNAS(ut, float);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRNAS(ut, B);
         END;
     } {
         BEG;
         DEF(sib::TArray<int _ 4>, arr, { 1 _ 2 _ 3 _ 4 });
-        DEF(auto, ut, = ::sib::MakeUniqueTuple<int(&)[4] _ C _ B>(arr));
+        DEF(auto, ut, = sib::MakeUniqueTuple<int(&)[4] _ C _ B>(arr));
         PRN(arr);
         PRN(decltype(ut)::types<>());
         PRN(decltype(ut)::veritable_types<>());
@@ -348,13 +348,13 @@ DEF_TEST(test_TUniqueTuple)
         BEG;
         DEF(int, i, = 0);
         DEF(std::string, s, = "");
-        DEF(sib::MakeUniqueTuple<int _ ::std::string>, ut, { i _ s });
+        DEF(sib::MakeUniqueTuple<int _ std::string>, ut, { i _ s });
         EXE(ut = 42);
         EXE(ut = "qwerty");
         ASSERT(ut == 42);
         ASSERT(ut == "qwerty");
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRN(i);
         PRN(s);
         PRN(ut.get<int>());
@@ -369,11 +369,11 @@ DEF_TEST(test_TUniqueTuple)
         BEG;
         DEF(int, i, = 42);
         DEF(std::string, s, = "qwerty");
-        DEF(sib::MakeUniqueTuple<int _ ::std::string> const, ut, { i _ s });
+        DEF(sib::MakeUniqueTuple<int _ std::string> const, ut, { i _ s });
         ASSERT(ut == 42);
         ASSERT(ut == "qwerty");
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRN(ut.get<int>());
         PRN(ut.as<int>());
         PRN(ut.as<int const &>());
@@ -384,7 +384,7 @@ DEF_TEST(test_TUniqueTuple)
         BEG;
         DEF(int, i, = 0);
         DEF(std::string, s, = "");
-        DEF(sib::MakeUniqueTuple<int& _ ::std::string&>, ut, { i _ s });
+        DEF(sib::MakeUniqueTuple<int& _ std::string&>, ut, { i _ s });
         PRN(decltype(ut)::types<>());
         PRN(decltype(ut)::veritable_types<>());
         EXE(ut.as<int>() = 42);
@@ -392,11 +392,11 @@ DEF_TEST(test_TUniqueTuple)
         ASSERT(i == 42);
         ASSERT(s == "qwerty");
         ASSERT(ut == 42);
-        ASSERT(ut.as<::std::string>() == "qwerty");
+        ASSERT(ut.as<std::string>() == "qwerty");
         PRN(i);
         PRN(s);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRN(ut.get<int&>());
         PRN(ut.as<int>());
         PRN(ut.as<int&>());
@@ -409,17 +409,17 @@ DEF_TEST(test_TUniqueTuple)
         BEG;
         DEF(int, i, = 123);
         DEF(std::string, s, = "123");
-        DEF(sib::MakeUniqueTuple<int const & _ ::std::string const &>, ut, { i _ s });
+        DEF(sib::MakeUniqueTuple<int const & _ std::string const &>, ut, { i _ s });
         PRN(decltype(ut)::types<>());
         PRN(decltype(ut)::veritable_types<>());
         EXE(i = 42);
         EXE(s = "qwerty");
         ASSERT(ut == 42);
-        ASSERT(ut.as<::std::string>() == "qwerty");
+        ASSERT(ut.as<std::string>() == "qwerty");
         PRN(i);
         PRN(s);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRN(ut.get<int const &>());
         PRN(ut.as<int>());
         PRN(ut.as<int const &>());
@@ -430,10 +430,10 @@ DEF_TEST(test_TUniqueTuple)
     } {
         BEG;
         TEnum e = e_1;
-        DEF(sib::MakeUniqueTuple<::std::string _ TEnum&>, ut, (e, ""));
+        DEF(sib::MakeUniqueTuple<std::string _ TEnum&>, ut, (e, ""));
         PRN(ut);
         PRNAS(ut, int);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRN(e);
         PRN(ut.as<int>());
         PRN(ut.as<TEnum>() = e_4);
@@ -448,10 +448,10 @@ DEF_TEST(test_TUniqueTuple)
         TEnumClass e = TEnumClass::e_1;
         TEnumClass& er = e;
         PRNAS(er, int);
-        DEF(sib::MakeUniqueTuple<::std::string _ TEnumClass&>, ut, (e, ""));
+        DEF(sib::MakeUniqueTuple<std::string _ TEnumClass&>, ut, (e, ""));
         PRN(ut);
         PRNAS(ut, TEnumClass);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRNAS(e, int);
         PRN(decltype(ut)::veritable_types<>());
         PRNAS(ut, int);
@@ -469,11 +469,11 @@ DEF_TEST(test_TUniqueTuple)
         DEF(TEnumClass123 &, er, = e);
         PRN(er);
         PRNAS(er, int);
-        DEF(sib::MakeUniqueTuple<::std::string _ TEnumClass123>, ut, (e, ""));
+        DEF(sib::MakeUniqueTuple<std::string _ TEnumClass123>, ut, (e, ""));
         PRN(static_cast<int>(ut));
         PRN(ut);
         PRNAS(ut, TEnumClass123);
-        PRNAS(ut, ::std::string);
+        PRNAS(ut, std::string);
         PRN(ut.as<TEnumClass123>());
         PRN(ut.as<TEnumClass123>() = TEnumClass123::_3);
         ASSERT(e == TEnumClass123::_1);
@@ -516,8 +516,8 @@ DEF_TEST(test_TUniqueTuple)
         PRN(&b);
         PRN(static_cast<bool&&>(i));
         PRN(static_cast<bool const &>(i));
-        ::sib::debug::outstream << &static_cast<bool const&>(i) << "\n";
-        ::sib::debug::outstream << &static_cast<bool const &>(static_cast<bool &&>(i)) << "\n";
+        sib::debug::outstream << &static_cast<bool const&>(i) << "\n";
+        sib::debug::outstream << &static_cast<bool const &>(static_cast<bool &&>(i)) << "\n";
         END;
     } {
         BEG;
@@ -527,7 +527,7 @@ DEF_TEST(test_TUniqueTuple)
         DEF(TF4, f4, = TF4::f4);
         DEF(TF5, f5, = TF5::f5);
         DEF(TF6, f6, = TF6::f0);
-        DEF(auto, ut1, = ::sib::make_unique_tuple(f1 _ f2 _ f3 _ f4 _ f5 _ f6 _ 42));
+        DEF(auto, ut1, = sib::make_unique_tuple(f1 _ f2 _ f3 _ f4 _ f5 _ f6 _ 42));
 
         DEF(decltype(ut1), ut2,);
         DEF(decltype(ut1), ut3,);
@@ -542,7 +542,7 @@ DEF_TEST(test_TUniqueTuple)
         EXE(ut1 = TF1::f3);
         EXE(ut1 = 666);
         EXE(ut3 = ut1);
-        EXE(ut2 = ::std::move(ut3));
+        EXE(ut2 = std::move(ut3));
         EXE(std::vector<int> vi);
         EXE(vi.push_back([](TF1 const& f) { return static_cast<int>(f); }(ut1)));
         EXE(vi.push_back([](TF2 const& f) { return static_cast<int>(f); }(ut1)));
@@ -573,7 +573,7 @@ DEF_TEST(test_TUniqueTuple)
         PRN(ut1.as<float>());
 
         MSG("\n\n");
-        DEF(auto, ut4, = ::sib::make_unique_tuple(TF3::f0 _ TF4::f0 _ 777));
+        DEF(auto, ut4, = sib::make_unique_tuple(TF3::f0 _ TF4::f0 _ 777));
         EXE(vi.clear());
         EXE(vi.push_back([](TF3 const& f) { return static_cast<int>(f); }(ut4)));
         EXE(vi.push_back([](TF4 const& f) { return static_cast<int>(f); }(ut4)));
@@ -585,6 +585,6 @@ DEF_TEST(test_TUniqueTuple)
         END;
     }
 
-    ::sib::debug::outstream << ::std::endl;
+    sib::debug::outstream << std::endl;
     return 0;
 }

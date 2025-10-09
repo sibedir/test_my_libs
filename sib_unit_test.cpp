@@ -27,7 +27,7 @@ namespace debug {
 
     ::std::mutex mtx{};
 
-    void under_lock_print(string const& str)
+    void under_lock_print(TString const& str)
     {
         ::std::lock_guard lock(mtx);
         outstream << str;
@@ -38,13 +38,56 @@ namespace debug {
 
     // ----------------------------------------------------------------------------------- debug tests
 
-    void RunAllTest() { for (auto& it: Tests) it.second.run(); }
+    void RunAllTest()
+    {
+        for (auto& it: Tests) it.second.run();
+    }
+
+    TString ReportText()
+    {
+        TBufer buf;
+        TString border = "********************************************************************************************************\n";
+        buf << border << "                                                REPORT                                                  \n";
+        for (auto test_it : Tests)
+        {
+            buf << border;
+            buf << "TEST: " << test_it.first << "\n";
+            auto& test = test_it.second;
+
+            switch (test.state()) {
+            case TTestState::NotInitialized: buf << "Not initialized" << "\n"; break;
+            case TTestState::NotCompleted: buf << "Not completed" << "\n"; break;
+            case TTestState::Completed: buf << "Completed" << "\n"; break;
+            default: buf << "Unknown state" << "\n";
+            }
+
+            int l = 0, m = 0, w = 0, e = 0;
+            for (auto rec_it : test.log()) {
+                buf << rec_it.united_message() << "\n";
+                ++l;
+                switch (rec_it.typ) {
+                    case TTestLogType::message: ++m; break;
+                    case TTestLogType::warning: ++w; break;
+                    case TTestLogType::error  : ++e; break;
+                }
+            }
+            buf << "\nlog count: " << l
+                << "  messages: "  << m
+                << "  warnings: "  << w
+                << "  errors: "    << e
+                << "\n";
+
+            border = "--------------------------------------------------------------------------------------------------------\n";
+        }
+        buf << "********************************************************************************************************\n";
+        return buf.str();
+    }
 
 
     
     // ----------------------------------------------------------------------------------- TTestLogRec
 
-    string TTestLogRec::united_message() const
+    TString TTestLogRec::united_message() const
     {
         TBufer res;
         auto i = static_cast<int>(typ);
@@ -60,11 +103,11 @@ namespace debug {
     const TTestLog   & TTest::log  () const { return _log  ; }
     const TTestFunc  & TTest::test () const { return _test ; }
     
-    void TTest::message(string && str) { write_to_log(TTestLogType::message , ::std::move(str)); }
-    void TTest::warning(string && str) { write_to_log(TTestLogType::warning , ::std::move(str)); }
-    void TTest::error  (string && str) { write_to_log(TTestLogType::error   , ::std::move(str)); }
+    void TTest::message(TString && str) { write_to_log(TTestLogType::message , ::std::move(str)); }
+    void TTest::warning(TString && str) { write_to_log(TTestLogType::warning , ::std::move(str)); }
+    void TTest::error  (TString && str) { write_to_log(TTestLogType::error   , ::std::move(str)); }
     
-    void TTest::write_to_log(TTestLogType st, string && str) { _log.emplace_back(st, str); }
+    void TTest::write_to_log(TTestLogType st, TString && str) { _log.emplace_back(st, str); }
     
     void TTest::run()
     {
@@ -84,9 +127,9 @@ namespace debug {
         }
         catch (std::exception const & e)
         {
-            string what = e.what();
-            if (what != string()) { what = string(":\n") + what; }
-            error(string("Test stopped due to exception [", typeid(e).name(), "]", what));
+            TString what = e.what();
+            if (what != TString()) { what = TString(":\n") + what; }
+            error(TString("Test stopped due to exception [", typeid(e).name(), "]", what));
         }
         catch (...)
         {
@@ -97,7 +140,7 @@ namespace debug {
 
     // ----------------------------------------------------------------------------------- debugging step by step
     
-    void SetBreakPoint(TBreakPointLevel bp_level /*= BP_CUSTOM*/, string msg /*= {}*/)
+    void SetBreakPoint(TBreakPointLevel bp_level /*= BP_CUSTOM*/, TString msg /*= {}*/)
     {
         ::std::set<::sib::console::TKeyCode> debugging_keys;
         for (auto it = debugging_reactions_to_keys.begin(); it != debugging_reactions_to_keys.end(); ++it)
@@ -110,7 +153,7 @@ namespace debug {
         
         if (bp_level == BP_CUSTOM)
         {
-            if (msg != string()) { under_lock_print(msg + string("\n")); }
+            if (msg != TString()) { under_lock_print(msg + TString("\n")); }
             else { under_lock_print("       - break point -       [Enter] - continue   [Esc] - abort\n"); }
         }
         
