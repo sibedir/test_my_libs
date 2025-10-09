@@ -310,7 +310,7 @@ namespace console {
 
             do {
                 int i = _getch();
-                int c = static_cast<char>(i);
+                int c = static_cast<unsigned char>(i);
                 if (c != i)
                 {
                     FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
