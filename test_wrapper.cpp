@@ -1,4 +1,6 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+﻿#if defined(_WIN32)
+    #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include "test_wrapper.h"
 
@@ -23,94 +25,18 @@ DEF_TEST(test_TNullPtr)
 
     {
         BEG;
+        ASS(sib::TNullPtr{} == nullptr);
+        END;
+    } {
+        DEF(sib::TNullPtr, ptr1, = nullptr);
 
-        {
-            sib::TNullPtr ptr = nullptr;
-            do {
-                auto __type_str__ = []
-                {
-                    if      constexpr (std::is_same_v<sib::debug::OutStrmCh, char>)
-                        return (const char*)"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, wchar_t>)
-                        return (const wchar_t*)L"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char8_t>)
-                        return (const char8_t*)u8"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char16_t>)
-                        return (const char16_t*)u"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char32_t>)
-                        return (const char32_t*)U"sib::TNullPtr";
-                }();
-                
-                auto __inst_str__ = []
-                {
-                    if      constexpr (std::is_same_v<sib::debug::OutStrmCh, char>)
-                        return (const char*)"ptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, wchar_t>)
-                        return (const wchar_t*)L"ptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char8_t>)
-                        return (const char8_t*)u8"ptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char16_t>)
-                        return (const char16_t*)u"ptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char32_t>)
-                        return (const char32_t*)U"ptr";
-                }();
-                
-                auto __init_str__ = []
-                {
-                    if constexpr (std::is_same_v<sib::debug::OutStrmCh, char>)
-                        return (const char*)"= nullptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, wchar_t>)
-                        return (const wchar_t*)L"= nullptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char8_t>)
-                        return (const char8_t*)u8"= nullptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char16_t>)
-                        return (const char16_t*)u"= nullptr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char32_t>)
-                        return (const char32_t*)U"= nullptr";
-                    }();
-                
-                auto __type_assert_str__ = []
-                {
-                    if constexpr (std::is_same_v<sib::debug::OutStrmCh, char>)
-                        return (const char*)"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, wchar_t>)
-                        return (const wchar_t*)L"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char8_t>)
-                        return (const char8_t*)u8"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char16_t>)
-                        return (const char16_t*)u"sib::TNullPtr";
-                    else if constexpr (std::is_same_v<sib::debug::OutStrmCh, char32_t>)
-                        return (const char32_t*)U"sib::TNullPtr";
-                    }();
-                
-                using __T__ = decltype(ptr);
-                using __TA__ = sib::TNullPtr;
-                auto __TN__ = ::sib::type_name<__T__>();
-                ::sib::debug::TBufer __buf__;
-                __buf__
-                    << "d   "   << __type_str__ << " " << __inst_str__ << " " << __init_str__
-                    << "  ->  " << __TN__;
-                
-                if constexpr (std::is_same_v<__T__, __TA__>)
-                {
-                    __buf__
-                        << " --> " << __type_assert_str__
-                        << "\n";
-                    ::sib::debug::under_lock_print(__buf__.str());
-                    ::sib::debug::SetBreakPoint(sib::debug::BP_ALL);
-                }
-                else {
-                    __buf__ << " -NOT-> " << __type_assert_str__ << "\n"; ::sib::debug::under_lock_print(__buf__.str()); auto st = ::sib::debug::TTestLogType::error; ::sib::debug::TString str("Type assertion fail: DEFA(", __type_str__, __inst_str__, __init_str__, __type_assert_str__, ")"); CUR_LOG.emplace_back(st, str); ::sib::debug::SetBreakPoint(::sib::debug::BP_CUSTOM, "     - assertion fail -     [Enter] - continue   [Esc] - abort");
-                }
-            } while (0);
-        }
+        DEFA(sib::TNullPtr, ptr2, = nullptr, sib::TNullPtr);
 
         DEFA(sib::TNullPtr, ptr, = nullptr, sib::TNullPtr);
         EXE(int* ip = ptr);
         PRN(ptr);
         PRN(ip);
-        END;
-        PRN(ptr == ip);
+        ASS(ptr == ip);
         END;
     } {
         BEG;
@@ -118,7 +44,7 @@ DEF_TEST(test_TNullPtr)
         EXE(int const* ip = ptr);
         PRN(ptr);
         PRN(ip);
-        PRN(ptr == ip);
+        ASS(ptr == ip);
         END;
     } {
         BEG;
@@ -382,8 +308,11 @@ DEF_TEST(test_TValue)
         DEF(TEnumClass, e2, = TEnumClass::e_2);
         DEF(TEnumClass123, e3, = TEnumClass123::_3);
         PRN(e1);
-        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
+
+        PAS(e2, std::underlying_type_t<decltype(e2)>);
+
+        PAS(e2, std::underlying_type_t<decltype(e2)>);
+        PAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
         EXE(std::vector<int> vec_i1(e1));
@@ -399,8 +328,8 @@ DEF_TEST(test_TValue)
         DEF(sib::TValue<TEnumClass   >, e2, = TEnumClass::e_2);
         DEF(sib::TValue<TEnumClass123>, e3, = TEnumClass123::_3);
         PRN(e1);
-        PRNAS(e2, decltype(e2)::underlying_type);
-        PRNAS(e3, decltype(e3)::underlying_type);
+        PAS(e2, decltype(e2)::underlying_type);
+        PAS(e3, decltype(e3)::underlying_type);
         END;
 
         EXE(std::vector<int> vec_i1(e1));
@@ -416,24 +345,24 @@ DEF_TEST(test_TValue)
         DEF(TEnumClass, e2, = TEnumClass::e_2);
         DEF(TEnumClass123, e3, = TEnumClass123::_3);
         PRN(e1);
-        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
+        PAS(e2, std::underlying_type_t<decltype(e2)>);
+        PAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
         DEF(sib::TValue, ve1, = e1);
         DEF(sib::TValue, ve2, = e2);
         DEF(sib::TValue, ve3, = e3);
         PRN(ve1);
-        PRNAS(ve2, decltype(ve2)::underlying_type);
-        PRNAS(ve3, decltype(ve3)::underlying_type);
+        PAS(ve2, decltype(ve2)::underlying_type);
+        PAS(ve3, decltype(ve3)::underlying_type);
         END;
 
         EXE(ve1 = e_3);
         EXE(ve2 = TEnumClass::e_5);
         EXE(ve3 = TEnumClass123::_1);
         PRN(ve1);
-        PRNAS(ve2, decltype(ve2)::underlying_type);
-        PRNAS(ve3, decltype(ve3)::underlying_type);
+        PAS(ve2, decltype(ve2)::underlying_type);
+        PAS(ve3, decltype(ve3)::underlying_type);
         END;
     } {
         BEG;
@@ -441,16 +370,16 @@ DEF_TEST(test_TValue)
         DEF(TEnumClass, e2, { 100 });
         DEF(TEnumClass123, e3, { 100 });
         PRN(e1);
-        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
+        PAS(e2, std::underlying_type_t<decltype(e2)>);
+        PAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
 
         DEF(sib::TValue<TEnum        >, ve1, { e_1 });
         DEF(sib::TValue<TEnumClass   >, ve2, { 100 });
         DEF(sib::TValue<TEnumClass123>, ve3, { 100 });
         PRN(e1);
-        PRNAS(e2, std::underlying_type_t<decltype(e2)>);
-        PRNAS(e3, std::underlying_type_t<decltype(e3)>);
+        PAS(e2, std::underlying_type_t<decltype(e2)>);
+        PAS(e3, std::underlying_type_t<decltype(e3)>);
         END;
     } {
         BEG;
@@ -1135,7 +1064,7 @@ DEF_TEST(test_TWrapper)
         PRN(tmp);
         PRN(int(tmp));
         PRN(TEnum(tmp));
-        PRNAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
+        PAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
         END;
 
         EXE(static_cast<int&>(tmp) = 444);
@@ -1144,7 +1073,7 @@ DEF_TEST(test_TWrapper)
         PRN(tmp);
         PRN(int(tmp));
         PRN(TEnum(tmp));
-        PRNAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
+        PAS(TEnumClass123(tmp), std::underlying_type_t<TEnumClass123>);
         END;
 
         DEF(TEnum, e, = tmp);

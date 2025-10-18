@@ -1,7 +1,39 @@
 ﻿#include "sib_console.h"
 
+#if defined(_WIN32)
+    #include <windows.h>
+    #include "conio.h"
+    #include <synchapi.h>
+#else
+    #include <cerrno>
+    #include <unistd.h>
+    #include <termios.h>
+    #include "sib_support.h"
+#endif
+
 namespace sib {
 namespace console {
+
+    // ----------------------------------------------------------------------------------- tabs
+
+    thread_local int TAB_DEF_WIDTH = 4;
+    thread_local ::std::vector<int> TAB_WIDTH = { 4, 6 };
+
+    int tab_width(size_t idx)
+    {
+        if (TAB_WIDTH.size() > idx) return TAB_WIDTH[idx];
+        return TAB_DEF_WIDTH;
+    }
+
+    int tab_pos(size_t idx)
+    {
+        int res = tab_width(idx);
+        for (size_t i = 0 ; i < idx ; ++i)
+            res += tab_width(i);
+        return res;
+    }
+
+
 
     // ----------------------------------------------------------------------------------- TKeyCode
 
@@ -392,7 +424,7 @@ namespace console {
     {
         auto kc = WaitKeyCodes(codes, msg);
         auto react = reactions.find(kc);
-        if (react != reactions.end()) react->second();
+        if (react != reactions.end()) react->second.func();
         return kc;
     }
 
@@ -402,7 +434,7 @@ namespace console {
     {
         auto kc = WaitAnyKey(msg);
         auto react = reactions.find(kc);
-        if (react != reactions.end()) react->second();
+        if (react != reactions.end()) react->second.func();
         return kc;
     }
 

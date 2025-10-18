@@ -22,10 +22,16 @@ namespace sib {
     }
 
     template <typename T>
-    constexpr auto type_name(T const &) noexcept
+    constexpr auto type_name(T&&) noexcept
     {
         return type_name<T>();
     }
+
+    //template <auto V>
+    //constexpr auto type_name() noexcept
+    //{
+    //    return type_name<decltype(V)>();
+    //}
 
     template <typename T>
     struct TTypeInfo<T> {

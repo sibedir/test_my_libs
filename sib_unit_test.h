@@ -17,23 +17,26 @@
 namespace sib {
 namespace debug {
 
-    namespace { using suppress_message_about_unused_included_header = TTypeInfo<void>; }
+    namespace {
+        using suppress_message_about_unused_included_header_sstream = std::basic_stringbuf<char>;
+        using suppress_message_about_unused_included_header_sib_type_info = TTypeInfo<void>;
+    }
 
     extern bool const & is_initialized;
 
     bool Init();
 
     #ifdef SIB_DEBUG_OUT_STREAM
-        inline auto& outstream = SIB_DEBUG_OUT_STREAM;
+        inline thread_local auto& outstream = SIB_DEBUG_OUT_STREAM;
     #else
-        inline auto& outstream = ::sib::console::outstream;
+        inline thread_local auto& outstream = ::sib::console::outstream;
     #endif // SIB_DEBUG_STREAM_CUSTOM
     
     using TOutStream = ::std::remove_reference_t<decltype(outstream)>;
     using OutStrmCh = typename TOutStream::char_type;
     using OutStrmTr = typename TOutStream::traits_type;
 
-    #define SIB_DEGUG_LITERAL(txt) SIB_MAKE_LITERAL(sib::debug::OutStrmCh, txt)
+    #define SIB_DEGUG_LITERAL(txt) SIB_MAKE_LITERAL(::sib::debug::OutStrmCh, txt)
 
     using TBufer  = ::sib::promiscuous_stringstream <OutStrmCh, OutStrmTr>;
     using TString = ::sib::promiscuous_string       <OutStrmCh, OutStrmTr>;
@@ -240,8 +243,9 @@ namespace debug {
 
     struct TTestLogRec
     {
-        TTestLogType typ;
-        TString      str;
+        TTestLogType type;
+        size_t       beg_num, lin_num;
+        TString      description;
         
         TString united_message() const;
     };
@@ -272,11 +276,11 @@ namespace debug {
         TTestLog   _log{};
         TTestFunc  _test;
 
-        void write_to_log(TTestLogType st, TString&& str);
+        void write_to_log(TTestLogType type, size_t beg_num, size_t lin_num, TString&& str);
         
-        void message(TString&& str);
-        void warning(TString&& str);
-        void error  (TString&& str);
+        void message(size_t beg_num, size_t lin_num, TString&& str);
+        void warning(size_t beg_num, size_t lin_num, TString&& str);
+        void error  (size_t beg_num, size_t lin_num, TString&& str);
     };
     
     inline ::std::map<TString, TTest> Tests {};
@@ -295,213 +299,159 @@ namespace debug {
     
     inline console::TKeyCodeReactions debugging_reactions_to_keys{};
     
-    void SetBreakPoint(TBreakPointLevel bp_level = BP_CUSTOM, TString msg = {});
+    console::TKeyCode SetBreakPoint(TBreakPointLevel bp_level = BP_CUSTOM, TString msg = {});
     
-    inline int BEG_COUNTR = 0;
-
 
 
 // ----------------------------------------------------------------------------------- debug macroses
 
     #define DEF_TEST(func_name) int func_name([[maybe_unused]]sib::debug::TTestLog& CUR_LOG)
 
-    inline constexpr bool _to_bool_(...) { return false; }
-    inline constexpr bool _to_bool_(bool val) { return val; }
+    inline thread_local bool STOP_FLAG_ASSERTION_ERROR = true;
+    inline thread_local bool STOP_FLAG_ASSERTION_FAIL = false;
 
-    #define ASSERT(...)                                                         \
-        do {                                                                    \
-            auto __VA_ARGS_STR__ = SIB_DEGUG_LITERAL(#__VA_ARGS__);             \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__ << "a       |" << __VA_ARGS_STR__;                          \
-            auto statement = (__VA_ARGS__);                                     \
-            if constexpr (!std::is_convertible_v<decltype(statement), bool>)    \
-            {                                                                   \
-                __buf__ << " - NOT convertible to bool\n";                      \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::TString str                                       \
-                (                                                               \
-                    "Assertion error (statement is not convertible to bool): ASSERT(", __VA_ARGS_STR__, ")" \
-                );                                                              \
-                CUR_LOG.emplace_back(st, str);                                  \
-                ::sib::debug::SetBreakPoint(                                    \
-                    ::sib::debug::BP_CUSTOM,                                    \
-                    "     - assertion error -      [Enter] - continue   [Esc] - abort" \
-                );                                                              \
-            } else if (sib::debug::_to_bool_(statement)) {                      \
-                __buf__ << " == true\n";                                        \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                ::sib::debug::SetBreakPoint(sib::debug::BP_ALL);                \
-            } else {                                                            \
-                __buf__ << " == FALSE\n";                                       \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::TString str                                       \
-                (                                                               \
-                    "Assertion fail: ASSERT(", __VA_ARGS_STR__, ")"             \
-                );                                                              \
-                CUR_LOG.emplace_back(st, str);                                  \
-                ::sib::debug::SetBreakPoint(                                    \
-                    ::sib::debug::BP_CUSTOM,                                    \
-                    "     - assertion fail -      [Enter] - continue   [Esc] - abort" \
-                );                                                              \
-            }                                                                   \
-        } while(0);                                                             \
+    extern thread_local unsigned const & BEG_ACCUM;
+    extern thread_local unsigned const & LIN_ACCUM;
+    extern thread_local unsigned const & NES_ACCUM;
 
-    #define TYPE_ASSERT(expr, type_assert)                                      \
-        do {                                                                    \
-            auto __expr_str__ = SIB_DEGUG_LITERAL(#expr);                       \
-            using type = decltype(expr);                                        \
-            auto type_name = ::sib::type_name<type>();                          \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__ << "a       |" << __expr_str__;                             \
-            if constexpr (std::is_same_v<type, type_assert>) {                  \
-                __buf__ << " --> " << #type_assert << "\n";                     \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                ::sib::debug::SetBreakPoint(sib::debug::BP_ALL);                \
-            } else {                                                            \
-                __buf__ << " -NOT-> " << #type_assert << "\n";                  \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::TString str                                       \
-                (                                                               \
-                    "Type assertion fail: TYPE_ASSERT(", __expr_str__, ", ", #type_assert, ")" \
-                );                                                              \
-                CUR_LOG.emplace_back(st, str);                                  \
-                ::sib::debug::SetBreakPoint(                                    \
-                    ::sib::debug::BP_CUSTOM,                                    \
-                    "     - assertion fail -     [Enter] - continue   [Esc] - abort"); \
-            }                                                                   \
-        } while(0);                                                             \
+    namespace detail {
 
-    #define BEG                                                                 \
-        do {                                                                    \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__                                                             \
-                << "---------------------------------------------------------------------------------------------- " \
-                << ++sib::debug::BEG_COUNTR                                     \
-                << "\n";                                                        \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_BEGIN)                       \
-    
-    #define DEF(type, inst, init)                                               \
-        type inst init;                                                         \
-        do {                                                                    \
-            auto __type_str__ = SIB_DEGUG_LITERAL(#type);                       \
-            auto __inst_str__ = SIB_DEGUG_LITERAL(#inst);                       \
-            auto __init_str__ = SIB_DEGUG_LITERAL(#init);                       \
-            auto __typ__ = ::sib::type_name<decltype(inst)>();                  \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__                                                             \
-                <<   "d   " << __type_str__                                     \
-                <<      " " << __inst_str__                                     \
-                <<      " " << __init_str__                                     \
-                << "  ->  " << __typ__                                          \
-                << "\n";                                                        \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_ALL)                         \
-    
-    #define DEFA(type, inst, init, type_assert)                                 \
-        type inst init;                                                         \
-        do {                                                                    \
-            auto __type_str__        = SIB_DEGUG_LITERAL(#type       );         \
-            auto __inst_str__        = SIB_DEGUG_LITERAL(#inst       );         \
-            auto __init_str__        = SIB_DEGUG_LITERAL(#init       );         \
-            auto __type_assert_str__ = SIB_DEGUG_LITERAL(#type_assert);         \
-            using __T__ = decltype(inst);                                       \
-            using __TA__ = type_assert;                                         \
-            auto __TN__ = ::sib::type_name<__T__>();                            \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__                                                             \
-                <<   "d   " << __type_str__                                     \
-                <<      " " << __inst_str__                                     \
-                <<      " " << __init_str__                                     \
-                << "  ->  " << __TN__;                                          \
-            if constexpr (std::is_same_v<__T__, __TA__>) {                      \
-                __buf__ <<   " --> "  << __type_assert_str__ << "\n";           \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                ::sib::debug::SetBreakPoint(sib::debug::BP_ALL);                \
-            } else {                                                            \
-                __buf__ << " -NOT-> " << __type_assert_str__ << "\n";           \
-                ::sib::debug::under_lock_print(__buf__.str());                  \
-                auto st = ::sib::debug::TTestLogType::error;                    \
-                ::sib::debug::TString str                                       \
-                (                                                               \
-                    "Type assertion fail: DEFA(", __type_str__, __inst_str__, __init_str__, __type_assert_str__, ")" \
-                );                                                              \
-                CUR_LOG.emplace_back(st, str);                                  \
-                ::sib::debug::SetBreakPoint(                                    \
-                    ::sib::debug::BP_CUSTOM,                                    \
-                    "     - assertion fail -     [Enter] - continue   [Esc] - abort"); \
-            }                                                                   \
-        } while(0)                                                              \
-    
-    #define PRN(...)                                                            \
-        do {                                                                    \
-            auto __VA_ARGS_STR__ = SIB_DEGUG_LITERAL(#__VA_ARGS__);             \
-            auto const & __ref__ = __VA_ARGS__;                                 \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__                                                             \
-                << "p       |" << __VA_ARGS_STR__                               \
-                <<     "  =  " << ::sib::debug::disclosure(__ref__)             \
-                <<      " -> " << ::sib::static_type_name<decltype(__VA_ARGS__)>() \
-                << "\n";                                                        \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_ALL)                         \
-    
-    #define PRNAS(inst, type_as)                                                \
-        do {                                                                    \
-            auto __inst__    = SIB_DEGUG_LITERAL(#inst   );                     \
-            auto __type_as__ = SIB_DEGUG_LITERAL(#type_as);                     \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__                                                             \
-                << "p       |" << __inst__                                      \
-                <<     "  ~  " << ::sib::debug::disclosure(static_cast<type_as>(inst)) \
-                <<      " ~> " << __type_as__                                   \
-                << "\n";                                                        \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_ALL)                         \
+        struct error_tag
+        {
+            constexpr operator bool() { return false; };
+        };
 
-    #define TYP(...)                                                            \
-        do {                                                                    \
-            auto __VA_ARGS_STR__ = SIB_DEGUG_LITERAL(#__VA_ARGS__);             \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__                                                             \
-                << "p       |" << __VA_ARGS_STR__                               \
-                <<      " -> " << ::sib::type_name<__VA_ARGS__>()               \
-                << "\n";                                                        \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_ALL)                         \
-    
-    #define EXE(...)                                                            \
-        do {                                                                    \
-            auto __VA_ARGS_STR__ = SIB_DEGUG_LITERAL(#__VA_ARGS__);             \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__ << "x   " << __VA_ARGS_STR__ << ";\n";                      \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        __VA_ARGS__;                                                            \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_ALL)                         \
-    
-    #define MSG(...)                                                            \
-        do {                                                                    \
-            auto __VA_ARGS_STR__ = SIB_DEGUG_LITERAL(#__VA_ARGS__);             \
-            ::sib::debug::TBufer __buf__;                                       \
-            __buf__ << "m   " << __VA_ARGS_STR__ << "\n";                       \
-            ::sib::debug::under_lock_print(__buf__.str());                      \
-        } while(0);                                                             \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_ALL)                         \
+        template <typename T>
+        error_tag to_bool(T const& val) { return {}; }
 
-    #define BP ::sib::debug::SetBreakPoint(sib::debug::BP_CUSTOM)               \
-    
-    #define END                                                                 \
-        ::sib::debug::under_lock_print("\n");                                   \
-        ::sib::debug::SetBreakPoint(sib::debug::BP_END)                         \
+        template <typename T>
+            requires std::is_convertible_v<T, bool>
+        bool to_bool(T const& val) { return val; }
 
-} // namespace debug 
+        extern thread_local TBufer output_bufer;
+
+        void start_macro(
+            TString const& prefix,
+            bool new_lin                  = true   ,
+            bool brk_lin                  = false  ,
+            char const* nesting_error_msg = nullptr);
+    
+        void to_drop_bufer();
+        
+        void stop_macro(bool & stop_flag, TString const& msg = {});
+
+        void finish_macro(TBreakPointLevel bp_level);
+    
+        void new_begin();
+
+    } // namespace detail
+
+    #define BP                                                                                          \
+        ::sib::debug::  SetBreakPoint(sib::debug::BP_CUSTOM)                                            \
+
+    #define BEG                                                                                         \
+        ::sib::debug::detail::start_macro("b", false, false, "BEG is nested in another sib::debug macro."); \
+        ::sib::debug::detail::new_begin();                                                              \
+        ::sib::debug::detail::output_bufer                                                              \
+            << "---------------------------------------------------------------------------------------------- " \
+            << ::sib::debug::BEG_ACCUM;                                                                 \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_BEGIN);                                       \
+
+    #define END                                                                                         \
+        ::sib::debug::detail::start_macro("e", false, false, "AND is nested in another sib::debug macro."); \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_END)                                          \
+
+    #define MSG(...)                                                                                    \
+        ::sib::debug::detail::start_macro("m", false);                                                  \
+        ::sib::debug::detail::output_bufer << ::sib::debug::TString(__VA_ARGS__);                       \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+
+    #define EXE(...)                                                                                    \
+        ::sib::debug::detail::start_macro("x");                                                         \
+        ::sib::debug::detail::output_bufer << #__VA_ARGS__;                                             \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL);                                         \
+        __VA_ARGS__                                                                                     \
+
+    #define TYP(...)                                                                                    \
+        ::sib::debug::detail::start_macro("p");                                                         \
+        if (not ::sib::debug::NES_ACCUM)                                                                \
+            ::sib::debug::detail::output_bufer << #__VA_ARGS__;                                         \
+        ::sib::debug::detail::output_bufer << " -> " << ::sib::type_name<__VA_ARGS__>();                \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+
+    #define DEF(type, inst, ...)                                                                        \
+        ::sib::debug::detail::start_macro("d");                                                         \
+        EXE(type inst __VA_ARGS__);                                                                     \
+        TYP(decltype(inst));                                                                            \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+
+    #define ASS(...)                                                                                    \
+        ::sib::debug::detail::start_macro("a", true, true);                                             \
+        if constexpr (std::same_as<decltype(::sib::debug::detail::to_bool(__VA_ARGS__)), bool>)         \
+        {                                                                                               \
+            if (::sib::debug::detail::to_bool(__VA_ARGS__))                                             \
+            {                                                                                           \
+                ::sib::debug::detail::output_bufer << "[pass] ASSERT(" << #__VA_ARGS__ << ")";          \
+            }                                                                                           \
+            else                                                                                        \
+            {                                                                                           \
+                ::sib::debug::detail::output_bufer << "[FAIL] ASSERT(" << #__VA_ARGS__ << ")";          \
+                CUR_LOG.emplace_back(                                                                   \
+                    ::sib::debug::TTestLogType::error,                                                  \
+                    ::sib::debug::BEG_ACCUM,                                                            \
+                    ::sib::debug::LIN_ACCUM,                                                            \
+                    "Assertion fail"                                                                    \
+                );                                                                                      \
+                ::sib::debug::detail::stop_macro(                                                       \
+                    ::sib::debug::STOP_FLAG_ASSERTION_FAIL,                                             \
+                    "\n    - assertion fail -"                                                          \
+                );                                                                                      \
+            }                                                                                           \
+        }                                                                                               \
+        else                                                                                            \
+        {                                                                                               \
+            ::sib::debug::detail::output_bufer                                                          \
+                << "[ERROR] ASSERT(" << #__VA_ARGS__ << ") "                                            \
+                << "Assertion statement is not convertible to bool";                                    \
+            CUR_LOG.emplace_back(                                                                       \
+                ::sib::debug::TTestLogType::error,                                                      \
+                ::sib::debug::BEG_ACCUM,                                                                \
+                ::sib::debug::LIN_ACCUM,                                                                \
+                "Assertion error (statement is not convertible to bool)"                                \
+            );                                                                                          \
+            ::sib::debug::detail::stop_macro(                                                           \
+                ::sib::debug::STOP_FLAG_ASSERTION_ERROR,                                                \
+                "\n    - assertion error -"                                                             \
+            );                                                                                          \
+        }                                                                                               \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+
+    #define TIS(type, ...) ASS(std::is_same_v<type, __VA_ARGS__>)
+
+    #define EIS(expr, ...) ASS(std::is_same_v<decltype(expr), __VA_ARGS__>)
+
+    #define DEFA(type, inst, init, ...)                                                                 \
+        ::sib::debug::detail::start_macro("d");                                                         \
+        EXE(type inst init);                                                                            \
+        TYP(decltype(inst));                                                                            \
+        EIS(inst, __VA_ARGS__);                                                                         \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+    
+    #define PRN(...)                                                                                    \
+        ::sib::debug::detail::start_macro("p");                                                         \
+        ::sib::debug::detail::output_bufer                                                              \
+            << #__VA_ARGS__                                                                             \
+            << " = "  << ::sib::debug::disclosure(__VA_ARGS__)                                          \
+            << " -> " << ::sib::type_name<decltype(__VA_ARGS__)>();                                     \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+
+    #define PAS(inst, ...)                                                                              \
+        ::sib::debug::detail::start_macro("p");                                                         \
+        ::sib::debug::detail::output_bufer                                                              \
+            << SIB_DEGUG_LITERAL(SIB_STR_STRINGISE(inst))                                               \
+            << " ~ "  << ::sib::debug::disclosure(static_cast<__VA_ARGS__>(inst))                       \
+            << " -> " << #__VA_ARGS__;                                                                  \
+        ::sib::debug::detail::finish_macro(sib::debug::BP_ALL)                                          \
+
+} // namespace debug
 } // namespace sib

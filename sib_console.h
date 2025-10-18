@@ -1,37 +1,26 @@
 ﻿#pragma once
 
 #include <iostream>
-#include <sstream>
+//#include <sstream>
 #include <set>
 #include <map>
 #include <string>
-//#include <cctype>
+#include <cctype>
 #include <functional>
 #include "sib_type_traits.h"
 #include "sib_string.h"
 
-#if defined(_WIN32)
-    #include <windows.h>
-    #include "conio.h"
-    #include <synchapi.h>
-#else
-    #include <cerrno>
-    #include <unistd.h>
-    #include <termios.h>
-    #include "sib_support.h"
-#endif
-
 namespace sib {
 namespace console {
 
-    extern bool const & is_initialized_console_unit;
+    extern bool const & is_initialized;
 
     bool Init();
 
     #ifdef SIB_OUT_STREAM
-        inline auto& outstream = SIB_OUT_STREAM;
+        inline thread_local auto& outstream = SIB_OUT_STREAM;
     #else
-        inline auto& outstream = ::std::cout;
+        inline thread_local auto& outstream = ::std::cout;
     #endif // SIB_DEBUG_STREAM_CUSTOM
 
     using TOutStream = ::std::remove_reference_t<decltype(outstream)>;
@@ -40,6 +29,17 @@ namespace console {
 
     using TBufer  = ::sib::promiscuous_stringstream<OutStrmCh, OutStrmTr>;
     using TString = ::sib::promiscuous_string      <OutStrmCh, OutStrmTr>;
+
+
+
+    // ----------------------------------------------------------------------------------- tabs
+
+    extern thread_local int TAB_DEF_WIDTH;
+    extern thread_local ::std::vector<int> TAB_WIDTH;
+
+    int tab_width(size_t idx);
+
+    int tab_pos(size_t idx);
 
 
 
@@ -71,6 +71,8 @@ namespace console {
         bool operator< (TKeyCode const& other) const noexcept;
         ::std::string name() const;
     };
+
+    inline TKeyCode KC_EMPTY = {};
 
     inline TKeyCode KC_ENTER            ;
     inline TKeyCode KC_ESC              ;
@@ -120,7 +122,26 @@ namespace console {
     inline TKeyCode KC_DOWN             ;
 
     using TKeyCodeNames     = ::std::map<TKeyCode, ::std::string>;
-    using TKeyCodeReactions = ::std::map<TKeyCode, ::std::function<void()>>;
+
+    namespace detail {
+        using TActionBase = ::std::pair<::std::string, ::std::function<void()>>;
+    }
+
+    struct TAction //: detail::TActionBase
+    {
+        using name_type = detail::TActionBase:: first_type;
+        using func_type = detail::TActionBase::second_type;
+
+        name_type name;
+        func_type func;
+
+        //name_type const & name() const { return this->first ; }
+        //name_type       & name()       { return this->first ; }
+        //func_type const & func() const { return this->second; }
+        //func_type       & func()       { return this->second; }
+    };
+    
+    using TKeyCodeReactions = ::std::map<TKeyCode, TAction>;
 
     inline TKeyCodeNames     KeyCodeNames            {};
     inline TKeyCodeReactions DefaultKeyCodeReactions {};

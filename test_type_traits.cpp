@@ -6,6 +6,7 @@
 #include <vector>
 #include <set>
 #include <iostream>
+#include <algorithm>
 
 #include "sib_support.h"
 #include "sib_unit_test.h"
@@ -84,70 +85,75 @@ struct contr<T>
     using type = decltype(*std::declval<sib::arrow_result_t<T>>());
 };
 
-// TEST MACRO
-#define TM(ptr, def, arw, lptr, fn, lfn, arr, cont, ...)    \
-namespace SIB_CONCAT(NS, __COUNTER__) {                     \
-    using T = __VA_ARGS__;                                  \
-    static_assert(ptr  std::is_pointer_v        <T>);     \
-    static_assert(def  sib::is_dereferenceable_v<T>);     \
-    static_assert(arw  sib::has_arrow_v         <T>);     \
-    static_assert(lptr sib::is_like_pointer_v   <T>);     \
-    static_assert(                                          \
-        not sib::LikePointer<T>                           \
-        or (                                                \
-                sib::Pointer<T>                           \
-            or  sib::LikeFunction<T>                      \
-            or  sib::Same<deref_t<T>, contr_t<T>>         \
-        )                                                   \
-    );                                                      \
-    static_assert(fn   sib::is_function_v       <T>);     \
-    static_assert(lfn  sib::is_like_function_v  <T>);     \
-    static_assert(arr  sib::is_array_v          <T>);     \
-    static_assert(cont sib::is_container_v      <T>);     \
-}
+// TEST MACRO ----------------------------------------------------------------------------------------------------------
+
+#define TM(ptr, def, arw, lptr, fn, lfn, arr, cont, ...)        \
+    namespace SIB_CONCAT(test_type_traits_, __COUNTER__) {      \
+        using T = __VA_ARGS__;                                  \
+        static_assert(ptr  std::is_pointer_v        <T>);       \
+        static_assert(def  sib::is_dereferenceable_v<T>);       \
+        static_assert(arw  sib::has_arrow_v         <T>);       \
+        static_assert(lptr sib::is_like_pointer_v   <T>);       \
+        static_assert(                                          \
+            not sib::LikePointer<T>                             \
+            or (                                                \
+                    sib::Pointer<T>                             \
+                or  sib::LikeFunction<T>                        \
+                or  sib::Same<deref_t<T>, contr_t<T>>           \
+            )                                                   \
+        );                                                      \
+        static_assert(fn   sib::is_function_v       <T>);       \
+        static_assert(lfn  sib::is_like_function_v  <T>);       \
+        static_assert(arr  sib::is_array_v          <T>);       \
+        static_assert(cont sib::is_container_v      <T>);       \
+    }                                                           \
 
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 //|  is ptr   |   deref   | has arrow | like ptr  |  is func  | like func |  is arr   | container |                    type                      |
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , void                                         )
 TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , int                                          )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , sib::TWrapper<int>                         )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , ::sib::TWrapper<int>                         )
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , std::nullptr_t                             )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , sib::TNullPtr                              )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , ::std::nullptr_t                             )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    , ::sib::TNullPtr                              )
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 TM(           ,    not    ,    not    ,           ,    not    ,    not    ,    not    ,    not    , void*                                        )
 TM(           ,           ,    not    ,           ,    not    ,    not    ,    not    ,    not    , int*                                         )
-TM(    not    ,    not    ,           ,           ,    not    ,    not    ,    not    ,    not    , sib::TPointer<void>                        )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , sib::TPointer<int>                         )
-TM(    not    ,    not    ,           ,           ,    not    ,    not    ,    not    ,    not    , sib::TWrapper<void*>                       )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , sib::TWrapper<int*>                        )
+TM(    not    ,    not    ,           ,           ,    not    ,    not    ,    not    ,    not    , ::sib::TPointer<void>                        )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::sib::TPointer<int>                         )
+TM(    not    ,    not    ,           ,           ,    not    ,    not    ,    not    ,    not    , ::sib::TWrapper<void*>                       )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::sib::TWrapper<int*>                        )
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , TPointer2<int>                               )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , std::shared_ptr<int>                       )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , std::unique_ptr<int>                       )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , sib::TPointer<std::unique_ptr<int*>>       )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , sib::TPointer<void*>                       )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , std::vector<int>::iterator                 )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , std::set<int>::iterator                    )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , std::vector<sib::TPointer<void>>::iterator )
-TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , std::vector<TPointer2<int>>::iterator      )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::std::shared_ptr<int>                       )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::std::unique_ptr<int>                       )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::sib::TPointer<std::unique_ptr<int*>>       )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::sib::TPointer<void*>                       )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::std::vector<int>::iterator                 )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::std::set<int>::iterator                    )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::std::vector<sib::TPointer<void>>::iterator )
+TM(    not    ,           ,           ,           ,    not    ,    not    ,    not    ,    not    , ::std::vector<TPointer2<int>>::iterator      )
 TM(           ,           ,    not    ,           ,    not    ,           ,    not    ,    not    , TFn*                                         )
-TM(    not    ,           ,    not    ,           ,    not    ,           ,    not    ,    not    , sib::TPointer<TFn>                         )
-TM(    not    ,           ,    not    ,           ,    not    ,           ,    not    ,    not    , sib::TWrapper<TFn*>                        )
+TM(    not    ,           ,    not    ,           ,    not    ,           ,    not    ,    not    , ::sib::TPointer<TFn>                         )
+TM(    not    ,           ,    not    ,           ,    not    ,           ,    not    ,    not    , ::sib::TWrapper<TFn*>                        )
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 TM(    not    ,    not    ,    not    ,    not    ,           ,           ,    not    ,    not    , TFn                                          )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,           ,    not    ,    not    , std::function<TFn>                         )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,           ,    not    ,    not    , sib::TWrapper<TFn>                         )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,           ,    not    ,    not    , ::std::function<TFn>                         )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,           ,    not    ,    not    , ::sib::TWrapper<TFn>                         )
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           ,           , int[5]                                       )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , sib::TArray<int, 5>                        )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , std::array<int, 5>                         )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , std::vector<int>                           )
-TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , std::string                                )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , ::sib::TArray<int, 5>                        )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , ::std::array<int, 5>                         )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , ::std::vector<int>                           )
+TM(    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,    not    ,           , ::std::string                                )
 //|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|----------------------------------------------|
 
 #undef TM
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+#define _ ,
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -177,60 +183,68 @@ DEF_TEST(test_type_traits)
     MSG("****************************************************************************************************");
     MSG("");
 
-    #define TM(lp, ...)                                             \
+    #define TM(lp, dt, at, ...)                                     \
     {                                                               \
         BEG;                                                        \
         MSG(#__VA_ARGS__);                                          \
         using T = __VA_ARGS__;                                      \
         if constexpr (std::is_default_constructible_v<T>)           \
             [[maybe_unused]] T tmp {};                              \
-        ASSERT(lp sib::is_like_pointer_v<__VA_ARGS__>);             \
-        TYP(deref_t<T>);                                            \
-        TYP(arrow_t<T>);                                            \
+        ASS(lp sib::is_like_pointer_v<__VA_ARGS__>);                \
+        TIS(deref_t<T>, dt);                                        \
+        TIS(arrow_t<T>, at);                                        \
         END;                                                        \
     }
-    
-    TM( not , int                                        );
-    TM( not , sib::TWrapper<int>                         );
-    TM( not , std::nullptr_t                             );
-    TM( not , sib::TNullPtr                              );
-    TM(     , void*                                      );
-    TM(     , int*                                       );
-    TM(     , sib::TPointer<void>                        );
-    TM(     , sib::TPointer<int>                         );
-    TM(     , sib::TWrapper<void*>                       );
-    TM(     , sib::TWrapper<int*>                        );
-    TM(     , TPointer2<int>                             );
-    TM(     , std::shared_ptr<int>                       );
-    TM(     , std::unique_ptr<int>                       );
-    TM(     , sib::TPointer<std::unique_ptr<int*>>       );
-    TM(     , sib::TPointer<void*>                       );
-    TM(     , std::vector<int>::iterator                 );
-    TM(     , std::set<int>::iterator                    );
-    TM(     , std::vector<sib::TPointer<void>>::iterator );
-    TM(     , std::vector<TPointer2<int>>::iterator      );
-    TM(     , TFn*                                       );
-    TM(     , sib::TPointer<TFn>                         );
-    TM(     , sib::TWrapper<TFn*>                        );
-    TM( not , std::function<TFn>                         );
-    TM( not , sib::TWrapper<TFn>                         );
-    TM( not , int[5]                                     );
-    TM( not , sib::TArray<int, 5>                        );
-    TM( not , std::array<int, 5>                         );
-    TM( not , std::vector<int>                           );
-    TM( not , std::string                                );
-    
-    #undef TM
+
+    {
+        using namespace std;
+        using namespace sib;
+
+        //|-----------|-------------------|--------------------|---------------------------------------|
+        //| like ptr  |     deref_t       |      arrow_t       |                 type                  |
+        //|-----------|-------------------|--------------------|---------------------------------------|
+        TM(    not    ,       None        ,        None        , int                                   );
+        TM(    not    ,       None        ,        None        , TWrapper<int>                         );
+        TM(    not    ,       None        ,        None        , nullptr_t                             );
+        TM(    not    ,       None        ,        None        , TNullPtr                              );
+        TM(           ,       None        ,        None        , void*                                 );
+        TM(           ,       int&        ,        None        , int*                                  );
+        TM(           ,       None        ,        void*       , TPointer<void>                        );
+        TM(           ,       int&        ,        int*        , TPointer<int>                         );
+        TM(           ,       None        ,        void*       , TWrapper<void*>                       );
+        TM(           ,       int&        ,        int*        , TWrapper<int*>                        );
+        TM(           ,       int&        ,    TPointer<int>   , TPointer2<int>                        );
+        TM(           ,       int&        ,        int*        , shared_ptr<int>                       );
+        TM(           ,       int&        ,        int*        , unique_ptr<int>                       );
+        TM(           , unique_ptr<int*>& , unique_ptr<int*>*  , TPointer<unique_ptr<int*>>            );
+        TM(           ,      void*&       ,       void**       , TPointer<void*>                       );
+        TM(           ,       int&        ,        int*        , vector<int>::iterator                 );
+        TM(           ,    int const &    ,     int const *    , set<int>::iterator                    );
+        TM(           ,  TPointer<void>&  ,  TPointer<void>*   , vector<TPointer<void>>::iterator      );
+        TM(           ,  TPointer2<int>&  ,  TPointer2<int>*   , vector<TPointer2<int>>::iterator      );
+        TM(           , int (&&) (double) ,        None        , TFn*                                  );
+        TM(           , int ( &) (double) ,        None        , TPointer<TFn>                         );
+        TM(           , int ( &) (double) ,        None        , TWrapper<TFn*>                        );
+        TM(    not    ,       None        ,        None        , function<TFn>                         );
+        TM(    not    ,       None        ,        None        , TWrapper<TFn>                         );
+        TM(    not    ,       None        ,        None        , int[5]                                );
+        TM(    not    ,       None        ,        None        , TArray<int, 5>                        );
+        TM(    not    ,       None        ,        None        , array<int, 5>                         );
+        TM(    not    ,       None        ,        None        , vector<int>                           );
+        TM(    not    ,       None        ,        None        , string                                );
+        
+        #undef TM
+    }
 
     {
         BEG;
-        ASSERT( sib::is_convertible_from_tooneof_v<int, float, std::string>);
-        PRN   ( sib::convert_from_tooneof_select  <int, float, std::string>{});
-        ASSERT(!sib::is_convertible_from_tooneof_v<int, float, char, std::string>);
-        ASSERT(!sib::is_convertible_from_tooneof_v<int, std::string, std::vector<int>>);
-        ASSERT( sib::is_convertible_from_tooneof_v<int, std::string, sib::TWrapper<float>, std::vector<int>>);
-        PRN   ( sib::convert_from_tooneof_select  <int, std::string, sib::TWrapper<float>, std::vector<int>>{});
-        ASSERT(!sib::is_convertible_from_tooneof_v<int, std::string, sib::TWrapper<float>, std::vector<int>, sib::TWrapper<int>>);
+        ASS( sib::is_convertible_from_tooneof_v<int, float, std::string>);
+        TIS( sib::convert_from_tooneof_select<int _ float _ std::string>, float);
+        ASS(!sib::is_convertible_from_tooneof_v<int, float, char, std::string>);
+        ASS(!sib::is_convertible_from_tooneof_v<int, std::string, std::vector<int>>);
+        ASS( sib::is_convertible_from_tooneof_v<int, std::string, sib::TWrapper<float>, std::vector<int>>);
+        TIS( sib::convert_from_tooneof_select<int _ std::string _ sib::TWrapper<float> _ std::vector<int>>, sib::TValue<float>);
+        ASS(!sib::is_convertible_from_tooneof_v<int, std::string, sib::TWrapper<float>, std::vector<int>, sib::TWrapper<int>>);
         END;
     } {
         struct C1 {};
@@ -255,33 +269,33 @@ DEF_TEST(test_type_traits)
         };
 
         BEG;
-        ASSERT(!std::is_convertible_v<C2, C4>);
-        ASSERT( std::is_constructible_v<C4, C2>);
-        ASSERT(!sib::is_convertible_from_to_v<C2, C4>);
-        ASSERT( sib::is_constructible_to_from_v<C4, C2>);
+        ASS(!std::is_convertible_v<C2, C4>);
+        ASS( std::is_constructible_v<C4, C2>);
+        ASS(!sib::is_convertible_from_to_v<C2, C4>);
+        ASS( sib::is_constructible_to_from_v<C4, C2>);
         END;
-        ASSERT(!sib::is_convertible_from_tooneof_v<C1, C2, C3>);
-        ASSERT( sib::is_convertible_from_tooneof_v<C3, C1, C2, C1>);
-        PRN   ( sib::convert_from_tooneof_select  <C3, C1, C2, C1>{});
-        ASSERT( sib::is_convertible_from_tooneof_v<C3, C2, C1, int>);
-        PRN   ( sib::convert_from_tooneof_select  <C3, C2, C1, int>{});
-        ASSERT( sib::is_convertible_from_tooneof_v<C2, C2, C1, C3>);
-        PRN   ( sib::convert_from_tooneof_select  <C2, C2, C1, C3>{});
-        ASSERT( sib::is_convertible_from_tooneof_v<C2, C1, int, C3>);
-        PRN   ( sib::convert_from_tooneof_select  <C2, C1, int, C3>{});
+        ASS(!sib::is_convertible_from_tooneof_v<C1, C2, C3>);
+        ASS( sib::is_convertible_from_tooneof_v<C3, C1, C2, C1>);
+        TIS(sib::convert_from_tooneof_select<C3 _ C1 _ C2 _ C1>, C2);
+        ASS( sib::is_convertible_from_tooneof_v<C3, C2, C1, int>);
+        TIS(sib::convert_from_tooneof_select<C3 _ C2 _ C1 _ int>, C2);
+        ASS( sib::is_convertible_from_tooneof_v<C2, C2, C1, C3>);
+        TIS(sib::convert_from_tooneof_select<C2 _ C2 _ C1 _ C3>, C2);
+        ASS( sib::is_convertible_from_tooneof_v<C2, C1, int, C3>);
+        TIS(sib::convert_from_tooneof_select<C2 _ C1 _ int _ C3>, int);
         END;
-        ASSERT(!sib::is_convertible_to_fromoneof_v<C1, C2, C3>);
-        ASSERT( sib::is_convertible_to_fromoneof_v<int, C1, C2, C3>);
-        PRN   ( sib::convert_to_fromoneof_select  <int, C1, C2, C3>{});
-        ASSERT( sib::is_convertible_to_fromoneof_v<C3, C2, C1, int>);
-        ASSERT( sib::is_convertible_to_fromoneof_v<C3, C1, int, MyClass>);
-        PRN   ( sib::convert_to_fromoneof_select  <C3, C1, int, MyClass>{});
-        ASSERT(!sib::is_convertible_to_fromoneof_v<C2, C2, C1, C3>);
-        ASSERT( sib::is_convertible_to_fromoneof_v<C2, C2>);
-        ASSERT(!sib::is_convertible_to_fromoneof_v<C2, C1>);
-        ASSERT( sib::is_convertible_to_fromoneof_v<C2, C3>);
-        ASSERT( sib::is_convertible_to_fromoneof_v<C2, C1, int, C3>);
-        PRN   ( sib::convert_to_fromoneof_select  <C2, C1, int, C3>{});
+        ASS(!sib::is_convertible_to_fromoneof_v<C1, C2, C3>);
+        ASS( sib::is_convertible_to_fromoneof_v<int, C1, C2, C3>);
+        TIS(sib::convert_to_fromoneof_select<int _ C1 _ C2 _ C3>, C2);
+        ASS( sib::is_convertible_to_fromoneof_v<C3, C2, C1, int>);
+        ASS( sib::is_convertible_to_fromoneof_v<C3, C1, int, MyClass>);
+        TIS(sib::convert_to_fromoneof_select<C3 _ C1 _ int _ MyClass>, int);
+        ASS(!sib::is_convertible_to_fromoneof_v<C2, C2, C1, C3>);
+        ASS( sib::is_convertible_to_fromoneof_v<C2, C2>);
+        ASS(!sib::is_convertible_to_fromoneof_v<C2, C1>);
+        ASS( sib::is_convertible_to_fromoneof_v<C2, C3>);
+        ASS( sib::is_convertible_to_fromoneof_v<C2, C1, int, C3>);
+        TIS(sib::convert_to_fromoneof_select<C2 _ C1 _ int _ C3>, C3);
         END;
     } {
         struct C1 {}; // <- C1, C4
@@ -300,19 +314,19 @@ DEF_TEST(test_type_traits)
         };
 
         BEG;
-        ASSERT(!sib::is_constructible_from_tooneof_v<C1, C2, C4, C3>);
-        ASSERT( sib::is_constructible_from_tooneof_v<C1, C2, C1, C3>);
-        PRN   ( sib::construct_from_tooneof_select  <C1, C2, C1, C3>{});
-        ASSERT( sib::is_constructible_from_tooneof_v<C4, C2, C1, C3>);
-        PRN   ( sib::construct_from_tooneof_select  <C4, C2, C1, C3>{});
-        ASSERT(!sib::is_constructible_from_tooneof_v<C4, C2, C1, C4>);
+        ASS(!sib::is_constructible_from_tooneof_v<C1, C2, C4, C3>);
+        ASS( sib::is_constructible_from_tooneof_v<C1, C2, C1, C3>);
+        TIS(sib::construct_from_tooneof_select<C1 _ C2 _ C1 _ C3>, C1);
+        ASS( sib::is_constructible_from_tooneof_v<C4, C2, C1, C3>);
+        TIS(sib::construct_from_tooneof_select<C4 _ C2 _ C1 _ C3>, C1);
+        ASS(!sib::is_constructible_from_tooneof_v<C4, C2, C1, C4>);
         END;
-        ASSERT(!sib::is_constructible_to_fromoneof_v<C5, C1, C2, C3>);
-        ASSERT( sib::is_constructible_to_fromoneof_v<C1, C2, C4, C3>);
-        PRN   ( sib::construct_to_fromoneof_select  <C1, C2, C4, C3>{});
-        ASSERT( sib::is_constructible_to_fromoneof_v<C1, C2, C1, C3>);
-        PRN   ( sib::construct_to_fromoneof_select  <C1, C2, C1, C3>{});
-        ASSERT(!sib::is_constructible_to_fromoneof_v<C1, C2, C4, C1, C3>);
+        ASS(!sib::is_constructible_to_fromoneof_v<C5, C1, C2, C3>);
+        ASS( sib::is_constructible_to_fromoneof_v<C1, C2, C4, C3>);
+        TIS(sib::construct_to_fromoneof_select<C1 _ C2 _ C4 _ C3>, C4);
+        ASS( sib::is_constructible_to_fromoneof_v<C1, C2, C1, C3>);
+        TIS(sib::construct_to_fromoneof_select<C1 _ C2 _ C1 _ C3>, C1);
+        ASS(!sib::is_constructible_to_fromoneof_v<C1, C2, C4, C1, C3>);
         END;
     }
 
@@ -330,6 +344,43 @@ std::string prn_type<None>() { return "(x)"; }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
+std::vector<std::string> gen_VS(size_t N)
+{
+    std::vector<std::string> res(N);
+    for (int i = 0; i < N; ++i) res[i] = std::to_string(i);
+    return res;
+}
+
+std::string VS_to_Str(std::vector<std::string> const & vec)
+{
+    std::string res = "<";
+    if (vec.size() > 0)
+    {
+        for (auto& s : vec)
+        {
+            res += s;
+            res += ", ";
+        }
+        res.resize(res.size() - 2);
+    }
+    res += '>';
+    return res;
+}
+
+template <template <typename...> typename Tmpl>
+struct gen_TS
+{
+private:
+    template <size_t... idx_>
+    static consteval auto impl(std::index_sequence<idx_...>)
+    {
+        return Tmpl< sib::int_tag<idx_> ... > {};
+    }
+public:
+    template <size_t N>
+    using type = decltype(impl(std::make_index_sequence<N>{}));
+};
+
 template <std::size_t... idx_>
 consteval auto gen_TP_impl(std::index_sequence<idx_...>)
 {
@@ -342,31 +393,27 @@ consteval auto gen_TL_impl(std::index_sequence<idx_...>)
     return sib::types_list< sib::int_tag<idx_> ... > {};
 }
 
+template <template <typename...> typename Tmpl, size_t N>
+using gen_TS_t = typename gen_TS<Tmpl>::template type<N>;
+
 template <size_t N> using gen_TP = decltype(gen_TP_impl(std::make_index_sequence<N>{}));
 template <size_t N> using gen_TL = decltype(gen_TL_impl(std::make_index_sequence<N>{}));
 
-template <typename T> struct Types_to_Str_Helper;
+template <typename T> struct TS_to_Str_Helper;
 
 template <template <typename...> typename Tmpl, typename... Ts>
-struct Types_to_Str_Helper<Tmpl<Ts...>>
+struct TS_to_Str_Helper<Tmpl<Ts...>>
 {
     operator std::string() const
     {
-        if constexpr (sizeof...(Ts) == 0) {
-            return "<>";
-        } else if constexpr (sizeof...(Ts) == 1) {
-            return "<" + std::to_string(sib::types_first_t<Ts...>::value) + ">";
-        } else {
-            std::string res = "<";
-            ((res += std::to_string(Ts::value) + ", "), ...);
-            res[res.size() - 2] = '>';
-            return res;
-        }
+        std::vector<std::string> vec;
+        (vec.push_back(std::to_string(Ts::value)), ...);
+        return VS_to_Str(vec);
     }
 };
 
 template <typename T>
-std::string Types_to_Str() { return Types_to_Str_Helper<T>(); }
+std::string TS_to_Str() { return TS_to_Str_Helper<T>(); }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -391,122 +438,147 @@ DEF_TEST(test_types_pack)
     MSG("                                             types pack                                             ");
     MSG("****************************************************************************************************");
     MSG("");
-    
+
+    #define _TS sib::types_pack
+    #define _gen_TS(N) gen_TS_t<_TS, N>
+
+    #define _C 10
+    #define _I 7
+
     {
         BEG;
-        EXE(using f1  = sib::types_first_t<A, B, C>);
-        EXE(using f2  = sib::types_first_t<C, B, B>);
-        EXE(using f3  = sib::types_first_t<D, D, B>);
-      //EXE(using f4  = sib::types_first_t<>);
-        EXE(using f5  = sib::types_first_t<E>);
-        EXE(using f6  = sib::types_first_t<sib::types_pack<A, B, C>>);
-        EXE(using f7  = sib::types_first_t<sib::types_pack<C, B, B>>);
-        EXE(using f8  = sib::types_first_t<sib::types_pack<D, D, B>>);
-      //EXE(using f9  = sib::types_first_t<sib::types_pack<>>);
-        EXE(using f10 = sib::types_first_t<sib::types_pack<E>>);
-        EXE(using f11 = sib::types_first_t<sib::types_pack<A, E>, B, C, sib::types_pack<D, A>>);
-        EXE(using f12 = sib::types_first_t<sib::types_pack<sib::types_pack<D, B>>>);
-        EXE(using f13 = sib::types_first_t<sib::types_pack<sib::types_pack<A, E>, B, C, sib::types_pack<D, A>>>);
-        DEFA(f1 , v1 , , A);
-        DEFA(f2 , v2 , , C);
-        DEFA(f3 , v3 , , D);
-      //DEF (f4 , v4 ,    );
-        DEFA(f5 , v5 , , E);
-        DEFA(f6 , v6 , , A);
-        DEFA(f7 , v7 , , C);
-        DEFA(f8 , v8 , , D);
-      //DEF (f9 , v9 ,    );
-        DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::types_pack<A _ E>);
-        DEFA(f12, v12, , sib::types_pack<D _ B>);
-        DEFA(f13, v13, , sib::types_pack<A _ E>);
+        TIS(A         , sib::types_first_t<A _ B _ C>);
+        TIS(C         , sib::types_first_t<C _ B _ B>);
+        TIS(D         , sib::types_first_t<D _ D _ B>);
+      //TIS(          , sib::types_first_t<>);
+        TIS(E         , sib::types_first_t<E>);
+        TIS(A         , sib::types_first_t<_TS<A _ B _ C>>);
+        TIS(C         , sib::types_first_t<_TS<C _ B _ B>>);
+        TIS(D         , sib::types_first_t<_TS<D _ D _ B>>);
+      //TIS(          , sib::types_first_t<_TS<>>);
+        TIS(E         , sib::types_first_t<_TS<E>>);
+        TIS(_TS<A _ E>, sib::types_first_t<_TS<A _ E> _ B _ C _ _TS<D _ A>>);
+        TIS(_TS<D _ B>, sib::types_first_t<_TS<_TS<D _ B>>>);
+        TIS(_TS<A _ E>, sib::types_first_t<_TS<_TS<A _ E> _ B _ C _ _TS<D _ A>>>);
         END;
     } {
         BEG;
-        EXE(using f1  = sib::types_last_t<A, B, C>);
-        EXE(using f2  = sib::types_last_t<C, B, B>);
-        EXE(using f3  = sib::types_last_t<D, D, B>);
-      //EXE(using f4  = sib::types_last_t<>);
-        EXE(using f5  = sib::types_last_t<E>);
-        EXE(using f6  = sib::types_last_t<sib::types_pack<A, B, C>>);
-        EXE(using f7  = sib::types_last_t<sib::types_pack<C, B, B>>);
-        EXE(using f8  = sib::types_last_t<sib::types_pack<D, D, B>>);
-      //EXE(using f9  = sib::types_last_t<sib::types_pack<>>);
-        EXE(using f10 = sib::types_last_t<sib::types_pack<E>>);
-        EXE(using f11 = sib::types_last_t<sib::types_pack<A _ E> _ B _ C _ sib::types_pack<D _ A>>);
-        EXE(using f12 = sib::types_last_t<sib::types_pack<sib::types_pack<D _ B>>>);
-        EXE(using f13 = sib::types_last_t<sib::types_pack<sib::types_pack<A _ E> _ B _ C _ sib::types_pack<D _ A>>>);
-        DEFA(f1 , v1 , , C);
-        DEFA(f2 , v2 , , B);
-        DEFA(f3 , v3 , , B);
-      //DEF (f4 , v4 ,    );
-        DEFA(f5 , v5 , , E);
-        DEFA(f6 , v6 , , C);
-        DEFA(f7 , v7 , , B);
-        DEFA(f8 , v8 , , B);
-      //DEF (f9 , v9 ,    );
-        DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::types_pack<D _ A>);
-        DEFA(f12, v12, , sib::types_pack<D _ B>);
-        DEFA(f13, v13, , sib::types_pack<D _ A>);
+        TIS(C                     , sib::types_last_t<A _ B _ C>);
+        TIS(B                     , sib::types_last_t<C _ B _ B>);
+        TIS(B                     , sib::types_last_t<D _ D _ B>);
+      //TIS(                      , sib::types_last_t<>);
+        TIS(E                     , sib::types_last_t<E>);
+        TIS(C                     , sib::types_last_t<_TS<A _ B _ C>>);
+        TIS(B                     , sib::types_last_t<_TS<C _ B _ B>>);
+        TIS(B                     , sib::types_last_t<_TS<D _ D _ B>>);
+      //TIS(                      , sib::types_last_t<_TS<>>);
+        TIS(E                     , sib::types_last_t<_TS<E>>);
+        TIS(_TS<D _ A>, sib::types_last_t<_TS<A _ E> _ B _ C _ _TS<D _ A>>);
+        TIS(_TS<D _ B>, sib::types_last_t<_TS<_TS<D _ B>>>);
+        TIS(_TS<D _ A>, sib::types_last_t<_TS<_TS<A _ E> _ B _ C _ _TS<D _ A>>>);
         END;
     } {
-        static constexpr int _C = 10;
-        static constexpr int _I = 7;
         BEG;
-        EXE(using Ts = gen_TP<_C>);
-        MSG("    |", Types_to_Str<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using Ts = _gen_TS(_C));
+        MSG("      ", TS_to_Str<Ts>());
+        ASS(sib::types_info<Ts>::count == _C);
         END;
+
         EXE(using H = sib::types_head_t<_I, Ts>);
-        MSG("    |", Types_to_Str<H>());
-        MSG("    |type count = ", sib::types_info<H>::count);
+        MSG("      ", TS_to_Str<H>());
+        ASS(sib::types_info<H>::count == _I);
         END;
 
         EXE(using T = sib::types_tail_t<_I _ Ts>);
-        MSG("    |", Types_to_Str<T>());
-        MSG("    |type count = ", sib::types_info<T>::count);
+        MSG("      ", TS_to_Str<T>());
+        ASS(sib::types_info<T>::count == _I);
         END;
     } {
         BEG;
-        EXE(using Ts = sib::types_tail_t<10, gen_TP<30>>);
-        MSG("    |", Types_to_Str<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using STs = sib::types_merge_sort_t<_TS<>>);
+        TYP(STs);
+        ASS(sib::types_info<STs>::count == 0);
+        END;
+    } {
+        BEG;
+        EXE(using STs = sib::types_quick_sort_t<_TS<>>);
+        TYP(STs);
+        ASS(sib::types_info<STs>::count == 0);
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::types_concat_t<_gen_TS(_C), _gen_TS(_I)>);
+        MSG("      ", TS_to_Str<Ts>());
+        ASS(sib::types_info<Ts>::count == _C + _I);
         END;
 
-        EXE(using STs = sib::types_quick_sort_t<Ts>);
-        MSG("    |", Types_to_Str<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
-        END;
-    } {
-        BEG;
-        EXE(using STs = sib::types_quick_sort_t<sib::types_pack<>>);
-        MSG("    |", sib::static_type_name<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
-        END;
-    } {
-        BEG;
-        EXE(using Ts = sib::types_summ_t<gen_TP<5>, gen_TP<3>>);
-        MSG("    |", Types_to_Str<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using mSTs = sib::types_merge_sort_t<Ts>);
+        MSG("      ", TS_to_Str<mSTs>());
+        ASS(sib::types_info<mSTs>::count == _C + _I);
         END;
 
-        EXE(using STs = sib::types_quick_sort_t<Ts>);
-        MSG("    |", Types_to_Str<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
+        using qSTs111 = sib::types_quick_sort_t<Ts>;
+
+        EXE(using qSTs = sib::types_quick_sort_t<Ts>);
+        MSG("      ", TS_to_Str<qSTs>());
+        ASS(sib::types_info<qSTs>::count == _C + _I);
+        END;
+
+        ASS(TS_to_Str<mSTs>() == TS_to_Str<qSTs>());
+        END;
+
+        EXE(auto VS = gen_VS(_C));
+        EXE(auto tmp = gen_VS(_I));
+        EXE(VS.insert(VS.end(), tmp.begin(), tmp.end()));
+        EXE(std::sort(VS.begin(), VS.end()));
+        MSG("      ", VS_to_Str(VS));
+        ASS(VS_to_Str(VS) == TS_to_Str<qSTs>());
         END;
     } {
         BEG;
-        EXE(using Ts = sib::types_pack<sib::types_pack<>, sib::types_pack<>, int, sib::types_pack<>, int, float, sib::types_pack<>, int, sib::types_pack<>>);
-        MSG("    |", sib::static_type_name<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using Ts = _TS<_TS<>, _TS<>, int, _TS<>, A, float, _TS<>, int, _TS<>>);
+        TYP(Ts);
+        ASS(sib::types_info<Ts>::count == 9);
         END;
 
-        EXE(using STs = sib::types_quick_sort_t<Ts>);
-        MSG("    |", sib::static_type_name<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
+        EXE(using mSTs = sib::types_merge_sort_t<Ts>);
+        TYP(mSTs);
+        ASS(sib::types_info<mSTs>::count == 9);
+        END;
+
+        EXE(using qSTs = sib::types_quick_sort_t<Ts>);
+        TYP(qSTs);
+        ASS(sib::types_info<qSTs>::count == 9);
+        END;
+
+        EXE(using CmSTs = sib::types_erase_t<mSTs, _TS<>>);
+        TYP(CmSTs);
+        ASS(sib::types_info<CmSTs>::count == 4);
+        END;
+
+        EXE(using CqSTs = sib::types_erase_t<qSTs, _TS<>>);
+        TYP(CqSTs);
+        ASS(sib::types_info<CqSTs>::count == 4);
+        END;
+
+        ASS(sib::Same<CmSTs, CqSTs>);
+        END;
+    } {
+        BEG;
+        #undef _C
+        #define _C 50
+        EXE(using mSTs = sib::types_merge_sort_t<_gen_TS(_C)>);
+        EXE(using qSTs = sib::types_quick_sort_t<_gen_TS(_C)>);
+        ASS(sib::types_info<mSTs>::count == _C);
+        ASS(sib::types_info<qSTs>::count == _C);
         END;
     }
+
+    #undef _I
+    #undef _C
+
+    #undef _gen_TS
+    #undef _TS
 
     sib::debug::outstream << std::endl;
     return 0;
@@ -524,121 +596,144 @@ DEF_TEST(test_types_list)
     MSG("****************************************************************************************************");
     MSG("");
     
+    #define _TS sib::types_list
+    #define _gen_TS(N) gen_TS_t<_TS, N>
+
+    #define _C 10
+    #define _I 7
+
     {
         BEG;
-        EXE(using f1  = sib::types_first_t<A, B, C>);
-        EXE(using f2  = sib::types_first_t<C, B, B>);
-        EXE(using f3  = sib::types_first_t<D, D, B>);
-      //EXE(using f4  = sib::types_first_t<>);
-        EXE(using f5  = sib::types_first_t<E>);
-        EXE(using f6  = sib::types_first_t<sib::types_list<A, B, C>>);
-        EXE(using f7  = sib::types_first_t<sib::types_list<C, B, B>>);
-        EXE(using f8  = sib::types_first_t<sib::types_list<D, D, B>>);
-      //EXE(using f9  = sib::types_first_t<sib::types_list<>>);
-        EXE(using f10 = sib::types_first_t<sib::types_list<E>>);
-        EXE(using f11 = sib::types_first_t<sib::types_list<A, E>, B, C, sib::types_list<D, A>>);
-        EXE(using f12 = sib::types_first_t<sib::types_list<sib::types_list<D, B>>>);
-        EXE(using f13 = sib::types_first_t<sib::types_list<sib::types_list<A, E>, B, C, sib::types_list<D, A>>>);
-        DEFA(f1 , v1 , , A);
-        DEFA(f2 , v2 , , C);
-        DEFA(f3 , v3 , , D);
-      //DEF (f4 , v4 ,    );
-        DEFA(f5 , v5 , , E);
-        DEFA(f6 , v6 , , A);
-        DEFA(f7 , v7 , , C);
-        DEFA(f8 , v8 , , D);
-      //DEF (f9 , v9 ,    );
-        DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::types_list<A _ E>);
-        DEFA(f12, v12, , sib::types_list<D _ B>);
-        DEFA(f13, v13, , sib::types_list<A _ E>);
+        TIS(A         , sib::types_first_t<A _ B _ C>);
+        TIS(C         , sib::types_first_t<C _ B _ B>);
+        TIS(D         , sib::types_first_t<D _ D _ B>);
+      //TIS(          , sib::types_first_t<>);
+        TIS(E         , sib::types_first_t<E>);
+        TIS(A         , sib::types_first_t<_TS<A _ B _ C>>);
+        TIS(C         , sib::types_first_t<_TS<C _ B _ B>>);
+        TIS(D         , sib::types_first_t<_TS<D _ D _ B>>);
+      //TIS(          , sib::types_first_t<_TS<>>);
+        TIS(E         , sib::types_first_t<_TS<E>>);
+        TIS(_TS<A _ E>, sib::types_first_t<_TS<A _ E> _ B _ C _ _TS<D _ A>>);
+        TIS(_TS<D _ B>, sib::types_first_t<_TS<_TS<D _ B>>>);
+        TIS(_TS<A _ E>, sib::types_first_t<_TS<_TS<A _ E> _ B _ C _ _TS<D _ A>>>);
         END;
     } {
         BEG;
-        EXE(using f1  = sib::types_last_t<A, B, C>);
-        EXE(using f2  = sib::types_last_t<C, B, B>);
-        EXE(using f3  = sib::types_last_t<D, D, B>);
-      //EXE(using f4  = sib::types_last_t<>);
-        EXE(using f5  = sib::types_last_t<E>);
-        EXE(using f6  = sib::types_last_t<sib::types_list<A, B, C>>);
-        EXE(using f7  = sib::types_last_t<sib::types_list<C, B, B>>);
-        EXE(using f8  = sib::types_last_t<sib::types_list<D, D, B>>);
-      //EXE(using f9  = sib::types_last_t<sib::types_list<>>);
-        EXE(using f10 = sib::types_last_t<sib::types_list<E>>);
-        EXE(using f11 = sib::types_last_t<sib::types_list<A _ E> _ B _ C _ sib::types_list<D _ A>>);
-        EXE(using f12 = sib::types_last_t<sib::types_list<sib::types_list<D _ B>>>);
-        EXE(using f13 = sib::types_last_t<sib::types_list<sib::types_list<A _ E> _ B _ C _ sib::types_list<D _ A>>>);
-        DEFA(f1 , v1 , , C);
-        DEFA(f2 , v2 , , B);
-        DEFA(f3 , v3 , , B);
-      //DEF (f4 , v4 ,    );
-        DEFA(f5 , v5 , , E);
-        DEFA(f6 , v6 , , C);
-        DEFA(f7 , v7 , , B);
-        DEFA(f8 , v8 , , B);
-      //DEF (f9 , v9 ,    );
-        DEFA(f10, v10, , E);
-        DEFA(f11, v11, , sib::types_list<D _ A>);
-        DEFA(f12, v12, , sib::types_list<D _ B>);
-        DEFA(f13, v13, , sib::types_list<D _ A>);
+        TIS(C                     , sib::types_last_t<A _ B _ C>);
+        TIS(B                     , sib::types_last_t<C _ B _ B>);
+        TIS(B                     , sib::types_last_t<D _ D _ B>);
+      //TIS(                      , sib::types_last_t<>);
+        TIS(E                     , sib::types_last_t<E>);
+        TIS(C                     , sib::types_last_t<_TS<A _ B _ C>>);
+        TIS(B                     , sib::types_last_t<_TS<C _ B _ B>>);
+        TIS(B                     , sib::types_last_t<_TS<D _ D _ B>>);
+      //TIS(                      , sib::types_last_t<_TS<>>);
+        TIS(E                     , sib::types_last_t<_TS<E>>);
+        TIS(_TS<D _ A>, sib::types_last_t<_TS<A _ E> _ B _ C _ _TS<D _ A>>);
+        TIS(_TS<D _ B>, sib::types_last_t<_TS<_TS<D _ B>>>);
+        TIS(_TS<D _ A>, sib::types_last_t<_TS<_TS<A _ E> _ B _ C _ _TS<D _ A>>>);
         END;
     } {
-        static constexpr int _C = 10;
-        static constexpr int _I = 7;
         BEG;
-        EXE(using Ts = gen_TL<_C>);
-        MSG("    |", Types_to_Str<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using Ts = _gen_TS(_C));
+        MSG("      ", TS_to_Str<Ts>());
+        ASS(sib::types_info<Ts>::count == _C);
         END;
+
         EXE(using H = sib::types_head_t<_I, Ts>);
-        MSG("    |", Types_to_Str<H>());
-        MSG("    |type count = ", sib::types_info<H>::count);
+        MSG("      ", TS_to_Str<H>());
+        ASS(sib::types_info<H>::count == _I);
         END;
 
         EXE(using T = sib::types_tail_t<_I _ Ts>);
-        MSG("    |", Types_to_Str<T>());
-        MSG("    |type count = ", sib::types_info<T>::count);
+        MSG("      ", TS_to_Str<T>());
+        ASS(sib::types_info<T>::count == _I);
         END;
     } {
         BEG;
-        EXE(using Ts = sib::types_tail_t<10, gen_TL<30>>);
-        MSG("    |", Types_to_Str<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using STs = sib::types_merge_sort_t<_TS<>>);
+        TYP(STs);
+        ASS(sib::types_info<STs>::count == 0);
+        END;
+    } {
+        BEG;
+        EXE(using STs = sib::types_quick_sort_t<_TS<>>);
+        TYP(STs);
+        ASS(sib::types_info<STs>::count == 0);
+        END;
+    } {
+        BEG;
+        EXE(using Ts = sib::types_concat_t<_gen_TS(_C), _gen_TS(_I)>);
+        MSG("      ", TS_to_Str<Ts>());
+        ASS(sib::types_info<Ts>::count == _C + _I);
         END;
 
-        EXE(using STs = sib::types_quick_sort_t<Ts>);
-        MSG("    |", Types_to_Str<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
-        END;
-    } {
-        BEG;
-        EXE(using STs = sib::types_quick_sort_t<sib::types_list<>>);
-        MSG("    |", sib::static_type_name<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
-        END;
-    } {
-        BEG;
-        EXE(using Ts = sib::types_summ_t<gen_TL<5>, gen_TL<3>>);
-        MSG("    |", Types_to_Str<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using mSTs = sib::types_merge_sort_t<Ts>);
+        MSG("      ", TS_to_Str<mSTs>());
+        ASS(sib::types_info<mSTs>::count == _C + _I);
         END;
 
-        EXE(using STs = sib::types_quick_sort_t<Ts>);
-        MSG("    |", Types_to_Str<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
+        EXE(using qSTs = sib::types_quick_sort_t<Ts>);
+        MSG("      ", TS_to_Str<qSTs>());
+        ASS(sib::types_info<qSTs>::count == _C + _I);
+        END;
+
+        ASS(TS_to_Str<mSTs>() == TS_to_Str<qSTs>());
+        END;
+
+        EXE(auto VS = gen_VS(_C));
+        EXE(auto tmp = gen_VS(_I));
+        EXE(VS.insert(VS.end(), tmp.begin(), tmp.end()));
+        EXE(std::sort(VS.begin(), VS.end()));
+        MSG("      ", VS_to_Str(VS));
+        ASS(VS_to_Str(VS) == TS_to_Str<qSTs>());
         END;
     } {
         BEG;
-        EXE(using Ts = sib::types_list<sib::types_list<>, sib::types_list<>, int, sib::types_list<>, int, float, sib::types_list<>, int, sib::types_list<>>);
-        MSG("    |", sib::static_type_name<Ts>());
-        MSG("    |type count = ", sib::types_info<Ts>::count);
+        EXE(using Ts = _TS<_TS<>, _TS<>, int, _TS<>, A, float, _TS<>, int, _TS<>>);
+        TYP(Ts);
+        ASS(sib::types_info<Ts>::count == 9);
         END;
 
-        EXE(using STs = sib::types_quick_sort_t<Ts>);
-        MSG("    |", sib::static_type_name<STs>());
-        MSG("    |type count = ", sib::types_info<STs>::count);
+        EXE(using mSTs = sib::types_merge_sort_t<Ts>);
+        TYP(mSTs);
+        ASS(sib::types_info<mSTs>::count == 9);
         END;
-    }    
+
+        EXE(using qSTs = sib::types_quick_sort_t<Ts>);
+        TYP(qSTs);
+        ASS(sib::types_info<qSTs>::count == 9);
+        END;
+
+        EXE(using CmSTs = sib::types_erase_t<mSTs, _TS<>>);
+        TYP(CmSTs);
+        ASS(sib::types_info<CmSTs>::count == 4);
+        END;
+
+        EXE(using CqSTs = sib::types_erase_t<qSTs, _TS<>>);
+        TYP(CqSTs);
+        ASS(sib::types_info<CqSTs>::count == 4);
+        END;
+
+        ASS(sib::Same<CmSTs, CqSTs>);
+        END;
+    } {
+        BEG;
+        #undef _C
+        #define _C 50
+        EXE(using mSTs = sib::types_merge_sort_t<_gen_TS(_C)>);
+        EXE(using qSTs = sib::types_quick_sort_t<_gen_TS(_C)>);
+        ASS(sib::types_info<mSTs>::count == _C);
+        ASS(sib::types_info<qSTs>::count == _C);
+        END;
+    }
+
+    #undef _I
+    #undef _C
+
+    #undef _gen_TS
+    #undef _TS
 
     sib::debug::outstream << std::endl;
     return 0;

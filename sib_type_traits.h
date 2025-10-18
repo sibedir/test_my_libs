@@ -87,7 +87,7 @@ namespace sib {
     #ifndef DISABLE_SIB_WARNINGS
     #ifndef DISABLE_WARNING_NON_STANDARD_FUNC_PTR_CONVERSION
     
-        #pragma message (__FILE__ "(" SIB_STRINGISE(__LINE__) ") : WARNING: "                   \
+        #pragma message (__FILE__ "(" SIB_STR_STRINGISE(__LINE__) ") : WARNING: "               \
             "Warning [SIB]: Possible non-standard conversion of function pointer to void*. "    \
             "Check the ::sib::NON_STANDARD_FUNC_PTR_CONVERSION_DETECT variable. "               \
             "To suppress this warning, define the "                                             \
@@ -326,19 +326,19 @@ namespace sib {
     inline constexpr bool is_one_of_v = true_for_one_v <T, ::std::is_same, Ts...>;
 
     template <typename T, typename    U > concept    Same  =     ::std::is_same_v  <T, U    >;
-    template <typename T, typename... Ts> concept    AnyOf =          is_any_of_v<T, Ts...>;
-    template <typename T, typename... Ts> concept    OneOf =          is_one_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept    AnyOf =            is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept    OneOf =            is_one_of_v<T, Ts...>;
 
     template <typename T, typename    U > concept NotSame  = not ::std::is_same_v  <T, U    >;
-    template <typename T, typename... Ts> concept NotAnyOf = not      is_any_of_v<T, Ts...>;
-    template <typename T, typename... Ts> concept NotOneOf = not      is_one_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept NotAnyOf = not        is_any_of_v<T, Ts...>;
+    template <typename T, typename... Ts> concept NotOneOf = not        is_one_of_v<T, Ts...>;
     
 
 
     // ----------------------------------------------------------------------------------- constract/convert/cast
 
     template <typename From, typename To> inline constexpr bool is_constructible_from_to_v = ::std::is_constructible_v<To, From>;
-    template <typename From, typename To> inline constexpr bool   is_convertible_from_to_v = ::std::  is_convertible_v<From, To>;
+    template <typename From, typename To> inline constexpr bool   is_convertible_from_to_v = ::std::is_convertible_v<From, To>;
     template <typename From, typename To> inline constexpr bool      is_castable_from_to_v = requires { static_cast<To>(std::declval<From>()); };
     template <typename To, typename From> inline constexpr bool is_constructible_to_from_v = ::std::is_constructible_v<To, From>;
     template <typename To, typename From> inline constexpr bool   is_convertible_to_from_v = ::std::is_convertible_v<From, To>;
@@ -811,13 +811,15 @@ namespace sib {
 
         template <typename TS> requires(std::is_base_of_v<types_container, TS>) struct types_info;
 
-        template <typename... Ts> struct types_first;
-        template <typename... Ts> struct types_last;
+        template <typename...> struct types_first;
+        template <typename...> struct types_last;
 
-        template <typename, typename> struct types_summ;
+        template <typename, typename> struct types_concat;
         
         template <::std::size_t, typename TS> requires(std::is_base_of_v<types_container, TS>) struct types_head;
         template <::std::size_t, typename TS> requires(std::is_base_of_v<types_container, TS>) struct types_tail;
+
+        template <typename TS, typename RT> requires(std::is_base_of_v<types_container, TS>) struct types_erase;
 
         template <typename TS> requires(std::is_base_of_v<types_container, TS>) struct types_merge_sort;
         template <typename TS> requires(std::is_base_of_v<types_container, TS>) struct types_quick_sort;
@@ -827,10 +829,12 @@ namespace sib {
         template <typename... Ts> using types_first_t = typename types_first<Ts...>::type;
         template <typename... Ts> using types_last_t  = typename types_last <Ts...>::type;
 
-        template <typename A, typename B> using types_summ_t = types_summ<A, B>::type;
+        template <typename A, typename B> using types_concat_t = types_concat<A, B>::type;
 
         template <size_t N, typename TS> using types_head_t = typename types_head<N, TS>::type;
         template <size_t N, typename TS> using types_tail_t = typename types_tail<N, TS>::type;
+
+        template <typename TS, typename RT> using types_erase_t = typename types_erase<TS, RT>::type;
 
         template <typename TS> using types_merge_sort_t = typename types_merge_sort <TS>::type;
         template <typename TS> using types_quick_sort_t = typename types_quick_sort <TS>::type;
@@ -968,31 +972,11 @@ namespace sib {
 
     // ------------------------------------------------------------------------------- summ
 
-    template <template <typename...> typename Tmpl, typename... Ts1, typename... Ts2>
-        requires(std::is_base_of_v<types_container, Tmpl<>>)
-    struct types_summ<Tmpl<Ts1...>, Tmpl<Ts2...>>
+    template <template <typename...> typename TsTmpl, typename... Ts1, typename... Ts2>
+        requires(std::is_base_of_v<types_container, TsTmpl<>>)
+    struct types_concat<TsTmpl<Ts1...>, TsTmpl<Ts2...>>
     {
-        using type = Tmpl<Ts1..., Ts2...>;
-    };
-
-    template <typename T, template <typename...> typename Tmpl, typename... Ts>
-        requires(
-            not is_instantiation_of_v<T, Tmpl>
-            and ::std::is_base_of_v<types_container, Tmpl<>>
-        )
-    struct types_summ<T, Tmpl<Ts...>>
-    {
-        using type = Tmpl<T, Ts...>;
-    };
-
-    template <typename T, template <typename...> typename Tmpl, typename... Ts>
-        requires(
-            not is_instantiation_of_v<T, Tmpl>
-            and ::std::is_base_of_v<types_container, Tmpl<>>
-        )
-    struct types_summ<Tmpl<Ts...>, T>
-    {
-        using type = Tmpl<Ts..., T>;
+        using type = TsTmpl<Ts1..., Ts2...>;
     };
 
 
@@ -1047,6 +1031,28 @@ namespace sib {
 
 
 
+    // ----------------------------------------------------------------------------------- remove
+
+    template <typename RT, template <typename...> typename TsTmpl>
+    struct types_erase<TsTmpl<>, RT>
+    {
+        using type = TsTmpl<>;
+    };
+
+    template <typename RT, template <typename...> typename TsTmpl, typename F, typename... Ts>
+    struct types_erase<TsTmpl<F, Ts...>, RT>
+    {
+        using type = types_concat_t<TsTmpl<F>, typename types_erase<TsTmpl<Ts...>, RT>::type>;
+    };
+
+    template <typename RT, template <typename...> typename TsTmpl, typename... Ts>
+    struct types_erase<TsTmpl<RT, Ts...>, RT>
+    {
+        using type = typename types_erase<TsTmpl<Ts...>, RT>::type;
+    };
+
+
+
     // ----------------------------------------------------------------------------------- types sort
 
     // merge sort
@@ -1057,7 +1063,7 @@ namespace sib {
     {
     private:
 
-        template <typename, typename> struct merge;
+        template <typename, typename> struct merge {};
         template <typename TL1, typename TL2> using  merge_t = typename merge<TL1, TL2>::type;
 
         template <typename... Ts>
@@ -1077,18 +1083,18 @@ namespace sib {
         {
             using type = ::std::conditional_t<
                 type_less_v<A, B>,
-                types_summ_t<TsTmpl<A>, merge_t<TsTmpl<   As...>, TsTmpl<B, Bs...>>>,
-                types_summ_t<TsTmpl<B>, merge_t<TsTmpl<A, As...>, TsTmpl<   Bs...>>>
+                types_concat_t<TsTmpl<A>, merge_t<TsTmpl<   As...>, TsTmpl<B, Bs...>>>,
+                types_concat_t<TsTmpl<B>, merge_t<TsTmpl<A, As...>, TsTmpl<   Bs...>>>
             >;
         };
 
 
 
-        template <typename   > struct sort;
+        template <typename   > struct sort {};
         template <typename TS> using  sort_t = typename sort<TS>::type;
 
-        template <typename>
-        struct sort
+        template <sib::Same<TsTmpl<>> T>
+        struct sort<T>
         {
             using type = TsTmpl<>;
         };
@@ -1106,6 +1112,7 @@ namespace sib {
         };
 
         template <typename... Ts>
+            requires(sizeof...(Ts) > 2)
         struct sort<TsTmpl<Ts...>>
         {
             static constexpr ::std::size_t middle = sizeof...(Ts) / 2;
@@ -1127,28 +1134,14 @@ namespace sib {
     struct types_quick_sort<TsTmpl<Types...>>
     {
     private:
+
         struct PASS {};
-
-        template <typename...   > struct collapse;
-        template <typename... Ts> using  collapse_t = typename collapse<Ts...>::type;
-
-        template <typename...>
-        struct collapse
-        {
-            using type = TsTmpl<>;
-        };
-
-        template <typename F, typename... Ts>
-        struct collapse<F, Ts...>
-        {
-            using type = ::std::conditional_t<::std::is_same_v<F, PASS>, collapse_t<Ts...>, types_summ_t<F, collapse_t<Ts...>>>;
-        };
+        
+        template <typename Cond, typename... Ts>
+        using left  = types_erase_t<TsTmpl< ::std::conditional_t< type_less_v<Ts, Cond>, Ts, PASS> ... >, PASS>;
 
         template <typename Cond, typename... Ts>
-        using left  = collapse_t< ::std::conditional_t< type_less_v<Ts, Cond>, Ts, PASS> ... >;
-
-        template <typename Cond, typename... Ts>
-        using right = collapse_t< ::std::conditional_t<!type_less_v<Ts, Cond>, Ts, PASS> ... >;
+        using right = types_erase_t<TsTmpl< ::std::conditional_t<!type_less_v<Ts, Cond>, Ts, PASS> ... >, PASS>;
 
 
 
@@ -1162,35 +1155,22 @@ namespace sib {
 
 
 
-        template <typename   > struct sort;
+        template <typename   > struct sort {};
         template <typename TS> using  sort_t = typename sort<TS>::type;
 
-        template <template <typename...> typename _Tmpl_>
-            requires(std::is_same_v<TsTmpl<>, _Tmpl_<>>)
-        struct sort<_Tmpl_<>>
+        template <sib::Same<TsTmpl<>> EmptyTs>
+        struct sort<EmptyTs>
         {
             using type = TsTmpl<>;
         };
 
-        // template <typename A>
-        // struct sort<TsTmpl<A>>
-        // {
-        //     using type = TsTmpl<A>;
-        // };
-
-        // template <typename A, typename B>
-        // struct sort<TsTmpl<A, B>>
-        // {
-        //     using type = ::std::conditional_t<type_less_v<A, B>, TsTmpl<A, B>, TsTmpl<A, B>>;
-        // };
-
-        template <typename A, typename... Ts>
-        struct sort<TsTmpl<A, Ts...>>
+        template <typename F, typename... Ts>
+        struct sort<TsTmpl<F, Ts...>>
         {
             using type = typename Ls_M_Rs<
-                sort_t<left <A, Ts...>>,
-                A,
-                sort_t<right<A, Ts...>>
+                sort_t<left <F, Ts...>>,
+                F,
+                sort_t<right<F, Ts...>>
             >::res;
         };
 

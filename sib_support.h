@@ -2,8 +2,9 @@
 
 #include <utility>
 #include <type_traits>
-#include <string>
 #include <cstdint>
+#include <stdexcept>
+
 
 namespace sib {
 
@@ -16,36 +17,135 @@ namespace sib {
     template <typename...>
     using always_void_t = void;
 
+    template <auto F, auto... Rest>
+    inline constexpr auto first_value = F;
+
+    template <auto... Vs>
+    inline constexpr auto last_value = (Vs, ...);
+
+    inline constexpr auto sss = last_value<1,2,3>;
+
     template <auto MSG>
     struct error { inline static constexpr auto msg = MSG; };
 
-    #define SIB_STR(...) #__VA_ARGS__
     #define SIB_CONCAT_INNER(a, b) a##b
     #define SIB_CONCAT(a, b) SIB_CONCAT_INNER(a, b)
 
-    #define SIB_STRINGISE_IMPL(x) #x
-    #define SIB_STRINGISE(x) SIB_STRINGISE_IMPL(x)
+    #define SIB_ARG_STRINGISE_IMPL(...) __VA_ARGS__
+    #define SIB_ARG_STRINGISE(...) SIB_ARG_STRINGISE_IMPL(__VA_ARGS__)
+
+    #define SIB_STR_STRINGISE_IMPL(...) #__VA_ARGS__
+    #define SIB_STR_STRINGISE(...) SIB_STR_STRINGISE_IMPL(__VA_ARGS__)
+
+    #define SIB_MAKE_LITERAL(CharT, txt) []() constexpr         \
+    {                                                           \
+        if constexpr (::std::is_same_v<CharT, char>)            \
+            return (const char*)  txt"";                        \
+        else                                                    \
+        if constexpr (::std::is_same_v<CharT, wchar_t>)         \
+            return (const wchar_t*) L##txt"";                   \
+        else                                                    \
+        if constexpr (::std::is_same_v<CharT, char8_t>)         \
+            return (const char8_t*) u8##txt"";                  \
+        else                                                    \
+        if constexpr (::std::is_same_v<CharT, char16_t>)        \
+            return (const char16_t*) u##txt"";                  \
+        else                                                    \
+        if constexpr (::std::is_same_v<CharT, char32_t>)        \
+            return (const char32_t*) U##txt"";                  \
+    }()                                                         \
 
 
-    #define SIB_MAKE_LITERAL(CharT, txt) []             \
-    {                                                   \
-        if constexpr (std::is_same_v<CharT, char>)      \
-            return (const char*)  txt;                  \
-        else                                            \
-        if constexpr (std::is_same_v<CharT, wchar_t>)   \
-            return (const wchar_t*) L##txt;             \
-        else                                            \
-        if constexpr (std::is_same_v<CharT, char8_t>)   \
-            return (const char8_t*) u8##txt;            \
-        else                                            \
-        if constexpr (std::is_same_v<CharT, char16_t>)  \
-            return (const char16_t*) u##txt;            \
-        else                                            \
-        if constexpr (std::is_same_v<CharT, char32_t>)  \
-            return (const char32_t*) U##txt;            \
-    }()                                                 \
+
+    // ----------------------------------------------------------------------------------- EnumSubset
+
+    template <typename Enum, Enum... Allowed>
+        requires (std::is_enum_v<Enum>)
+    struct constrained_enum_t
+    {
+        static_assert(sizeof...(Allowed) > 0, "EnumSubset requires at least one allowed value");
+
+        using value_type = Enum;
+
+        Enum value{ first_value<Allowed...> };
+
+        constexpr constrained_enum_t() = default;
+
+        constexpr constrained_enum_t(Enum v)
+            : value(v)
+        {
+            if (!is_valid(v)) throw std::invalid_argument("Invalid enum value for EnumSubset");
+        }
+
+        constexpr constrained_enum_t& operator=(Enum v)
+        {
+            if (!is_valid(v)) throw std::invalid_argument("Invalid enum value for EnumSubset");
+
+            value = v;
+            return *this;
+        }
+
+        constexpr operator Enum() const { return value; }
+
+        [[nodiscard]] constexpr bool try_set(Enum v)
+        {
+            if (!is_valid(v)) return false;
+
+            value = v;
+            return true;
+        }
+
+        static constexpr bool is_valid(Enum v) noexcept {
+            return ((v == Allowed) || ...);
+        }
+
+        static constexpr std::array<Enum, sizeof...(Allowed)> allowed_values() noexcept {
+            return { Allowed... };
+        }
+    };
+
+    // ----------------------------------------------------------------------------------- Position
+
+    enum class TPosition { Center, Left, Right, Top, Bottom };
+
+    struct TPositionHor : constrained_enum_t<TPosition, TPosition::Left, TPosition::Center, TPosition::Right>
+    {
+        using base_type = constrained_enum_t<TPosition, TPosition::Left, TPosition::Center, TPosition::Right>;
+        using base_type::base_type;
+
+        static constexpr auto Left   = TPosition::Left  ;
+        static constexpr auto Center = TPosition::Center;
+        static constexpr auto Right  = TPosition::Right ;
+    };
 
 
+    struct TPositionVer : constrained_enum_t<TPosition, TPosition::Top, TPosition::Center, TPosition::Bottom>
+    {
+        using base_type = constrained_enum_t<TPosition, TPosition::Top, TPosition::Center, TPosition::Bottom>;
+        using base_type::base_type;
+
+        static constexpr auto Top    = TPosition::Top   ;
+        static constexpr auto Center = TPosition::Center;
+        static constexpr auto Bottom = TPosition::Bottom;
+    };
+
+    static_assert(TPositionHor::Left   == TPosition::Left);
+    static_assert(TPositionHor::Left   != TPosition::Top);
+    static_assert(TPositionHor::Center == TPositionVer::Center);
+    static_assert(TPositionHor::Right  != TPositionVer::Top);
+
+    static_assert([]() {
+        TPosition p = TPosition::Left;
+        TPositionHor ph;
+        TPositionVer pv;
+
+        ph = p;
+        ph = TPosition::Right;
+        //pv = ph; // Error
+        p = ph;
+        //pv = p; // Error
+        return not pv.try_set(p);
+    }());
 
     // ----------------------------------------------------------------------------------- scope_guard
 
@@ -85,9 +185,11 @@ namespace sib {
     }
 
     #define SIB_SCOPE_GUARD(...)                                        \
-        auto SIB_CONCAT(sib_scope_guard_guard, __COUNTER__) =           \
+        auto SIB_CONCAT(sib_scope_guard_, __COUNTER__) =                \
             ::sib::make_scope_guard( [&]() noexcept { __VA_ARGS__ } );  \
 
+    #define SIB_OBJECT_GUARD(...)                                       \
+        auto SIB_CONCAT(sib_object_guard_, __COUNTER__) = __VA_ARGS__;  \
 
 
     // ----------------------------------------------------------------------------------- forward_like
@@ -119,7 +221,7 @@ namespace sib {
     template <typename T>
     constexpr auto ptr_to_int(T* ptr) noexcept
     {
-        return reinterpret_cast<::std::uintptr_t const>(ptr);
+        return reinterpret_cast<::std::uintptr_t>(ptr);
     }
 
 

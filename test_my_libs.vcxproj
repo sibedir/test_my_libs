@@ -132,7 +132,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="sib_console.cpp" />
-    <ClCompile Include="sib_string.cpp" />
     <ClCompile Include="sib_support.cpp" />
     <ClCompile Include="sib_unit_test.cpp" />
     <ClCompile Include="test_console.cpp" />

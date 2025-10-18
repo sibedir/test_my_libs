@@ -1,21 +1,17 @@
 ﻿#include "sib_unit_test.h"
 #include <clocale>
-#include <string>
 #include "sib_support.h"
 
-// #include <iostream>
-// #include <string>
-
 #define TEST_CONSOLE
-//#define TEST_TYPE_TRAITS
-//#define TEST_TYPES_PACK
-//#define TEST_TYPES_LIST
-//#define TEST_NULLPTR
-//#define TEST_VALUE
-//#define TEST_POINTER
-//#define TEST_ARRAY
-//#define TEST_WRAPPER
-//#define TEST_UNIQUE_TUPLE
+#define TEST_TYPE_TRAITS
+#define TEST_TYPES_PACK
+#define TEST_TYPES_LIST
+#define TEST_NULLPTR
+#define TEST_VALUE
+#define TEST_POINTER
+#define TEST_ARRAY
+#define TEST_WRAPPER
+#define TEST_UNIQUE_TUPLE
 
 #if defined(TEST_CONSOLE)
     #include "test_console.h"
@@ -37,7 +33,6 @@
     #include <Windows.h>
 #endif
 
-#include "sib_wrapper.h"
 using namespace std::string_literals;
 
 // MAIN ------------------------------------------------------------------------------
@@ -52,16 +47,21 @@ int main()
     #endif
 
     SIB_SCOPE_GUARD(
-        sib::console::WaitAnyKey(
-            "     --- END ---\n"
-            "   press any key..."
+        sib::console::WaitKeyCodes(
+            { sib::console::KC_ENTER },
+                "     --- END ---\n"
+                "   press [" + sib::console::KC_ENTER.name() + "]"
         );
+        //sib::console::WaitAnyKey(
+        //    "     --- END ---\n"
+        //    "   press any key..."
+        //);
         sib::console::outstream << std::endl;
     );
 
     sib::debug::CONTAINER_DISCLOSURE_LENGTH = 32;
     sib::debug::Init();
-    
+
     #ifdef TEST_CONSOLE
         sib::debug::Tests.emplace("01 console", test_console);
     #endif
