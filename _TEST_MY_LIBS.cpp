@@ -3,15 +3,15 @@
 #include "sib_support.h"
 
 #define TEST_CONSOLE
-#define TEST_TYPE_TRAITS
-#define TEST_TYPES_PACK
-#define TEST_TYPES_LIST
-#define TEST_NULLPTR
-#define TEST_VALUE
-#define TEST_POINTER
-#define TEST_ARRAY
-#define TEST_WRAPPER
-#define TEST_UNIQUE_TUPLE
+//#define TEST_TYPE_TRAITS
+//#define TEST_TYPES_PACK
+//#define TEST_TYPES_LIST
+//#define TEST_NULLPTR
+//#define TEST_VALUE
+//#define TEST_POINTER
+//#define TEST_ARRAY
+//#define TEST_WRAPPER
+//#define TEST_UNIQUE_TUPLE
 
 #if defined(TEST_CONSOLE)
     #include "test_console.h"

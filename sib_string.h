@@ -5,6 +5,17 @@
 
 namespace sib {
 
+    template <BasicString Str>
+    Str aligned_string(Str const& content, unsigned const length, TPositionHor const aligned_string, typename Str::value_type const filling)
+    {
+
+        Str result;
+
+        return result;
+    }
+
+    // ----------------------------------------------------------------------------------- promiscuous_stringstream
+
     template <::sib::Char Ch, typename Tr = ::std::char_traits<Ch>, typename Al = std::allocator<Ch>>
     class promiscuous_stringstream : public ::std::basic_stringstream<Ch, Tr, Al>
     {

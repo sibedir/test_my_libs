@@ -503,6 +503,8 @@ namespace sib {
     template <typename L, typename R> using less_equal_result_t    = typename less_equal_result   <L, R>::type;
     template <typename L, typename R> using greater_equal_result_t = typename greater_equal_result<L, R>::type;
 
+
+
     // ----------------------------------------------------------------------------------- container
 
     template <typename T>

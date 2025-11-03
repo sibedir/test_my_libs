@@ -3,7 +3,6 @@
 
 DEF_TEST(test_console)
 {
-
     sib::debug::Init();
 
     MSG("");                                              //

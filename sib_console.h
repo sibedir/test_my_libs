@@ -121,7 +121,7 @@ namespace console {
     inline TKeyCode KC_UP               ;
     inline TKeyCode KC_DOWN             ;
 
-    using TKeyCodeNames     = ::std::map<TKeyCode, ::std::string>;
+    using TKeyCodeNames = ::std::map<TKeyCode, ::std::string>;
 
     namespace detail {
         using TActionBase = ::std::pair<::std::string, ::std::function<void()>>;
